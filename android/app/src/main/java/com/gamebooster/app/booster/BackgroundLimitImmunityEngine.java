@@ -125,20 +125,32 @@ public final class BackgroundLimitImmunityEngine {
             cmds.add("cmd app_standby set " + SHIZUKU_PACKAGE + " active 2>/dev/null");
             cmds.add("am set-inactive " + SHIZUKU_PACKAGE + " false 2>/dev/null");
 
-            // 4. Defeat Android 12-16 Phantom Process Killer (prevents child process killing)
+            // 4. Defeat Android 12-16 Phantom Process Killer & Cached Apps Freezer
             cmds.add("/system/bin/device_config put activity_manager max_phantom_processes 2147483647 2>/dev/null");
             cmds.add("/system/bin/setprop persist.sys.fflag.override.settings_enable_monitor_phantom_procs false 2>/dev/null");
             cmds.add("settings put global settings_enable_monitor_phantom_procs false 2>/dev/null");
+            cmds.add("settings put global cached_apps_freezer disabled 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager freeze_debounce_timeout 86400000 2>/dev/null");
 
-            // 5. OEM-Specific Background Killer Bypasses (MIUI / HyperOS, Transsion, ColorOS)
+            // 5. Defeat Wireless Debugging / ADB Disconnect & Wi-Fi Sleep during Gaming
+            cmds.add("settings put global adb_wifi_enabled 1 2>/dev/null");
+            cmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
+            cmds.add("settings put global wifi_sleep_policy 2 2>/dev/null");
+            cmds.add("settings put global wifi_wakeup_available 1 2>/dev/null");
+            cmds.add("settings put global wifi_wakeup_enabled 1 2>/dev/null");
+            cmds.add("settings put global wifi_mobile_data_transition_wakelock_timeout_ms 300000 2>/dev/null");
+
+            // 6. OEM-Specific Background Killer Bypasses (MIUI / HyperOS, Transsion, ColorOS)
             cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " AUTO_START allow 2>/dev/null");
             cmds.add("cmd appops set " + SHIZUKU_PACKAGE + " AUTO_START allow 2>/dev/null");
             cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " BOOT_COMPLETED allow 2>/dev/null");
+            cmds.add("cmd appops set " + SHIZUKU_PACKAGE + " IGNORE_BATTERY_OPTIMIZATIONS allow 2>/dev/null");
+            cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " IGNORE_BATTERY_OPTIMIZATIONS allow 2>/dev/null");
 
             // Execute batch privileged commands
             CommandExecutor.executeBatchCommands(cmds);
 
-            // 6. Kernel OOM Immortal Pinning: Set oom_score_adj to -900 for our PIDs and Shizuku
+            // 7. Kernel OOM Immortal Pinning: Set oom_score_adj to -900 for our PIDs and Shizuku
             protectProcessOomScore(GAME_BOOSTER_PACKAGE);
             protectProcessOomScore(SHIZUKU_PACKAGE);
 
@@ -163,10 +175,10 @@ public final class BackgroundLimitImmunityEngine {
                 targetPids.add(android.os.Process.myPid());
             }
 
-            // Query via pidof and pgrep to catch multi-process daemons (:service, shizuku_server)
+            // Query via pidof and pgrep to catch multi-process daemons (:service, shizuku_server, app_process)
             String cmd = "pidof " + packageName + " 2>/dev/null; pgrep -f " + packageName + " 2>/dev/null";
             if (SHIZUKU_PACKAGE.equals(packageName)) {
-                cmd += "; pgrep -f shizuku_server 2>/dev/null; pgrep -f rikka.shizuku 2>/dev/null";
+                cmd += "; pgrep -f shizuku_server 2>/dev/null; pgrep -f rikka.shizuku 2>/dev/null; pgrep -f 'shizuku' 2>/dev/null; pgrep -f 'rish' 2>/dev/null";
             }
 
             String pidOut = ShizukuExecutor.executeShizukuCommand(cmd);
@@ -195,6 +207,43 @@ public final class BackgroundLimitImmunityEngine {
         } catch (Throwable t) {
             Log.w(TAG, "Failed to protect oom score for " + packageName + ": " + t.getMessage());
         }
+    }
+
+    /**
+     * Periodic in-game keep-alive pulse:
+     * Constantly refreshes OOM scores and warms Shizuku IPC so Android LMKD never kills the daemon during games.
+     */
+    public static void keepAlivePulse(Context context) {
+        AppExecutors.getInstance().executeCommand(() -> {
+            try {
+                // 1. Re-pin OOM scores for Shizuku and Game Booster
+                protectProcessOomScore(SHIZUKU_PACKAGE);
+                protectProcessOomScore(GAME_BOOSTER_PACKAGE);
+
+                // 2. Lock wireless debugging & anti-freezer settings
+                List<String> pulseCmds = new ArrayList<>();
+                pulseCmds.add("settings put global adb_wifi_enabled 1 2>/dev/null");
+                pulseCmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
+                pulseCmds.add("settings put global cached_apps_freezer disabled 2>/dev/null");
+                pulseCmds.add("am set-standby-bucket " + SHIZUKU_PACKAGE + " active 2>/dev/null");
+                pulseCmds.add("cmd app_standby set " + SHIZUKU_PACKAGE + " active 2>/dev/null");
+                CommandExecutor.executeBatchCommands(pulseCmds);
+
+                // 3. Keep IPC connection warm and auto-rebind if needed
+                boolean alive = rikka.shizuku.Shizuku.pingBinder();
+                if (alive) {
+                    if (!com.gamebooster.app.shizuku.ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
+                        com.gamebooster.app.shizuku.ShizukuUserServiceConnector.getInstance().bindService();
+                    }
+                } else {
+                    // Try resurrection if dropped
+                    tryAutoResurrectShizukuDaemon();
+                    com.gamebooster.app.shizuku.ShizukuConnectionManager.getInstance().forceReconnectCheck();
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "keepAlivePulse note: " + t.getMessage());
+            }
+        });
     }
 
     /**

@@ -126,6 +126,8 @@ public class ShizukuConnectionManager {
         }
     }
 
+    private int heartbeatDeadTicks = 0;
+
     private void ensureHeartbeatRunning() {
         if (!heartbeatStarted.compareAndSet(false, true)) return;
         Thread heartbeatThread = new Thread(() -> {
@@ -137,6 +139,7 @@ public class ShizukuConnectionManager {
                     boolean alive = Shizuku.pingBinder();
                     boolean granted = alive && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
                     if (alive && granted) {
+                        heartbeatDeadTicks = 0;
                         if (state != State.READY) {
                             setState(State.READY);
                         }
@@ -145,6 +148,11 @@ public class ShizukuConnectionManager {
                         }
                     } else if (!alive && state == State.READY) {
                         onBinderDead();
+                    } else if (!alive && (state == State.DEAD || state == State.BINDING)) {
+                        if (heartbeatDeadTicks++ % 5 == 0) {
+                            com.gamebooster.app.booster.BackgroundLimitImmunityEngine.tryAutoResurrectShizukuDaemon();
+                            scheduleReconnect();
+                        }
                     }
                 } catch (Throwable ignored) {}
             }
@@ -227,10 +235,10 @@ public class ShizukuConnectionManager {
 
     /** Binder died — verify with confirmation ping before transitioning to DEAD. */
     public void onBinderDead() {
-        // Filter transient network/Wi-Fi switching and process-switching blips
+        // Filter transient network/Wi-Fi switching, shader compilation, and heavy game loading spikes
         AppExecutors.getInstance().executeCommand(() -> {
             boolean confirmedDead = true;
-            long[] debounceIntervals = {100L, 200L, 300L};
+            long[] debounceIntervals = {250L, 500L, 750L, 1000L};
             for (long delay : debounceIntervals) {
                 sleepQuietly(delay);
                 try {
@@ -244,7 +252,7 @@ public class ShizukuConnectionManager {
             }
 
             if (confirmedDead) {
-                Log.w(TAG, "Shizuku confirmed dead after 3-stage debounce. Transitioning to DEAD.");
+                Log.w(TAG, "Shizuku confirmed dead after 4-stage debounce. Transitioning to DEAD.");
                 setState(State.DEAD);
                 currentAttempt.set(0);
                 com.gamebooster.app.booster.BackgroundLimitImmunityEngine.tryAutoResurrectShizukuDaemon();

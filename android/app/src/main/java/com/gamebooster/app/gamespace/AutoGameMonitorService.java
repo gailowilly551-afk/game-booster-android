@@ -134,6 +134,8 @@ public class AutoGameMonitorService extends Service {
         handler.post(monitorRunnable);
     }
 
+    private int inGamePulseTicks = 0;
+
     private void checkForegroundApp() {
         AppExecutors.getInstance().executeCommand(() -> {
             String currentPackage = getForegroundPackage();
@@ -152,11 +154,15 @@ public class AutoGameMonitorService extends Service {
                         return;
                     }
                     lastActiveGamePackage = currentPackage;
+                    inGamePulseTicks = 0;
                     Log.i(TAG, "GAME LAUNCH DETECTED: " + currentPackage + " — Starting GameManager Session");
 
                     // Record the capability-checked launcher session.
                     final Context appCtx = getApplicationContext();
                     com.gamebooster.app.gamemanager.GameManagerSessionEngine.beginSession(appCtx, currentPackage);
+
+                    // IMMORTAL SHIELD: Lock Shizuku and Game Booster into OOM -900 and kill immunity immediately
+                    com.gamebooster.app.booster.BackgroundLimitImmunityEngine.enforceImmunitySync(appCtx);
 
                     final int targetHz = com.gamebooster.app.config.GameProfilePreferences.getTargetHz(appCtx, currentPackage);
                     // DUAL-STAGE AUTO INJECTION PIPELINE:
@@ -181,7 +187,14 @@ public class AutoGameMonitorService extends Service {
 
                     AppExecutors.getInstance().postToMainThread(() ->
                             android.widget.Toast.makeText(appCtx, "⚡ Auto-Optimized: " + currentPackage,
-                                    android.widget.Toast.LENGTH_SHORT).show());
+                                     android.widget.Toast.LENGTH_SHORT).show());
+                } else {
+                    // Game is actively running in foreground:
+                    // Pulse Shizuku immortal shield every ~10s (every 3 ticks) to prevent OS / LMKD disconnect
+                    inGamePulseTicks++;
+                    if (inGamePulseTicks % 3 == 0) {
+                        com.gamebooster.app.booster.BackgroundLimitImmunityEngine.keepAlivePulse(getApplicationContext());
+                    }
                 }
             } else if (lastActiveGamePackage != null) {
                 // Ignore transient system packages (in-game overlays, keyboards, Google Play login, dialogs, webviews)
