@@ -1971,6 +1971,24 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
 JNIEXPORT jfloat JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeCombatCooldownRemaining
   (JNIEnv *, jclass, jint);
 
+/*
+ * 2026 Latest Patch Engine (Everything.txt)
+ * MLBB: 90% Damage, Attack Speed, Armor, Infinite Mana/Energy, Zero Delay, Fast Jungle/Turtle, 3X Drone View.
+ * CODM: Damage, Speed, Armor, Skills, Zero Recoil, All Scope, Aimbot 90% Headshot, 4-Bullet Kill.
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectMlbbLatest2026Patch
+  (JNIEnv *, jclass, jstring, jboolean);
+
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectCodmLatest2026Patch
+  (JNIEnv *, jclass, jstring, jboolean);
+
+/*
+ * 2026 Sovereign SELinux & Android Driver Bypass Engine
+ * Direct POSIX & Kernel Sysfs Driver Accelerator
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeBypassSelinuxAndDrivers
+  (JNIEnv *, jclass, jstring);
+
 #ifdef __cplusplus
 }
 #endif

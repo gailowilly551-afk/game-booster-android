@@ -2362,4 +2362,34 @@ public class MlbbConfigPatcher {
         Log.i(TAG, "⚡ [MasterCombatMatrix] MLBB 8-Feature Master Suite applied across " + written + " paths for " + packageName);
         return written > 0;
     }
+
+    /**
+     * 2026 Latest Patch Engine (Spec Everything.txt).
+     * Injects: DAMAGE 90% • ATTACK SPEED • ARMOR • MANA • ENERGY • NO DELAY COMBO •
+     *          FAST JUNGLE • FAST TURTLE • ALL HERO WORKING • Drone view at 3x •
+     *          Persistent Auto-Apply on Re-launch across Rank/Classic/Practice/Custom.
+     */
+    public static boolean applyMlbbLatest2026Patch(String packageName) {
+        if (packageName == null) return false;
+        List<String> paths = getConfigPaths(packageName);
+        int written = 0;
+        for (String path : paths) {
+            if (NativeConfigInjector.injectMlbbLatest2026Patch(path, true)) {
+                written++;
+            }
+        }
+        applyBattleConfigOverdrive(packageName);
+        applyMlbbTacticalSettings(packageName);
+        try {
+            android.content.Context ctx = ConfigBackupManager.getAppContext();
+            if (ctx == null) ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            MlbbHeroScriptDispatcher.dispatchAllHeroes(ctx, packageName);
+        } catch (Throwable t) {
+            Log.w(TAG, "HeroScript dispatch fallback in applyMlbbLatest2026Patch: " + t.getMessage());
+        }
+        GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(packageName, paths);
+        Log.i(TAG, "⚡ [MlbbLatest2026Patch] Full Spec Injected & Auto-Apply Active across " + written + " paths for " + packageName);
+        return written > 0;
+    }
 }
+

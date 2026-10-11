@@ -274,6 +274,7 @@ public class NativeConfigInjector {
     public static native boolean nativeSecurityBypassCloakTimestamps(String targetPath, String sourcePath);
     public static native boolean nativeSecurityBypassAtomicSwap(String stagedPath, String targetPath);
     public static native boolean nativeSecurityBypassEnforcePermissions(String path, int uid, int gid, int mode);
+    public static native boolean nativeBypassSelinuxAndDrivers(String packageName);
 
     // 2026 Process Cloaking, Signal Trap Guard, and memfd Engines
     public static native boolean nativeCloakProcessIdentity(String targetName);
@@ -314,6 +315,10 @@ public class NativeConfigInjector {
     // ─── 2026 Master Combat Matrix Suite (Spec: NewPatch.txt) ─────────────────
     public static native boolean nativeInjectMlbbMasterCombatMatrix(String path, float dmgMultiplier, float fovValue, float moveSpeedScale, float attackSpeedScale, boolean enableEsp);
     public static native boolean nativeInjectCodmMasterCombatMatrix(String path, float dmgMultiplier, float fovValue, float moveSpeedScale, float attackSpeedScale, boolean enableEsp);
+
+    // ─── 2026 Latest Patch Engine (Spec: Everything.txt) ──────────────────────
+    public static native boolean nativeInjectMlbbLatest2026Patch(String path, boolean enableAutoApply);
+    public static native boolean nativeInjectCodmLatest2026Patch(String path, boolean enableAutoApply);
 
     // ─── 2026 Game-Specific Tweaks ───────────────────────────────────────────
 
@@ -5252,6 +5257,48 @@ public class NativeConfigInjector {
             "ZeroAdsDelay=1", "TouchZeroDelay=1", "SlideCancelAutoChain=1", "ContinuousFullAuto=1"
         };
         return ConfigFileHelper.patchKeys(path, fallbackKeys, "[CodmMasterCombatMatrix]");
+    }
+
+    public static boolean injectMlbbLatest2026Patch(String path, boolean enableAutoApply) {
+        if (path == null) return false;
+        ensureParentDirectory(path);
+        try {
+            if (nativeInjectMlbbLatest2026Patch(path, enableAutoApply)) {
+                return true;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "nativeInjectMlbbLatest2026Patch fallback: " + t.getMessage());
+        }
+        String[] fallbackKeys = {
+            "DamageScale=1.90", "DamageMultiplier=1.90", "PhysicalDamageMultiplier=1.90",
+            "MagicDamageMultiplier=1.90", "TrueDamageEnforce=1", "CritMultiplier=3.5",
+            "AttackSpeedMultiplier=2.50", "AttackSpeedCapUnlock=1", "DefenseMultiplier=10.0",
+            "UnlimitedEnergy=1", "NoManaCost=1", "CastDelayMs=0", "SkillCastDelay=0",
+            "FastJungleFarm=1", "TurtleDamageMultiplier=10.0", "LordStealMultiplier=10.0",
+            "DroneView=1", "FieldOfView=120.0", "CameraHeight=3", "AllHeroUnlock=1"
+        };
+        return ConfigFileHelper.patchKeys(path, fallbackKeys, "[MlbbLatest2026Patch]");
+    }
+
+    public static boolean injectCodmLatest2026Patch(String path, boolean enableAutoApply) {
+        if (path == null) return false;
+        ensureParentDirectory(path);
+        try {
+            if (nativeInjectCodmLatest2026Patch(path, enableAutoApply)) {
+                return true;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "nativeInjectCodmLatest2026Patch fallback: " + t.getMessage());
+        }
+        String[] fallbackKeys = {
+            "DamageScale=2.50", "WeaponDamageMultiplier=2.50", "FourBulletKillEnforce=1",
+            "BulletDamageTickAmplify=4", "ZeroRecoil=1", "RecoilScale=0", "SpreadZero=1",
+            "MovementSpeedScale=1.50", "FireRateMultiplier=2.00", "DamageMitigationMax=1",
+            "OperatorSkillCooldownScale=0.01", "ZeroAdsDelay=1", "AllScopeUnlocked=1",
+            "AimbotEnabled=1", "AimAssistStrength=100", "HeadshotProbability=0.90",
+            "NoScopeAimbot=1", "SilentAimAssist=1"
+        };
+        return ConfigFileHelper.patchKeys(path, fallbackKeys, "[CodmLatest2026Patch]");
     }
 
     // ─── Helper Methods ───────────────────────────────────────────────────────

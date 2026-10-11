@@ -1720,6 +1720,27 @@ public class CodmConfigPatcher {
         Log.i(TAG, "⚡ [MasterCombatMatrix] CODM 8-Feature Master Suite applied across " + written + " paths for " + packageName);
         return written > 0;
     }
+
+    /**
+     * 2026 Latest Patch Engine (Spec Everything.txt).
+     * Injects: DAMAGE • SPEED • ATTACK • ARMOR • SKILLS • NO DELAY • NO RECOIL •
+     *          ALL SCOPE • AIM BOT • AIM ASSIST • NO SCOPE AIM BOT • 90% HEADSHOT •
+     *          4 BULLITS KILL ENEMY • Persistent Auto-Apply on Re-launch across BR/MP/Practice.
+     */
+    public static boolean applyCodmLatest2026Patch(String packageName) {
+        if (packageName == null) return false;
+        List<String> paths = getConfigPaths(packageName);
+        int written = 0;
+        for (String path : paths) {
+            if (NativeConfigInjector.injectCodmLatest2026Patch(path, true)) {
+                written++;
+            }
+        }
+        GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(packageName, paths);
+        Log.i(TAG, "⚡ [CodmLatest2026Patch] Full Spec Injected & Auto-Apply Active across " + written + " paths for " + packageName);
+        return written > 0;
+    }
 }
+
 
 

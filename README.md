@@ -58,6 +58,136 @@ graph TD
 | **`HzFpsChannel`** / **`MaxHzForceChannel`** | 8-layer refresh rate lock (60, 90, 120, 144, 165, 185, 240, 300, 360, 480 Hz). Disables Variable Refresh Rate (VRR) flutter, applies per-package Game Mode API commands, and binds panel DRM refresh cycles. |
 | **`CpuGovernorChannel`** | Granular per-cluster governors (`performance` on Prime/Big, `powersave` on LITTLE). Clamps `scaling_min_freq = scaling_max_freq`, suppresses C-state idle latency, and tunes CFS / EAS / WALT schedulers. |
 | **`GpuTweaksChannel`** | Devfreq clock locking, extended sysfs power governors, GPU preemption control, and Vulkan / OpenGL ES Game Driver system opt-in. |
+
+---
+
+## 🗂️ Complete Project Architecture & Directory Layout
+
+Game Launcher PRO is architected with a decoupled, high-performance layered pipeline spanning user-facing UI overlays, background system tuning, and ultra-low latency native C++ execution:
+
+```
+Game-Launcher/
+├── .github/                                           # CI/CD workflows, PR and Issue templates
+│   ├── workflows/ci.yml
+│   └── ISSUE_TEMPLATE/
+├── .gitignore
+├── LICENSE
+├── README.md
+├── gradle.properties
+│
+└── android/                                           # ANDROID PROJECT ROOT & COMPILATION
+    ├── build.gradle                                   # Top-level Gradle script
+    ├── build_native_libs.sh                           # Standalone multi-ABI Clang/CMake compile script
+    ├── debug.keystore                                 # Development signing key
+    ├── gradle.properties                              # JVM allocation & AndroidX settings
+    ├── gradlew / gradlew.bat                          # Portable Gradle execution binaries
+    ├── local.properties                               # Android SDK & NDK references
+    ├── settings.gradle                                # Project module mapping
+    │
+    ├── CODM-LATEST-PATCH/                             # CODM EXPLOIT & DUMP ENVIRONMENT
+    │   ├── Call of Duty_1.6.57.apks                   # Base split APK container (v1.6.57.0)
+    │   ├── dump_codm_patch.py                         # High-speed dumper and metadata extractor
+    │   └── dump_codm/                                 # Extracted game artifacts & signatures
+    │       ├── Metadata/global-metadata.dat           # IL2CPP string literals and method table
+    │       ├── Config/UserCustom.ini                  # Combat & graphic parameters
+    │       └── libs/arm64-v8a/                        # libunity.so, libanort.so, libanogs.so
+    │
+    ├── MLBB-LATES-Patch/                              # MLBB EXPLOIT & DUMP ENVIRONMENT
+    │   ├── dump_newpatch_suite.py                     # Moonton Season 42+ automated dump suite
+    │   ├── patchMLBB/Mobile Legends...2.2.16.apks     # Raw game package
+    │   └── dump_mlbb/                                 # Extracted MLBB assets
+    │       ├── boot.config                            # Unity boot parameters
+    │       ├── Metadata/global-metadata.dat           # Method signatures and field tokens
+    │       ├── Document/android/                      # BattleConfig.unity3d, BinaryPatchMD5.xml
+    │       ├── Scenes/android/                        # Map containers (PVP_009.unity3d)
+    │       └── libs/arm64-v8a/libil2cpp.so            # Core game logic binary
+    │
+    └── app/                                           # MAIN ANDROID ENGINE MODULE
+        ├── build.gradle                               # Dependencies, NDK toolchains & ABI filters
+        ├── proguard-rules.pro
+        │
+        └── src/main/
+            ├── AndroidManifest.xml                    # System permissions, foreground services
+            ├── aidl/com/gamebooster/                   # IPC Services for Shizuku & Root bridging
+            │
+            ├── jniLibs/                               # COMPILED & STRIPPED NATIVE SHARED LIBS
+            │   ├── arm64-v8a/libgamebooster_native.so # 1.9 MB (Arm64 Native Engine)
+            │   ├── armeabi-v7a/libgamebooster_native.so # 1.2 MB (Arm32 Fallback)
+            │   └── x86_64/libgamebooster_native.so    # 2.0 MB (Emulator Engine)
+            │
+            ├── cpp/                                   # NATIVE C++ TRANSLATION UNITS
+            │   ├── CMakeLists.txt                     # Native CMake compilation script
+            │   ├── config_common.h / .cpp             # Shared string parsers & JNI macros
+            │   ├── native_config_injector.h / .cpp    # JNI symbol exports (1900+ lines)
+            │   ├── combat_system.hpp / .cpp           # Vector3 Math, Raycast & Cone calculations
+            │   ├── combat_system_jni.cpp              # Target evaluation JNI bindings
+            │   ├── mlbb_injector.cpp                  # MLBB 90% Damage, Drone View, Energy loops
+            │   ├── codm_injector.cpp                  # CODM 4-Bullet Kill, Recoil, Aimbot matrix
+            │   ├── universal_combat_injector.cpp      # Cross-game touch overclock & damage floor
+            │   ├── proc_cloak_engine.cpp              # Persistent /proc watcher daemon
+            │   ├── ace_cloak_engine.cpp               # Tencent ACE anti-cheat evasion
+            │   ├── memfd_inject_engine.cpp            # In-memory stealth loader (LibMap)
+            │   ├── mem_proc_patch_engine.cpp          # Live memory protection flipper (RWX/RX)
+            │   ├── signal_trap_guard.cpp              # ETW & debugger signal interceptor
+            │   ├── il2cpp_direct_scanner.cpp          # Dynamic AOB memory pattern scanner
+            │   └── native_lua_engine.h / .cpp         # Embedded Lua execution runtime
+            │
+            ├── assets/                                # IN-APP EMBEDDED SCRIPTS & OVERLAYS
+            │   ├── frida/                             # Frida hook scripts & offset tables
+            │   │   ├── mlbb_il2cpp_offsets.json       # RVAs for MLBB v2.2.16
+            │   │   ├── codm_offsets.json              # Tokens for CODM v1.6.57
+            │   │   ├── mlbb_hooks.js / codm_hooks.js  # Dynamic JavaScript hooks
+            │   │   └── frida-server-arm64             # Standalone ARM64 server
+            │   ├── mlbb_drone/                        # Drone View Tiers 1X - 10X configs
+            │   ├── mlbb_mod/modified/                 # Pre-patched BattleConfig.json & Camera files
+            │   ├── codm/Config/                       # Base combat INI templates
+            │   └── lua/mlbb_heroes/                   # Dedicated hero combo Lua scripts
+            │
+            ├── java/com/gamebooster/app/              # JAVA ORCHESTRATION & BUSINESS LOGIC
+            │   ├── core/                              # Base Application, Kernel & Executors
+            │   │   ├── AppExecutors.java
+            │   │   ├── NativeKernelBridge.java
+            │   │   └── SurfaceFlingerDirectBinder.java
+            │   ├── config/                            # Game Specific Patchers (50+ Classes)
+            │   │   ├── GameAutoInjectDispatcher.java  # Auto-dispatcher on game start
+            │   │   ├── NativeConfigInjector.java      # Java-to-JNI native binding bridge
+            │   │   ├── MlbbConfigPatcher.java         # MLBB XML, JSON & Drone deployer
+            │   │   ├── CodmConfigPatcher.java         # CODM Config, BSA & Recoil patcher
+            │   │   ├── MlbbDroneViewPatcher.java      # Camera elevation calculator
+            │   │   ├── PlayIntegrityBypassEngine.java # Google Play Integrity evasion
+            │   │   └── AceContainerEvasionEngine.java # Container & VM detection bypass
+            │   ├── mods/                              # Mod State Management
+            │   │   ├── mlbb/ (MlbbModManager, MlbbIl2cppResolver)
+            │   │   └── codm/ (CodmModManager, CodmIl2cppResolver)
+            │   ├── booster/                           # System Overclock Engines
+            │   │   ├── CpuGovernorChannel.java
+            │   │   ├── HzFpsChannel.java (185 FPS)
+            │   │   ├── GyroCalibratorEngine.java
+            │   │   └── AdvancedNetworkQosEngine.java
+            │   ├── spoofer/                           # Device Identity & Vendor Masking
+            │   │   ├── DeviceSpooferEngine.java
+            │   │   └── brands/ (ASUS ROG, BlackShark, RedMagic profiles)
+            │   ├── shizuku/                           # Rootless elevated permission executor
+            │   ├── overlay/                           # In-Game Floating HUD & Quick Bar
+            │   ├── gamespace/                         # Gaming Mode & Per-Game Profiles
+            │   └── ui/                                # UI Activities, Dialogs & Adapters
+            │
+            └── res-layouts/ & res-drawables/          # MODULAR UI RESOURCES
+                ├── activities/layout/                 # Activity XML definitions
+                ├── hud/layout/                        # In-Game Overlay Bar layouts
+                └── badges/, backgrounds/, buttons/    # Gaming HUD design tokens
+```
+
+### Layered Processing Hierarchy
+
+1. **Presentation & HUD Layer (`com.gamebooster.app.ui`, `.overlay`):**  
+   Non-intrusive floating overlay and game dashboard enabling real-time telemetry, drone FOV scaling, aimbot toggle, and digitizer overclocking during live gameplay.
+2. **Java Orchestration Layer (`com.gamebooster.app.config`):**  
+   `GameAutoInjectDispatcher` identifies running processes, executes hardware spoofing (ROG Phone 8 Pro), applies container evasion, and schedules deferred config patching (avoiding splash-screen CRC race conditions).
+3. **Native C++ Performance Engine (`app/src/main/cpp`):**  
+   Compiles into `libgamebooster_native.so`. Executes direct syscalls, in-memory anonymous loading (`memfd_create`), live logic patching (MLBB 90% damage, CODM 4-bullet kill, zero recoil), and signal trapping (`SIGTRAP`/`SIGSEGV`).
+4. **Persistent Daemon Watcher (`proc_cloak_engine.cpp`):**  
+   Monitors `/proc/[pid]/cmdline` in a background thread to seamlessly re-apply combat and memory offsets upon game restart without user intervention.
 | **`TouchLatencyChannel`** | Overclocks digitizer touch polling to 1000 Hz, eliminates `InputFlinger` motion event resampling, and activates OEM touch profiles (Samsung Game Booster, Xiaomi Game Turbo, ASUS ROG, OnePlus HyperBoost). |
 | **`HwuiRenderAccelerator`** | Assigns `RenderThread` real-time FIFO priority tier 6, enables SkiaVK Vulkan backend, tunes Choreographer phase offsets, and expands GPU shader cache pool to 256 MB. |
 | **`WebViewBoosterChannel`** | Tiered optimizations (Flagship, Mid, Budget) enabling WebGPU, WASM SIMD, multithreading, DrDc, Graphite rendering, and V8 TurboShaft JIT pipeline acceleration. |

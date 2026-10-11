@@ -177,6 +177,46 @@ public final class GameSecurityBypassEngine {
     }
 
     /**
+     * 2026 Sovereign SELinux & Android Driver Bypass Suite.
+     * 1. SELinux: Sets permissive policy, restores file contexts, and masks process domain.
+     * 2. Android Driver: Overclocks GPU devfreq, enables Game Driver opt-in, and suppresses InputFlinger touch resampling.
+     */
+    public static boolean bypassSelinuxAndAndroidDriver(String packageName) {
+        if (!ShellSafety.isSafePackageName(packageName)) return false;
+        String pkg = packageName.trim().toLowerCase(Locale.ROOT);
+
+        // A. Native C++ Kernel Sysfs & Thread Attribution Bypass
+        try {
+            NativeConfigInjector.nativeBypassSelinuxAndDrivers(pkg);
+        } catch (Throwable t) {
+            Log.w(TAG, "Native driver bypass fallback: " + t.getMessage());
+        }
+
+        // B. Elevated SELinux Permissive & Context Restoration
+        StringBuilder sb = new StringBuilder();
+        sb.append("setenforce 0 2>/dev/null; ");
+        sb.append("echo 0 > /sys/fs/selinux/enforce 2>/dev/null; ");
+        sb.append("restorecon -F -R '/data/data/").append(pkg).append("' 2>/dev/null; ");
+        sb.append("restorecon -F -R '/storage/emulated/0/Android/data/").append(pkg).append("' 2>/dev/null; ");
+
+        // C. Elevated Android Driver Bypass (Game Driver & InputFlinger)
+        sb.append("settings put global game_driver_all_apps 0 2>/dev/null; ");
+        sb.append("settings put global updatable_driver_all_apps 0 2>/dev/null; ");
+        sb.append("settings put global game_driver_opt_in_apps '").append(pkg).append("' 2>/dev/null; ");
+        sb.append("settings put global updatable_driver_production_opt_in_apps '").append(pkg).append("' 2>/dev/null; ");
+        sb.append("setprop debug.hwui.renderer skiavk 2>/dev/null; ");
+        sb.append("setprop debug.touch.resample 0 2>/dev/null; ");
+        sb.append("setprop debug.stagefright.omx_input.resample 0 2>/dev/null; ");
+        sb.append("setprop debug.xclipse.driver.mode 1 2>/dev/null; ");
+        sb.append("setprop debug.ged.mode 1 2>/dev/null; ");
+
+        executePrivileged(sb.toString());
+        Log.i(TAG, "⚡ [SovereignBypass] SELinux & Android Driver Bypass armed for " + pkg);
+        return true;
+    }
+
+
+    /**
      * Applies Anti-Tamper Read-Only Lock & Kernel Bind-Mount Protection to injected config files.
      * Uses 3 layers of anti-reset:
      *   1. chmod 444 / 666 safe read enforcement

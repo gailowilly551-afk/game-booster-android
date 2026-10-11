@@ -151,3 +151,49 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     env->ReleaseStringUTFChars(jPath, path);
     return ok ? JNI_TRUE : JNI_FALSE;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── 5. Direct Kernel SELinux & Android Driver Bypass ─────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+static void write_sysfs_fast(const char* path, const char* value) {
+    if (!path || !value) return;
+    int fd = open(path, O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+    if (fd >= 0) {
+        write(fd, value, strlen(value));
+        close(fd);
+    }
+}
+
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeBypassSelinuxAndDrivers
+  (JNIEnv *env, jclass, jstring jPkgName) {
+    const char *pkg = jPkgName ? env->GetStringUTFChars(jPkgName, nullptr) : nullptr;
+
+    // 1. Direct SELinux Policy Bypass
+    // Attempt to write 0 directly into /sys/fs/selinux/enforce (permissive flip)
+    write_sysfs_fast("/sys/fs/selinux/enforce", "0");
+
+    // Mask SELinux context on calling thread
+    write_sysfs_fast("/proc/thread-self/attr/current", "u:r:untrusted_app:s0");
+
+    // 2. Direct GPU Driver Hardware Bypass (Adreno / Mali / MediaTek)
+    write_sysfs_fast("/sys/class/kgsl/kgsl-3d0/devfreq/governor", "performance");
+    write_sysfs_fast("/sys/class/kgsl/kgsl-3d0/force_clk_on", "1");
+    write_sysfs_fast("/sys/class/kgsl/kgsl-3d0/force_bus_on", "1");
+    write_sysfs_fast("/sys/class/kgsl/kgsl-3d0/force_rail_on", "1");
+    write_sysfs_fast("/sys/class/kgsl/kgsl-3d0/idle_timer", "100000");
+    write_sysfs_fast("/sys/module/mali_kbase/parameters/mali_gpu_power_override", "1");
+    write_sysfs_fast("/sys/kernel/ged/hal/ged_kpi_enable", "1");
+    write_sysfs_fast("/sys/kernel/ged/hal/custom_up_threshold", "10");
+
+    // 3. Touch Driver Bypass (InputFlinger Resampling & Latency Suppression)
+    write_sysfs_fast("/proc/touchscreen/game_mode", "1");
+    write_sysfs_fast("/sys/devices/virtual/touch/switch/set_touch_screen", "1");
+    write_sysfs_fast("/sys/class/touch/switch/set_touch_screen", "1");
+    write_sysfs_fast("/sys/devices/platform/goodix_ts.0/game_mode", "1");
+
+    if (pkg) {
+        env->ReleaseStringUTFChars(jPkgName, pkg);
+    }
+    return JNI_TRUE;
+}
+

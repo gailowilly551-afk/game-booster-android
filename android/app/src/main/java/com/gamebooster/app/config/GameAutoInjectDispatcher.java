@@ -114,6 +114,13 @@ public final class GameAutoInjectDispatcher {
                 Log.w(TAG, "AceContainerEvasionEngine note for " + pkg + ": " + t.getMessage());
             }
 
+            // ── 2026: Sovereign SELinux & Android Driver Hardware Bypass ──
+            try {
+                GameSecurityBypassEngine.bypassSelinuxAndAndroidDriver(pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "SELinux & Driver bypass note for " + pkg + ": " + t.getMessage());
+            }
+
             try {
                 com.gamebooster.app.spoofer.DeviceSpooferEngine.autoApplyOptimalProfileForGame(ctx, pkg);
             } catch (Throwable t) {
@@ -211,13 +218,14 @@ public final class GameAutoInjectDispatcher {
                         }
                         // Native inject deferred together with rest of MLBB I/O
                         NativeConfigInjector.injectAllConfigsForPackage(fPkg, 185);
+                        MlbbConfigPatcher.applyMlbbLatest2026Patch(fPkg);
                         MlbbConfigPatcher.cleanLegacyLoadingLocks(fPkg);
                         try {
                             com.gamebooster.app.mods.mlbb.MlbbModManager.applyProfile(fCtx, fPkg, com.gamebooster.app.mods.GameModProfile.load(fCtx));
                         } catch (Throwable modErr) {
                             Log.w(TAG, "MLBB Mod Profile injection warning: " + modErr.getMessage());
                         }
-                        Log.i(TAG, "✅ [MLBB Deferred Inject] All overrides applied for " + fPkg);
+                        Log.i(TAG, "✅ [MLBB Deferred Inject] All overrides & Latest 2026 Patch applied for " + fPkg);
                     } catch (Throwable t) {
                         Log.e(TAG, "Error in MLBB deferred injection for " + fPkg, t);
                     }
@@ -258,6 +266,7 @@ public final class GameAutoInjectDispatcher {
                 CodmConfigPatcher.applyCodmInstantChamberingQuickDraw(pkg);
                 CodmConfigPatcher.applyCodmSlideCancelMobility(pkg);
                 CodmConfigPatcher.applyCodmUltraDroneViewMaxFov(pkg);
+                CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
                 try {
                     com.gamebooster.app.mods.codm.CodmModManager.applyProfile(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
                 } catch (Throwable modErr) {

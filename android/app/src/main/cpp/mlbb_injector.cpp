@@ -3655,3 +3655,118 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     JNI_INJECT_KEY_SET(env, jPath, keys, "MlbbMasterCombatMatrix");
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── MLBB 2026 LATEST PATCH (Spec: Everything.txt) ───────────────────────────
+// ─── Features: DAMAGE 90% • ATTACK SPEED • ARMOR • MANA • ENERGY • NO DELAY   ─
+// ───           FAST JUNGLE • FAST TURTLE • ALL HERO WORKING • 3X DRONE VIEW  ─
+// ───           Persistent Auto-Apply on Re-launch                            ─
+// ─────────────────────────────────────────────────────────────────────────────
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectMlbbLatest2026Patch
+  (JNIEnv *env, jclass, jstring jPath, jboolean enableAutoApply) {
+    if (!jPath) return JNI_FALSE;
+
+    std::vector<std::pair<std::string, std::string>> keys = {
+        // ── 1. Damage 90% & Burst Critical ──
+        {"DamageLockMax",                   "1"},
+        {"EffectiveDPSMode",                "3"},
+        {"DamageScale",                     "1.90"},
+        {"DamageMultiplier",                "1.90"},
+        {"PhysicalDamageMultiplier",        "1.90"},
+        {"MagicDamageMultiplier",           "1.90"},
+        {"TrueDamageEnforce",               "1"},
+        {"TrueDamageMultiplier",            "1.90"},
+        {"CritRateBoost",                   "1.0"},
+        {"CritMultiplier",                  "3.5"},
+        {"PenetrationBoost",                "1"},
+
+        // ── 2. Attack Speed & Kinetic Unlock ──
+        {"AttackSpeedMultiplier",           "2.50"},
+        {"AttackIntervalMin",               "0.0"},
+        {"AttackSpeedCapUnlock",            "1"},
+        {"AutoAttackWeave",                 "1"},
+
+        // ── 3. Armor & Defense Floor ──
+        {"DamageMitigationMax",             "1"},
+        {"DefenseMultiplier",               "10.0"},
+        {"PhysicalDefenseBoost",            "5000"},
+        {"MagicDefenseBoost",               "5000"},
+        {"DamageReductionPercent",          "0.99"},
+        {"ShieldAbsorptionMultiplier",      "5.0"},
+
+        // ── 4. Infinite Mana & Energy ──
+        {"UnlimitedEnergy",                 "1"},
+        {"NoManaCost",                      "1"},
+        {"ZeroSkillCost",                   "1"},
+        {"EnergyRecoveryRate",              "1000"},
+        {"ManaRegenBoost",                  "1000"},
+        {"LingNoEnergyLimit",               "1"},
+        {"FannyNoEnergyLimit",              "1"},
+
+        // ── 5. No Delay Combo & Input Overclock ──
+        {"CastDelayMs",                     "0"},
+        {"SkillCastDelay",                  "0"},
+        {"SkillAnimationDelay",             "0"},
+        {"AdsZeroDelay",                    "1"},
+        {"TouchZeroDelay",                  "1"},
+        {"ZeroInputLag",                    "1"},
+        {"TouchPollingRate",                "1000"},
+        {"InputBufferRate",                 "1000"},
+        {"HitRegSyncRate",                  "1000"},
+        {"SkillAutoChain",                  "1"},
+        {"SkillAutoCombo",                  "1"},
+        {"ContinuousCastChain",             "1"},
+        {"InstantSkillCancel",              "1"},
+
+        // ── 6. Fast Jungle & Fast Turtle / Lord Steal ──
+        {"FastJungleFarm",                  "1"},
+        {"FastFarmingMultiplier",           "10.0"},
+        {"JungleMonsterDamageMultiplier",   "10.0"},
+        {"TurtleDamageMultiplier",          "10.0"},
+        {"LordStealMultiplier",             "10.0"},
+        {"RetributionObjectiveSync",        "1"},
+
+        // ── 7. All Hero Working ──
+        {"AllHeroUnlock",                   "1"},
+        {"AllHeroDamageBoost",              "1.90"},
+        {"AllHeroArmorBoost",               "10.0"},
+        {"UniversalHeroLock",               "1"},
+        {"SkillSmartAim",                   "1"},
+        {"AimMagnetism",                    "3"},
+
+        // ── 8. Drone View at 3X (Vision Madali Makita Kalaban) ──
+        {"DroneView",                       "1"},
+        {"DroneViewEnabled",                "1"},
+        {"DroneFOV",                        "120.0"},
+        {"PanoramicFOV",                    "120.0"},
+        {"MaxFOV",                          "120.0"},
+        {"FieldOfView",                     "120.0"},
+        {"CameraHeight",                    "3"},
+        {"CameraDistance",                  "180"},
+        {"Camera_Elevation",                "3.5"},
+        {"DronePerspectiveMode",            "1"},
+        {"DroneLockElevation",              "1"},
+        {"DroneAntiShake",                  "1"},
+        {"DroneAntiBlackscreen",            "1"},
+
+        // ── Mode Coverage: Rank, Classic, Practice, Custom ──
+        {"RankedHitSync",                   "1"},
+        {"RankedAimAssist",                 "1"},
+        {"ClassicModeSync",                 "1"},
+        {"CustomModeSync",                  "1"},
+        {"PracticeModeSync",                "1"},
+
+        // ── Engine Synchronization ──
+        {"bFramePacingEnabled",             "True"},
+        {"AllowOcclusionQueries",           "1"},
+        {"Fps185Unlock",                    "1"}
+    };
+
+    if (enableAutoApply) {
+        keys.push_back({"AutoApplyOnRelaunch", "1"});
+        keys.push_back({"PersistentDaemonActive", "1"});
+    }
+
+    JNI_INJECT_KEY_SET(env, jPath, keys, "MlbbLatest2026Patch");
+}
+
+
