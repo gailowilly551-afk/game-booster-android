@@ -421,6 +421,9 @@ int detect_cpu_cluster_mask(bool bigCoresOnly) {
 bool apply_keys_to_file(const std::string& pathStr, const char* path,
                         const std::vector<std::pair<std::string, std::string>>& keys,
                         const char* logTag) {
+    if (path) {
+        chmod(path, 0666);
+    }
     std::string content = read_file_posix(pathStr);
     struct stat stBefore;
     bool hasStat = (stat(path, &stBefore) == 0);
@@ -462,6 +465,7 @@ bool fast_batch_inject(const std::string& path,
                        const char* logTag) {
     if (path.empty() || keys.empty()) return false;
 
+    chmod(path.c_str(), 0666);
     std::string content = read_file_posix(path);
     struct stat stBefore;
     bool hasStat = (stat(path.c_str(), &stBefore) == 0);

@@ -239,6 +239,27 @@ public final class MlbbDroneViewPatcher {
                     if (cameraJsonBytes != null && cameraJsonBytes.length > 0) {
                         writeWithFallback(context, docDir + "/CameraConfig.json", cameraJsonBytes, "666");
                     }
+                    byte[] resCheckUnity3d = readAssetBytes(am, ASSET_BASE_DIR + "/Document/android/ResCheckConf.unity3d");
+                    if (resCheckUnity3d != null && resCheckUnity3d.length > 0) {
+                        writeWithFallback(context, docDir + "/ResCheckConf.unity3d", resCheckUnity3d, "666");
+                    }
+                }
+
+                // 2.1 Deploy Season 42+ Camera Panoramic PVP Scene Patches
+                String[] targetScenePaths = {
+                    rootDir + "/files/dragon2017/assets/Scenes/android",
+                    rootDir + "/files/LoadResManager/Scenes/android"
+                };
+                byte[] pvp049 = readAssetBytes(am, ASSET_BASE_DIR + "/Scenes/android/PVP_049_low.unity3d");
+                byte[] pvp009 = readAssetBytes(am, ASSET_BASE_DIR + "/Scenes/android/PVP_009.unity3d");
+                for (String sceneDir : targetScenePaths) {
+                    ShizukuFileManager.makeDirectory(sceneDir);
+                    if (pvp049 != null && pvp049.length > 0) {
+                        writeWithFallback(context, sceneDir + "/PVP_049_low.unity3d", pvp049, "666");
+                    }
+                    if (pvp009 != null && pvp009.length > 0) {
+                        writeWithFallback(context, sceneDir + "/PVP_009.unity3d", pvp009, "666");
+                    }
                 }
             }
 
@@ -419,6 +440,7 @@ public final class MlbbDroneViewPatcher {
                 sb.append("    touch -t 203001010000 \"$d/BattleSystemConfig.bytes\" 2>/dev/null\n");
                 sb.append("    [ -f \"$d/BattleSystemConfig.bytes\" ] && APPLIED=$((APPLIED+1))\n");
                 sb.append("  done\n");
+                sb.append("  for sc in \"$root/files/dragon2017/assets/Scenes/android\" \"$root/files/LoadResManager/Scenes/android\"; do mkdir -p \"$sc\" 2>/dev/null; chmod 666 \"$sc\"/* 2>/dev/null; done\n");
 
                 // 1.2 Clean up any legacy directory locks that stall Unity loading
                 sb.append("  rm -rf \"$root/files/dragon2017/assets/Document/android/Document.unity3d.res_check_fix\" \"$root/files/dragon2017/assets/Document/android/Document.unity3d.res_check_fix.temp\" 2>/dev/null\n");

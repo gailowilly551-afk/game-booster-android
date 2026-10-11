@@ -1,15 +1,22 @@
 {
-  "version": "2026.1",
+  "version": "2026.2",
   "comment": "Master Anti-Redownload & Checksum Skip Manifest for MLBB & CODM",
   "rules": [
     {
       "game": "com.mobile.legends",
       "target_paths": [
         "dragon2017/assets/Document/android/ResCheckConf.xml",
+        "dragon2017/assets/Document/android/ResCheckConf.unity3d",
         "dragon2017/assets/Document/android/res_skip_patch.xml",
         "dragon2017/assets/Document/android/HeroStatConfig.json",
+        "dragon2017/assets/Document/android/BinaryPatchMD5.xml",
+        "dragon2017/assets/Document/android/mola_config.xml",
+        "dragon2017/assets/Document/android/SplitLibMD5.xml",
+        "dragon2017/assets/Document/android/mode_versions_build.xml",
         "dragon2017/assets/version/android/version.xml",
-        "dragon2017/assets/version/android/realversion.xml"
+        "dragon2017/assets/version/android/realversion.xml",
+        "dragon2017/assets/Scenes/android/PVP_049_low.unity3d",
+        "dragon2017/assets/Scenes/android/PVP_009.unity3d"
       ],
       "future_timestamp_seconds": 1893456000,
       "md5_override": "MATCH_LOCAL",
@@ -23,6 +30,14 @@
         "Config/GameConfig.xml",
         "Config/ControlsSettings.ini",
         "Config/GraphicsSettings.ini",
+        "Config/settings.xml",
+        "Config/MSDKConfig.ini",
+        "files/settings.xml",
+        "files/MSDKConfig.ini",
+        "files/boot.config",
+        "files/Config/settings.xml",
+        "files/Config/MSDKConfig.ini",
+        "shared_prefs/settings.xml",
         "res_skip_patch"
       ],
       "future_timestamp_seconds": 1893456000,
@@ -37,6 +52,14 @@
         "Config/GameConfig.xml",
         "Config/ControlsSettings.ini",
         "Config/GraphicsSettings.ini",
+        "Config/settings.xml",
+        "Config/MSDKConfig.ini",
+        "files/settings.xml",
+        "files/MSDKConfig.ini",
+        "files/boot.config",
+        "files/Config/settings.xml",
+        "files/Config/MSDKConfig.ini",
+        "shared_prefs/settings.xml",
         "res_skip_patch"
       ],
       "future_timestamp_seconds": 1893456000,
