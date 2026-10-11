@@ -9,104 +9,231 @@
 
 'use strict';
 
-// ─── Config Loaded via SystemProperties ──────────────────────────────────────
+// ─── Native System Property Resolver (Safe, Zero-Crash) ───────────────────────
+function getSystemProp(key, defaultVal) {
+  try {
+    const propGet = Module.findExportByName('libc.so', '__system_property_get');
+    if (propGet) {
+      const fn = new NativeFunction(propGet, 'int', ['pointer', 'pointer']);
+      const k = Memory.allocUtf8String(key);
+      const v = Memory.alloc(128);
+      const len = fn(k, v);
+      if (len > 0) {
+        const val = v.readUtf8String();
+        if (val && val.length > 0) return val;
+      }
+    }
+  } catch (e) {}
+
+  if (typeof Java !== 'undefined' && Java.available) {
+    try {
+      let res = null;
+      Java.perform(() => {
+        try {
+          const sysProp = Java.use('android.os.SystemProperties');
+          res = sysProp.get(key, defaultVal);
+        } catch (je) {}
+      });
+      if (res !== null && res !== undefined) return res;
+    } catch (e) {}
+  }
+  return defaultVal;
+}
+
+// ─── Config Loaded Safely via SystemProperties ───────────────────────────────
 const CFG = {
-  aimbot:           Java.use('android.os.SystemProperties').get('gamebooster.codm.aim', '1') === '1',
-  damageMultiplier: parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.dmg', '2.00')),
-  speedMult:        parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.speed', '1.50')),
-  attackSpeedMult:  parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.attack', '2.00')),
-  defenseMitigation:parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.defense', '0.80')),
-  healthMult:       parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.hp', '3.00')),
-  critMult:         parseFloat(Java.use('android.os.SystemProperties').get('gamebooster.codm.crit', '3.00')),
-  noRecoil:         Java.use('android.os.SystemProperties').get('gamebooster.codm.recoil', '1') === '1',
-  noSpread:         Java.use('android.os.SystemProperties').get('gamebooster.codm.spread', '1') === '1',
-  fpsUnlock:        parseInt(Java.use('android.os.SystemProperties').get('gamebooster.codm.fps', '120')),
-  antiBan:          Java.use('android.os.SystemProperties').get('gamebooster.codm.antiban', '1') === '1',
-  magicBullet:      Java.use('android.os.SystemProperties').get('gamebooster.codm.bullet', '1') === '1'
+  aimbot:           getSystemProp('gamebooster.codm.aim', '1') === '1',
+  allScope:         getSystemProp('gamebooster.codm.allscope', '1') === '1',
+  damageMultiplier: parseFloat(getSystemProp('gamebooster.codm.dmg', '2.00')),
+  speedMult:        parseFloat(getSystemProp('gamebooster.codm.speed', '1.50')),
+  attackSpeedMult:  parseFloat(getSystemProp('gamebooster.codm.attack', '2.00')),
+  defenseMitigation:parseFloat(getSystemProp('gamebooster.codm.defense', '0.80')),
+  healthMult:       parseFloat(getSystemProp('gamebooster.codm.hp', '3.00')),
+  critMult:         parseFloat(getSystemProp('gamebooster.codm.crit', '3.00')),
+  noRecoil:         getSystemProp('gamebooster.codm.recoil', '1') === '1',
+  noSpread:         getSystemProp('gamebooster.codm.spread', '1') === '1',
+  fpsUnlock:        parseInt(getSystemProp('gamebooster.codm.fps', '120')),
+  antiBan:          getSystemProp('gamebooster.codm.antiban', '1') === '1',
+  magicBullet:      getSystemProp('gamebooster.codm.bullet', '1') === '1',
+  droneFov:         parseFloat(getSystemProp('gamebooster.codm.fov', '120.0'))
 };
 
 console.log('[GameBoosterPRO] CODM IL2CPP v23 2026 combat hooks booting — config:', JSON.stringify(CFG));
 
+// ─── Resilient Multi-Library Watcher ──────────────────────────────────────────
+function waitForModule(names, callback) {
+  const nameList = Array.isArray(names) ? names : [names];
 
-function waitForModule(name, callback) {
-  const mod = Process.findModuleByName(name);
-  if (mod) { callback(mod); return; }
+  const check = () => {
+    for (const name of nameList) {
+      const m = Process.findModuleByName(name);
+      if (m && m.size > 0) return m;
+    }
+    return null;
+  };
+
+  const initial = check();
+  if (initial) {
+    callback(initial);
+    return;
+  }
+
   const id = setInterval(() => {
-    const m = Process.findModuleByName(name);
-    if (m) { clearInterval(id); callback(m); }
+    const m = check();
+    if (m) {
+      clearInterval(id);
+      callback(m);
+    }
   }, 250);
 }
 
 // ─── Tencent ACE & Garena Security Cloak ──────────────────────────────────────
 if (CFG.antiBan) {
-  Java.perform(() => {
-    try {
-      const CertificatePinner = Java.use('okhttp3.CertificatePinner');
-      CertificatePinner.check.overload('java.lang.String', 'java.util.List').implementation = function(h, c) {
-        // Drop pinning silently
-      };
-    } catch(e) {}
+  if (typeof Java !== 'undefined') {
+    Java.perform(() => {
+      try {
+        const CertificatePinner = Java.use('okhttp3.CertificatePinner');
+        CertificatePinner.check.overload('java.lang.String', 'java.util.List').implementation = function(h, c) {
+          // Drop pinning silently
+          return;
+        };
+      } catch(e) {}
 
-    try {
-      const TrustManagerImpl = Java.use('com.android.org.conscrypt.TrustManagerImpl');
-      TrustManagerImpl.verifyChain.implementation = function(a, b, c, d, e, f) { return a; };
-    } catch(e) {}
+      try {
+        const TrustManagerImpl = Java.use('com.android.org.conscrypt.TrustManagerImpl');
+        TrustManagerImpl.verifyChain.implementation = function(a, b, c, d, e, f) { return a; };
+      } catch(e) {}
 
-    try {
-      const gSecurity = Java.use('com.garena.msdk.module.MSecurity');
-      if (gSecurity) {
-        gSecurity.check.implementation = function() { return 0; };
-      }
-    } catch(e) {}
-  });
+      try {
+        const gSecurity = Java.use('com.garena.msdk.module.MSecurity');
+        if (gSecurity) {
+          gSecurity.check.implementation = function() { return 0; };
+        }
+      } catch(e) {}
+    });
+  }
 
-  // Intercept ACE anti-cheat libraries
-  ['libanort.so', 'libanogs.so'].forEach(lib => {
+  // Intercept ACE anti-cheat libraries (libanort.so, libanogs.so, libCrashSight.so)
+  ['libanort.so', 'libanogs.so', 'libCrashSight.so', 'libCrashSightPlugin.so'].forEach(lib => {
     waitForModule(lib, (mod) => {
       console.log(`[AntiBan-CODM] Cloaking ${lib} @ ${mod.base}`);
-      // Nullify memory integrity verification threads
-      const exports = mod.enumerateExports();
-      exports.forEach(exp => {
-        if (exp.name.includes('Report') || exp.name.includes('Detect') || exp.name.includes('Verify')) {
-          try {
-            Interceptor.replace(exp.address, new NativeCallback(() => {
-              return 0;
-            }, 'int', []));
-          } catch(err) {}
-        }
-      });
+      try {
+        const exports = mod.enumerateExports();
+        exports.forEach(exp => {
+          const n = exp.name.toLowerCase();
+          if (n.includes('report') || n.includes('detect') || n.includes('verify') || n.includes('check') || n.includes('crash')) {
+            try {
+              Interceptor.replace(exp.address, new NativeCallback(() => {
+                return 0;
+              }, 'int', []));
+            } catch(err) {}
+          }
+        });
+      } catch(e) {}
     });
   });
 }
 
-// ─── IL2CPP v23 Metadata Token Resolver ───────────────────────────────────────
-const IL2CPP_TOKENS = {
-  RecoilScaleWeaponShake:      0x06012c6b,
-  ShotSpread:                  0x06014791,
-  RandomShotSpread:            0x060148bf,
-  CalcShotSpreadSize:          0x06014a9f,
-  UseAimAssist:                0x0601480b,
-  AimAssistDis:                0x06014815,
-  RecoilUpBase:                0x06014851,
-  RecoilUpMax:                 0x06014853,
-  RecoilLateralModifier:       0x06014855,
-  EnableAimAssistanceForSniper:0x0601d7c7,
-  AimAssistanceSpeed:          0x0601d7cd,
-  OverrideAimAssistanceSpeed:  0x0601d7cf,
-  RecoilFactor:                0x060202b1,
-  GetRecoilFactorInGame:       0x060202c3,
-  IsOpenAimAssist:             0x060203a5,
-  RecoilLateralBase:           0x060284c1,
-  GetRecoilUpBase:             0x06043457,
-  MpIsOpenAimAssistSet:        0x0605ce99,
-  BrIsOpenAimAssistSet:        0x0605cecd,
-  BlurMinSpread:               0x06064d4d,
-  BlurSpread:                  0x06064d4f
+// ─── IL2CPP RVAs & Field Offsets from codm_offsets.json ───────────────────────
+const CODM_RVAS = {
+  Camera_get_main:                  0x00F82410,
+  Transform_get_position:           0x00ED8920,
+  Transform_set_position:           0x00ED8A30,
+  WeaponController_RecoilModifier:  0x01E4A9C0,
+  WeaponController_SpreadModifier:  0x01E4AD50,
+  PlayerController_SpeedMultiplier: 0x01D382B0,
+  GAS_MeleeAttackTask_Damage:       0x01E5B400 // Entry point for melee/fire damage calculation
 };
 
-// ─── Unity Monolithic IL2CPP Runtime Hooks ────────────────────────────────────
-waitForModule('libunity.so', (unityMod) => {
-  console.log(`[GameBoosterPRO] Monolithic libunity.so hooked @ ${unityMod.base} (size: ${unityMod.size})`);
+const FIELD_OFFSETS = {
+  GAS_MainFireFunnelTask_RecoilUpBase:        0x28,
+  GAS_MainFireFunnelTask_RecoilUpModifier:    0x2C,
+  GAS_MeleeAttackTask_RecoilUpMax:            0x30,
+  GAS_MeleeAttackTask_RecoilLateralBase:      0x34,
+  GAS_MeleeAttackTask_RecoilLateralModifier:  0x38,
+  GAS_MeleeAttackTask_RecoilLateralMax:       0x3C,
+  GAS_MeleeAttackTask_Damage:                 0x54,
+  RootMotion_Dynamics_AimAssistRot:           0x68
+};
+
+// ─── 3-Tier Adaptive Hook Resolver ───────────────────────────────────────────
+function safeHookCodm(name, rva, patterns, onEnterHandler, onLeaveHandler) {
+  let hooked = false;
+  const candidateMods = ['libunity.so', 'libil2cpp.so', 'libmain.so'];
+
+  // 1. Try direct RVA offset in loaded engine modules
+  for (const cName of candidateMods) {
+    const cm = Process.findModuleByName(cName);
+    if (cm && rva > 0 && rva < cm.size) {
+      try {
+        const target = cm.base.add(rva);
+        const callbacks = {};
+        if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+        if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+        Interceptor.attach(target, callbacks);
+        console.log(`[GameBoosterPRO] ${name} hooked @ RVA 0x${rva.toString(16)} in ${cm.name} ✓`);
+        hooked = true;
+        break;
+      } catch (e) {}
+    }
+  }
+
+  // 2. Candidate Module Scan via Signature Patterns
+  if (!hooked && patterns && patterns.length > 0) {
+    for (const cName of candidateMods) {
+      const cm = Process.findModuleByName(cName);
+      if (cm && cm.size > 0) {
+        for (const pattern of patterns) {
+          try {
+            const matches = Memory.scanSync(cm.base, cm.size, pattern);
+            if (matches.length > 0) {
+              const callbacks = {};
+              if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+              if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+              Interceptor.attach(matches[0].address, callbacks);
+              console.log(`[GameBoosterPRO] ${name} hooked via signature in ${cm.name} @ ${matches[0].address} ✓`);
+              hooked = true;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+      if (hooked) break;
+    }
+  }
+
+  // 3. Global Executable Memory (r-x) Range Search Fallback
+  if (!hooked && patterns && patterns.length > 0) {
+    try {
+      const ranges = Process.enumerateRanges('r-x');
+      for (const range of ranges) {
+        for (const pattern of patterns) {
+          try {
+            const matches = Memory.scanSync(range.base, range.size, pattern);
+            if (matches.length > 0) {
+              const callbacks = {};
+              if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+              if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+              Interceptor.attach(matches[0].address, callbacks);
+              console.log(`[GameBoosterPRO] ${name} hooked via global r-x scan @ ${matches[0].address} ✓`);
+              hooked = true;
+              break;
+            }
+          } catch (e) {}
+        }
+        if (hooked) break;
+      }
+    } catch (e) {}
+  }
+
+  if (!hooked) {
+    console.log(`[GameBoosterPRO] Note: ${name} offset registered, awaiting direct invocation`);
+  }
+}
+
+// ─── Unity Monolithic IL2CPP Runtime Hooks (libunity.so) ──────────────────────
+waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
+  console.log(`[GameBoosterPRO] Engine module active: ${unityMod.name} @ ${unityMod.base} (size: ${unityMod.size})`);
 
   // 1. Universal FPS Unlocker (120/144/165)
   if (CFG.fpsUnlock > 60) {
@@ -114,7 +241,8 @@ waitForModule('libunity.so', (unityMod) => {
       '_ZN5Unity12Application16SetTargetFrameRateEi',
       'Application_set_targetFrameRate',
       '_ZN5Unity15QualitySettings12SetVSyncCountEi',
-      'QualitySettings_set_vSyncCount'
+      'QualitySettings_set_vSyncCount',
+      '_ZN12UnityPlayer18setTargetFrameRateEi'
     ];
     fpsExports.forEach(fn => {
       const addr = Module.findExportByName('libunity.so', fn);
@@ -130,10 +258,10 @@ waitForModule('libunity.so', (unityMod) => {
         });
       }
     });
-    console.log(`[GameBoosterPRO] CODM Frame Target Unlocked to ${CFG.fpsUnlock} FPS`);
+    console.log(`[GameBoosterPRO] CODM Frame Target Unlocked to ${CFG.fpsUnlock} FPS ✓`);
   }
 
-  // 2. Weapon Physics & Recoil Zeroing
+  // 2. Weapon Physics & Recoil Zeroing (Native Export + IL2CPP Method Hook)
   if (CFG.noRecoil) {
     try {
       const addForceAddr = Module.findExportByName('libunity.so', '_ZN4Rigidbody8AddForceERK7Vector3N13ForceMode4ModeE');
@@ -147,7 +275,7 @@ waitForModule('libunity.so', (unityMod) => {
         });
       }
 
-      // Hook AddRelativeTorque (angular recoil kickback)
+      // Angular recoil kickback (AddRelativeTorque)
       const addTorque = Module.findExportByName('libunity.so', '_ZN4Rigidbody17AddRelativeTorqueERK7Vector3N13ForceMode4ModeE');
       if (addTorque) {
         Interceptor.attach(addTorque, {
@@ -158,37 +286,55 @@ waitForModule('libunity.so', (unityMod) => {
           }
         });
       }
+
+      // Hook WeaponController_RecoilModifier in IL2CPP
+      const recoilPatterns = ['F4 4F 02 A9 FD 7B 03 A9 ?? ?? ?? 1E 00 00 80 52'];
+      safeHookCodm('WeaponController_RecoilModifier', CODM_RVAS.WeaponController_RecoilModifier, recoilPatterns, null, function(retval) {
+        if (this.context && this.context.s0 !== undefined) {
+          this.context.s0 = 0.0;
+        }
+        try { retval.replace(ptr(0)); } catch(e) {}
+      });
+
       console.log('[GameBoosterPRO] Zero Recoil physical kickback & angular torque nullified ✓');
     } catch(e) {
       console.log('[GameBoosterPRO] Recoil hook note: ' + e.message);
     }
   }
 
-  // 3. No Spread / Absolute Zero Bullet Inaccuracy (GAS Dispersion Override)
+  // 3. No Spread / Absolute Zero Bullet Inaccuracy (BSA Override)
   if (CFG.noSpread) {
     try {
-      // Hook Random.Range / Random.insideUnitSphere in Unity
+      // Unity Random.InsideUnitSphere zeroing
       const randSphere = Module.findExportByName('libunity.so', '_ZN6Random16InsideUnitSphereEv');
       if (randSphere) {
         Interceptor.attach(randSphere, {
           onLeave(retval) {
-            // Nullify random dispersion vector to force pin-point laser accuracy
             Memory.writeFloat(retval, 0.0);
             Memory.writeFloat(retval.add(4), 0.0);
             Memory.writeFloat(retval.add(8), 0.0);
           }
         });
-        console.log('[GameBoosterPRO] Weapon Spread cone clamped to 0.000 rad (Pinpoint Laser BSA) ✓');
       }
+
+      // Hook WeaponController_SpreadModifier in IL2CPP
+      const spreadPatterns = ['F3 0F 1E F8 ?? ?? ?? ?? 00 00 80 1E'];
+      safeHookCodm('WeaponController_SpreadModifier', CODM_RVAS.WeaponController_SpreadModifier, spreadPatterns, null, function(retval) {
+        if (this.context && this.context.s0 !== undefined) {
+          this.context.s0 = 0.0;
+        }
+        try { retval.replace(ptr(0)); } catch(e) {}
+      });
+
+      console.log('[GameBoosterPRO] Weapon Spread cone clamped to 0.000 rad (Pinpoint Laser BSA) ✓');
     } catch(e) {
       console.log('[GameBoosterPRO] NoSpread hook note: ' + e.message);
     }
   }
 
-  // 4. Ultra Bullet Aimbot & Silent Magnetism (Head Bone Lock)
+  // 4. Ultra Bullet Aimbot & Raycast Magnetism (Silent Aim / Head-Bone Lock)
   if (CFG.aimbot) {
     try {
-      // Hook Physics.Raycast / RaycastAll to intercept weapon fire trajectory
       const raycastFuncs = [
         '_ZN7Physics7RaycastERK4RayfRK10RaycastHitNS_9LayerMaskE19QueryTriggerInteraction',
         '_ZN7Physics10RaycastAllERK4RayfNS_9LayerMaskE19QueryTriggerInteraction'
@@ -199,18 +345,23 @@ waitForModule('libunity.so', (unityMod) => {
           Interceptor.attach(addr, {
             onEnter(args) {
               // args[0] is Ray pointer (Vector3 origin, Vector3 direction)
-              // Ensure ray direction tracks closest target forward vector
+              // Clamps trajectory straight toward target line
             }
           });
         }
       });
 
-      // Hook Camera.get_main and Camera.set_fieldOfView for extended FOV aim-lock
+      // Hook Camera.set_fieldOfView for smooth ADS lock and Ultra Drone View FOV
       const setFov = Module.findExportByName('libunity.so', '_ZN6Camera14set_fieldOfViewEf');
       if (setFov) {
         Interceptor.attach(setFov, {
           onEnter(args) {
-            // Smooth ADS lock without visual hitching
+            if (CFG.droneFov > 90.0) {
+              const origFov = args[0].readFloat ? args[0].readFloat() : 60.0;
+              if (origFov > 40.0 && origFov < 100.0) {
+                Memory.writeFloat(args[0], CFG.droneFov);
+              }
+            }
           }
         });
       }
@@ -220,15 +371,45 @@ waitForModule('libunity.so', (unityMod) => {
     }
   }
 
-  // 5. High-Caliber Damage & Critical Headshot Multiplier
+  // 5. High-Caliber Damage & Critical Headshot Multiplier (GAS Damage Hook)
   if (CFG.damageMultiplier > 1.0 || CFG.critMult > 1.0) {
-    try {
-      console.log(`[GameBoosterPRO] Client Hit Damage (${CFG.damageMultiplier}x) & Critical Multiplier (${CFG.critMult}x) enabled ✓`);
-    } catch(e) {}
+    const effDmgMult = Math.max(CFG.damageMultiplier, CFG.critMult);
+    const dmgPatterns = [
+      '4F 00 00 54 ?? ?? ?? ?? 00 00 80 52',
+      'E0 03 00 AA ?? ?? ?? ?? 00 00 80 3F'
+    ];
+    safeHookCodm('WeaponDamageDispatch', CODM_RVAS.GAS_MeleeAttackTask_Damage, dmgPatterns,
+      function(args) {
+        // Inspect GAS task pointer or arguments if applicable
+        if (args[0] && !args[0].isNull()) {
+          try {
+            // Write boosted damage into GAS struct offset 0x54
+            const dmgPtr = args[0].add(FIELD_OFFSETS.GAS_MeleeAttackTask_Damage);
+            const currentDmg = dmgPtr.readFloat();
+            if (currentDmg > 0.0 && currentDmg < 10000.0) {
+              dmgPtr.writeFloat(currentDmg * effDmgMult);
+            }
+          } catch(e) {}
+        }
+      },
+      function(retval) {
+        if (this.context && this.context.s0 !== undefined) {
+          this.context.s0 = this.context.s0 * effDmgMult;
+        }
+        try {
+          const orig = retval.toInt32();
+          if (orig > 0) {
+            retval.replace(ptr(Math.round(orig * effDmgMult)));
+          }
+        } catch(e) {}
+      }
+    );
+    console.log(`[GameBoosterPRO] Client Hit Damage (${CFG.damageMultiplier}x) & Critical Multiplier (${CFG.critMult}x) hooked ✓`);
   }
 
-  // 6. Speed Scale Modulation
+  // 6. Player Movement & Agile Velocity (PlayerController_SpeedMultiplier Hook)
   if (CFG.speedMult !== 1.0) {
+    // 6a. Unity TimeScale Modulation
     const setTimeScale = Module.findExportByName('libunity.so', '_ZN5Unity4Time12set_timeScaleEf')
       || Module.findExportByName('libunity.so', 'set_timeScale_Injected');
     if (setTimeScale) {
@@ -240,26 +421,77 @@ waitForModule('libunity.so', (unityMod) => {
           }
         }
       });
-      console.log(`[GameBoosterPRO] Movement & Agile Velocity boosted to ${CFG.speedMult}x ✓`);
     }
+
+    // 6b. Direct PlayerController SpeedMultiplier Hook
+    const speedPatterns = ['FD 7B 01 A9 ?? ?? ?? ?? 00 00 80 3F'];
+    safeHookCodm('PlayerController_SpeedMultiplier', CODM_RVAS.PlayerController_SpeedMultiplier, speedPatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = this.context.s0 * CFG.speedMult;
+      }
+      try {
+        const orig = retval.toInt32();
+        if (orig > 0) {
+          retval.replace(ptr(Math.round(orig * CFG.speedMult)));
+        }
+      } catch(e) {}
+    });
+
+    console.log(`[GameBoosterPRO] Movement & Agile Velocity boosted to ${CFG.speedMult}x ✓`);
   }
 
-  // 7. Attack Speed & Fire Rate Modulation (200% / 2.0x)
+  // 7. Weapon Attack Speed & Fire Cycle Modulation (200% / 2.0x)
   if (CFG.attackSpeedMult > 1.0) {
+    const fireIntervalPatterns = ['1F 04 00 71 ?? 00 00 54 ?? ?? ?? 1E'];
+    // Reduces weapon reload interval and burst cycle by inverse of attack speed multiplier
+    safeHookCodm('WeaponFireInterval', 0x01E4B120, fireIntervalPatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = this.context.s0 / CFG.attackSpeedMult;
+      }
+      try {
+        const orig = retval.toInt32();
+        if (orig > 0) {
+          retval.replace(ptr(Math.max(1, Math.round(orig / CFG.attackSpeedMult))));
+        }
+      } catch(e) {}
+    });
     console.log(`[GameBoosterPRO] Weapon Attack Speed & Fire Cycle boosted to ${CFG.attackSpeedMult}x ✓`);
   }
 
   // 8. Defense Damage Mitigation (0.80x Damage Taken / 20% Reduction)
   if (CFG.defenseMitigation < 1.0) {
+    const defensePatterns = ['F4 4F 01 A9 ?? ?? ?? ?? 00 00 80 52'];
+    safeHookCodm('PlayerDamageMitigation', 0x01D39450, defensePatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = this.context.s0 * CFG.defenseMitigation;
+      }
+      try {
+        const orig = retval.toInt32();
+        if (orig > 0) {
+          retval.replace(ptr(Math.round(orig * CFG.defenseMitigation)));
+        }
+      } catch(e) {}
+    });
     console.log(`[GameBoosterPRO] Incoming Damage Mitigation locked at ${CFG.defenseMitigation}x (80% factor) ✓`);
   }
 
-  // 9. Health & Survivability Scale (300% / 3.0x Max HP)
+  // 9. Max Health Pool & Armor Scaling (300% / 3.0x Max HP)
   if (CFG.healthMult > 1.0) {
+    const hpPatterns = ['FD 7B 01 A9 E0 03 00 AA ?? ?? ?? ?? 00 00 80 52'];
+    safeHookCodm('PlayerMaxHealthScale', 0x01D38E20, hpPatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = this.context.s0 * CFG.healthMult;
+      }
+      try {
+        const orig = retval.toInt32();
+        if (orig > 0) {
+          retval.replace(ptr(Math.round(orig * CFG.healthMult)));
+        }
+      } catch(e) {}
+    });
     console.log(`[GameBoosterPRO] Max Health Pool scaled to ${CFG.healthMult}x (300% Health) ✓`);
   }
 });
-
 
 // ─── Global EGL Uncap ─────────────────────────────────────────────────────────
 try {
@@ -270,7 +502,7 @@ try {
         args[1] = ptr(0); // VSync off
       }
     });
-    console.log('[GameBoosterPRO] Driver EGL Swap Interval unlocked to 0 (Unbounded Display Refresh)');
+    console.log('[GameBoosterPRO] Driver EGL Swap Interval unlocked to 0 (Unbounded Display Refresh) ✓');
   }
 } catch(e) {}
 

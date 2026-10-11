@@ -123,11 +123,9 @@ public final class MlbbModManager {
                         || profile.mlbbNoCooldown || profile.mlbbMapHack || profile.mlbbFpsUnlock || profile.mlbbAntiBan;
 
                 if (anyModActive) {
-                    String hookScript = readAsset(ctx, "frida/mlbb_hooks.js");
-                    if (!hookScript.isEmpty()) {
-                        pushScriptToDevice(hookScript, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
-                        injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
-                    }
+                    GameModEngine.startFridaServer(ctx);
+                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/mlbb_hooks.js", FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
+                    GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
                 }
 
                 Log.i(TAG, "✅ MLBB mod pipeline fully deployed for " + pkg);

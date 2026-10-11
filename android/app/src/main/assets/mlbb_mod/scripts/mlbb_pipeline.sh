@@ -189,6 +189,50 @@ do_revert() {
     ok "REVERT COMPLETE — original OBB restored"
 }
 
+# ─── PHASE 7: FRIDA HOOK RUNTIME ──────────────────────────────────
+
+do_frida() {
+    echo "━━━ FRIDA RUNTIME HOOKS ━━━"
+    FRIDA_SERVER_SRC="$SCRIPT_DIR/../../frida/frida-server-arm64"
+    HOOKS_SRC="$SCRIPT_DIR/../../frida/mlbb_hooks.js"
+
+    info "1. Checking frida-server on device..."
+    adb shell "mkdir -p /data/local/tmp/gb_hooks"
+    adb shell "chmod 755 /data/local/tmp"
+
+    if [ -f "$FRIDA_SERVER_SRC" ]; then
+        SERVER_SIZE=$(adb shell stat -c %s /data/local/tmp/frida-server 2>/dev/null | tr -d '\r' || echo 0)
+        if [ "$SERVER_SIZE" -lt 40000000 ]; then
+            warn "Deploying frida-server-arm64 to /data/local/tmp/frida-server..."
+            adb push "$FRIDA_SERVER_SRC" /data/local/tmp/frida-server
+            adb shell chmod 755 /data/local/tmp/frida-server
+            ok "frida-server deployed"
+        else
+            ok "frida-server already installed on device"
+        fi
+    fi
+
+    info "Starting frida-server in background..."
+    adb shell "killall frida-server 2>/dev/null; /data/local/tmp/frida-server &" &
+    sleep 1
+
+    if [ -f "$HOOKS_SRC" ]; then
+        info "Pushing mlbb_hooks.js..."
+        adb push "$HOOKS_SRC" /data/local/tmp/gb_hooks/mlbb_hooks.js
+        adb shell chmod 666 /data/local/tmp/gb_hooks/mlbb_hooks.js
+        ok "Hook script deployed to /data/local/tmp/gb_hooks/mlbb_hooks.js"
+    fi
+
+    if command -v frida &>/dev/null; then
+        ok "Launching Frida hook session directly into $MLBB_PKG..."
+        frida -U -f "$MLBB_PKG" -l "$HOOKS_SRC" --no-pause
+    else
+        warn "frida CLI not installed on host machine. (Run: pip install frida-tools)"
+        info "frida-server is running on device @ /data/local/tmp/frida-server"
+        info "Script ready at: /data/local/tmp/gb_hooks/mlbb_hooks.js"
+    fi
+}
+
 # ─── DISPATCH ──────────────────────────────────────────────────────
 
 check_device
@@ -198,6 +242,7 @@ case "${1:-all}" in
     patch)   do_patch ;;
     push)    do_push ;;
     install) do_install ;;
+    frida)   do_frida ;;
     logs)    do_logs ;;
     revert)  do_revert ;;
     all)
@@ -210,7 +255,7 @@ case "${1:-all}" in
         do_install
         ;;
     *)
-        echo "Usage: bash mlbb_pipeline.sh [pull|patch|push|install|logs|revert|all]"
+        echo "Usage: bash mlbb_pipeline.sh [pull|patch|push|install|frida|logs|revert|all]"
         exit 1
         ;;
 esac

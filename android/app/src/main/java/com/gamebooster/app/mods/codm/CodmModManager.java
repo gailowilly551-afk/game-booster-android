@@ -112,11 +112,9 @@ public final class CodmModManager {
                     profile.codmNoSpread || profile.codmFpsUnlock || profile.codmAntiBan;
 
                 if (anyModActive) {
-                    String hookScript = readAsset(ctx, "frida/codm_hooks.js");
-                    if (!hookScript.isEmpty()) {
-                        pushScriptToDevice(hookScript, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
-                        injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
-                    }
+                    GameModEngine.startFridaServer(ctx);
+                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/codm_hooks.js", FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
+                    GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
                 }
 
 

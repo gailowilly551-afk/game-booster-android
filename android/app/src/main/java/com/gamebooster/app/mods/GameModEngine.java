@@ -41,10 +41,59 @@ public final class GameModEngine {
 
     // ─── Frida Server ─────────────────────────────────────────────────────────
 
+    /**
+     * Deploys frida-server binary from assets/frida/frida-server-arm64 to /data/local/tmp/frida-server
+     * with chmod 755 executable permissions.
+     */
+    public static boolean deployFridaServer(Context ctx) {
+        if (ctx == null) return false;
+        try {
+            // Check if frida-server already exists on device with valid size (> 40MB)
+            String checkRes = execOutput("stat -c %s " + FRIDA_SERVER_DEVICE_PATH + " 2>/dev/null || wc -c < " + FRIDA_SERVER_DEVICE_PATH + " 2>/dev/null");
+            long existingSize = 0;
+            try {
+                if (checkRes != null && !checkRes.trim().isEmpty()) {
+                    existingSize = Long.parseLong(checkRes.trim().split("\n")[0].trim());
+                }
+            } catch (Exception ignored) {}
+
+            if (existingSize > 40000000L) {
+                exec("chmod 755 " + FRIDA_SERVER_DEVICE_PATH);
+                return true;
+            }
+
+            Log.i(TAG, "📦 Deploying frida-server-arm64 from assets to " + FRIDA_SERVER_DEVICE_PATH + "...");
+            File temp = new File(ctx.getCacheDir(), "frida_server_stage_" + System.currentTimeMillis() + ".bin");
+            try (InputStream is = ctx.getAssets().open("frida/frida-server-arm64");
+                 FileOutputStream fos = new FileOutputStream(temp)) {
+                byte[] buf = new byte[65536];
+                int read;
+                while ((read = is.read(buf)) != -1) {
+                    fos.write(buf, 0, read);
+                }
+                fos.flush();
+            }
+
+            temp.setReadable(true, false);
+            temp.setExecutable(true, false);
+
+            exec("mkdir -p /data/local/tmp && cp -f '" + temp.getAbsolutePath() + "' " + FRIDA_SERVER_DEVICE_PATH + " && chmod 755 " + FRIDA_SERVER_DEVICE_PATH);
+            temp.delete();
+
+            String verifySize = execOutput("stat -c %s " + FRIDA_SERVER_DEVICE_PATH + " 2>/dev/null || wc -c < " + FRIDA_SERVER_DEVICE_PATH + " 2>/dev/null");
+            Log.i(TAG, "✅ frida-server deployed to " + FRIDA_SERVER_DEVICE_PATH + " (size: " + verifySize + " bytes)");
+            return true;
+        } catch (Throwable t) {
+            Log.e(TAG, "deployFridaServer error: " + t.getMessage(), t);
+            return false;
+        }
+    }
+
     /** Start frida-server in background on device (requires root/Shizuku). */
     public static void startFridaServer(Context ctx) {
         AppExecutors.getInstance().executeCommand(() -> {
             try {
+                deployFridaServer(ctx);
                 exec("killall frida-server 2>/dev/null; sleep 0.2");
                 exec(FRIDA_SERVER_DEVICE_PATH + " &");
                 Thread.sleep(800); // let server bind
@@ -161,18 +210,65 @@ public final class GameModEngine {
         exec("setprop " + key + " " + value);
     }
 
-    private static void injectFrida(String packageName, String scriptPath) {
-        // frida-inject: attach to running process and run script
-        // Requires frida-server running on device
-        exec("frida -U -f " + packageName + " -l " + scriptPath + " --no-pause &");
-        Log.i(TAG, "[Frida] Injected into " + packageName + " with " + scriptPath);
+    public static void injectFrida(String packageName, String scriptPath) {
+        try {
+            String whichFrida = ShizukuExecutor.executeShizukuCommand("which frida 2>/dev/null || which frida-inject 2>/dev/null || [ -f /data/local/tmp/frida-inject ] && echo /data/local/tmp/frida-inject");
+            if (whichFrida != null && !whichFrida.trim().isEmpty() && !whichFrida.startsWith("ERROR:")) {
+                String bin = whichFrida.trim().split("\n")[0].trim();
+                if (bin.contains("frida-inject")) {
+                    exec(bin + " -n " + packageName + " -s " + scriptPath + " &");
+                } else {
+                    exec(bin + " -U -f " + packageName + " -l " + scriptPath + " --no-pause &");
+                }
+                Log.i(TAG, "[Frida] Injected into " + packageName + " with " + scriptPath + " using " + bin);
+            } else {
+                Log.i(TAG, "ℹ️ Frida server running @ /data/local/tmp/frida-server; script ready @ " + scriptPath);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "injectFrida note: " + t.getMessage());
+        }
+    }
+
+    public static void pushScriptAssetToDevice(Context ctx, String assetPath, String devicePath) {
+        if (ctx == null || assetPath == null || devicePath == null) return;
+        try {
+            exec("mkdir -p " + FRIDA_HOOK_DEVICE_DIR);
+            File temp = new File(ctx.getCacheDir(), "hook_stage_" + System.currentTimeMillis() + ".js");
+            try (InputStream is = ctx.getAssets().open(assetPath);
+                 FileOutputStream fos = new FileOutputStream(temp)) {
+                byte[] buf = new byte[8192];
+                int read;
+                while ((read = is.read(buf)) != -1) {
+                    fos.write(buf, 0, read);
+                }
+                fos.flush();
+            }
+            temp.setReadable(true, false);
+            exec("cp -f '" + temp.getAbsolutePath() + "' '" + devicePath + "' && chmod 666 '" + devicePath + "'");
+            temp.delete();
+            Log.i(TAG, "✅ Pushed hook asset " + assetPath + " → " + devicePath);
+        } catch (Throwable t) {
+            Log.e(TAG, "pushScriptAssetToDevice error for " + assetPath + ": " + t.getMessage());
+        }
     }
 
     private static void pushScriptToDevice(String content, String devicePath) {
         if (content == null || content.isEmpty()) return;
         exec("mkdir -p " + FRIDA_HOOK_DEVICE_DIR);
-        // Write via echo (simple approach for JS files)
-        // For larger files use adb push from a temp local file
+        try {
+            Context ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
+            if (ctx == null) ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            if (ctx != null) {
+                File temp = new File(ctx.getCacheDir(), "hook_content_stage.js");
+                try (FileOutputStream fos = new FileOutputStream(temp)) {
+                    fos.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    fos.flush();
+                }
+                exec("cp -f '" + temp.getAbsolutePath() + "' '" + devicePath + "' && chmod 666 '" + devicePath + "'");
+                temp.delete();
+                return;
+            }
+        } catch (Throwable ignored) {}
         exec("echo '" + content.replace("'", "'\\''") + "' > " + devicePath);
     }
 
