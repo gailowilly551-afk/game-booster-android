@@ -204,8 +204,8 @@ public class AutoGameMonitorService extends Service {
 
                 // Debounce exit: verify game process liveness before resetting refresh rates & governors
                 consecutiveUnfocusedCount++;
-                if (consecutiveUnfocusedCount < 6 || isProcessAlive(lastActiveGamePackage)) {
-                    Log.d(TAG, "Game PID/Process still active or debouncing (" + consecutiveUnfocusedCount + "/6) for: " + lastActiveGamePackage);
+                if (consecutiveUnfocusedCount < 10 || isProcessAlive(lastActiveGamePackage)) {
+                    Log.d(TAG, "Game PID/Process still active or debouncing (" + consecutiveUnfocusedCount + "/10) for: " + lastActiveGamePackage);
                     return;
                 }
 
@@ -214,6 +214,7 @@ public class AutoGameMonitorService extends Service {
                 lastActiveGamePackage = null;
                 consecutiveUnfocusedCount = 0;
                 lastSessionEndTimeMs = System.currentTimeMillis(); // record exit time for cooldown
+
                 com.gamebooster.app.overlay.RealGameFpsMonitor.getInstance().setTargetPackage(null);
                 FloatingOverlayService.setSessionDismissed(false); // Reset dismissal for next game
 
@@ -320,7 +321,30 @@ public class AutoGameMonitorService extends Service {
             }
         } catch (Exception ignored) {}
 
-        // 3. Fallback to system shell check
+        // 3. Fallback to /proc/ check via Java File API
+        try {
+            java.io.File procDir = new java.io.File("/proc");
+            String[] pids = procDir.list();
+            if (pids != null) {
+                for (String pidStr : pids) {
+                    if (android.text.TextUtils.isDigitsOnly(pidStr)) {
+                        java.io.File cmdline = new java.io.File("/proc/" + pidStr + "/cmdline");
+                        if (cmdline.canRead()) {
+                            try (java.io.FileInputStream fis = new java.io.FileInputStream(cmdline)) {
+                                byte[] buf = new byte[256];
+                                int len = fis.read(buf);
+                                if (len > 0) {
+                                    String cmd = new String(buf, 0, len).replace('\0', ' ').trim();
+                                    if (cmd.contains(packageName)) return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 4. Fallback to system shell check
         try {
             String procCheck = com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(
                     "pgrep -f \"" + packageName + "\" 2>/dev/null");
@@ -331,6 +355,7 @@ public class AutoGameMonitorService extends Service {
 
         return false;
     }
+
 
     private String getForegroundPackage() {
         return com.gamebooster.app.games.ForegroundGameDetector.detectForegroundPackage(getApplicationContext());

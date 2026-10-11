@@ -87,6 +87,9 @@ uint32_t calculate_crc32(const uint8_t* data, size_t length);
 bool make_parent_dirs(const std::string& path);
 bool write_file_atomic(const std::string& path, const std::string& content, mode_t mode = 0666);
 std::string read_file_posix(const std::string& path);
+bool lock_file_immutable_posix(const std::string& path, bool lockReadOnly = true);
+bool unlock_file_writable_posix(const std::string& path);
+
 
 // ─── Structural In-Memory Parsers (Zero-Corruption) ──────────────────────────
 bool patch_key_value(std::string& content, const std::string& key, const std::string& value);

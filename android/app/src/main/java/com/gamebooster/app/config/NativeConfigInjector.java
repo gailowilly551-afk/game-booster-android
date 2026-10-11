@@ -70,7 +70,10 @@ public class NativeConfigInjector {
     public static native boolean nativePreserveFileTimestamps(String path, long atimeSec, long mtimeSec);
     public static native boolean nativeStealthWrite(String path, String content);
     public static native long nativeCalculateConfigCrc32(String path);
+    public static native boolean nativeLockConfigPath(String path, boolean readOnly);
+    public static native boolean nativeUnlockConfigPath(String path);
     public static native boolean nativeInjectUnrealEngineIni(String path, int targetFps);
+
     public static native boolean nativeInjectUnityBootConfig(String path, int targetFps);
     public static native boolean nativeInjectNextGenEngineOptimizations(String path, int targetFps, int engineType);
     public static native boolean nativeInjectNextGenTouchSampling(String path, int pollingRateHz);
@@ -217,6 +220,53 @@ public class NativeConfigInjector {
         if (lower.endsWith(".xml") && (lower.contains("/data/data/") || lower.contains("/data/user/"))) return true;
         return false;
     }
+
+    public static boolean lockConfig(String path, boolean readOnly) {
+        if (path == null) return false;
+        if (isNativeLoaded()) {
+            try {
+                return nativeLockConfigPath(path, readOnly);
+            } catch (Throwable t) {
+                Log.w(TAG, "nativeLockConfigPath failed: " + t.getMessage());
+            }
+        }
+        // Fallback to shell chmod + touch
+        try {
+            String perm = readOnly ? "444" : "666";
+            String cmd = "chmod " + perm + " '" + path + "' 2>/dev/null; touch -t 203001010000 '" + path + "' 2>/dev/null";
+            if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(cmd);
+            } else {
+                CommandExecutor.executeSystemCommand(cmd);
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean unlockConfig(String path) {
+        if (path == null) return false;
+        if (isNativeLoaded()) {
+            try {
+                return nativeUnlockConfigPath(path);
+            } catch (Throwable t) {
+                Log.w(TAG, "nativeUnlockConfigPath failed: " + t.getMessage());
+            }
+        }
+        try {
+            String cmd = "chmod 666 '" + path + "' 2>/dev/null";
+            if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(cmd);
+            } else {
+                CommandExecutor.executeSystemCommand(cmd);
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
 
 
     // 2026 Advanced Security & Anti-Tamper Native Bypass Suite

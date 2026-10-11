@@ -278,7 +278,30 @@ JNIEXPORT jlong JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nat
     return static_cast<jlong>(calculate_crc32(reinterpret_cast<const uint8_t*>(content.data()), content.size()));
 }
 
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeLockConfigPath
+  (JNIEnv *env, jclass, jstring jPath, jboolean jReadOnly) {
+    if (!jPath) return JNI_FALSE;
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    if (!path) return JNI_FALSE;
+
+    bool ok = lock_file_immutable_posix(path, (jReadOnly == JNI_TRUE));
+    env->ReleaseStringUTFChars(jPath, path);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeUnlockConfigPath
+  (JNIEnv *env, jclass, jstring jPath) {
+    if (!jPath) return JNI_FALSE;
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    if (!path) return JNI_FALSE;
+
+    bool ok = unlock_file_writable_posix(path);
+    env->ReleaseStringUTFChars(jPath, path);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
 // ─── JNI Implementation Functions ─────────────────────────────────────────────
+
 
 JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectConfig
   (JNIEnv *env, jclass, jstring jPath, jstring jContent) {

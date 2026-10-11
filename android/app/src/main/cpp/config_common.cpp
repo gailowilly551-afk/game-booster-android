@@ -56,6 +56,9 @@ static bool s_randSeeded = false;
 bool write_file_atomic(const std::string& path, const std::string& content, mode_t mode) {
     make_parent_dirs(path);
 
+    // Pre-unlock destination file in case it was previously marked read-only (chmod 0444)
+    chmod(path.c_str(), 0666);
+
     if (!s_randSeeded) {
         srand(static_cast<unsigned>(time(nullptr)) ^ getpid());
         s_randSeeded = true;
@@ -85,12 +88,37 @@ bool write_file_atomic(const std::string& path, const std::string& content, mode
     close(fd);
 
     if (rename(tmpPath.c_str(), path.c_str()) != 0) {
-        LOGW("Atomic rename failed from %s to %s (errno=%d)", tmpPath.c_str(), path.c_str(), errno);
-        unlink(tmpPath.c_str());
-        return false;
+        // Fallback for filesystems that reject rename over existing read-only file: unlink then rename
+        unlink(path.c_str());
+        if (rename(tmpPath.c_str(), path.c_str()) != 0) {
+            LOGW("Atomic rename failed from %s to %s (errno=%d)", tmpPath.c_str(), path.c_str(), errno);
+            unlink(tmpPath.c_str());
+            return false;
+        }
     }
     return true;
 }
+
+bool lock_file_immutable_posix(const std::string& path, bool lockReadOnly) {
+    if (path.empty()) return false;
+    // Set permission 0444 (read-only)
+    mode_t targetMode = lockReadOnly ? 0444 : 0666;
+    chmod(path.c_str(), targetMode);
+
+    // Touch timestamp far into future (2030-01-01) to prevent game engine from overwriting/redownloading
+    struct utimbuf times;
+    times.actime  = 1893456000L; // 2030-01-01 00:00:00 UTC
+    times.modtime = 1893456000L;
+    utime(path.c_str(), &times);
+    return true;
+}
+
+bool unlock_file_writable_posix(const std::string& path) {
+    if (path.empty()) return false;
+    int ret = chmod(path.c_str(), 0666);
+    return (ret == 0);
+}
+
 
 std::string read_file_posix(const std::string& path) {
     int fd = open(path.c_str(), O_RDONLY);

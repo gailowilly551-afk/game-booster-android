@@ -103,6 +103,23 @@ JNIEXPORT jlong JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nat
 
 /*
  * Class:     com_gamebooster_app_config_NativeConfigInjector
+ * Method:    nativeLockConfigPath
+ * Signature: (Ljava/lang/String;Z)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeLockConfigPath
+  (JNIEnv *, jclass, jstring, jboolean);
+
+/*
+ * Class:     com_gamebooster_app_config_NativeConfigInjector
+ * Method:    nativeUnlockConfigPath
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeUnlockConfigPath
+  (JNIEnv *, jclass, jstring);
+
+
+/*
+ * Class:     com_gamebooster_app_config_NativeConfigInjector
  * Method:    nativeInjectConfig
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Z
  */
