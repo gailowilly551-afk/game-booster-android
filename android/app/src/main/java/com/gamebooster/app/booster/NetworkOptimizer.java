@@ -294,7 +294,7 @@ public class NetworkOptimizer {
      */
     public static void optimizeTcpBuffers() {
         // Direct Linux Kernel sysctl & /proc writes (Active on Root & Privileged Shizuku)
-        CommandExecutor.executeSystemCommand("sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null; echo bbr > /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null; sysctl -w net.ipv4.tcp_fastopen=3 2>/dev/null; sysctl -w net.ipv4.tcp_sack=1 2>/dev/null; sysctl -w net.ipv4.tcp_window_scaling=1 2>/dev/null; sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null; sysctl -w net.ipv4.tcp_rmem=\"524288 1048576 8388608\" 2>/dev/null; sysctl -w net.ipv4.tcp_wmem=\"524288 1048576 8388608\" 2>/dev/null");
+        CommandExecutor.executeSystemCommand("sysctl -w net.core.rmem_max=8388608 2>/dev/null; sysctl -w net.core.wmem_max=8388608 2>/dev/null; sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null; echo bbr > /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null; sysctl -w net.ipv4.tcp_fastopen=3 2>/dev/null; sysctl -w net.ipv4.tcp_sack=1 2>/dev/null; sysctl -w net.ipv4.tcp_window_scaling=1 2>/dev/null; sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null; sysctl -w net.ipv4.tcp_rmem=\"524288 1048576 8388608\" 2>/dev/null; sysctl -w net.ipv4.tcp_wmem=\"524288 1048576 8388608\" 2>/dev/null");
 
         // Wi-Fi 2.4GHz / 5GHz / 6GHz (Wi-Fi 6/6E/7) TCP Buffer Tuning (min, default, max)
         CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.wifi 524288,1048576,8388608,262144,524288,4194304");
@@ -430,6 +430,8 @@ public class NetworkOptimizer {
      */
     public static boolean disableDataSaver() {
         try {
+            CommandExecutor.setSystemSetting("global", "restrict_background_data", "0");
+            CommandExecutor.setSystemSetting("global", "data_saver_enabled", "0");
             CommandExecutor.executeSystemCommand("cmd netpolicy set restrict-background false 2>/dev/null");
             CommandExecutor.executeSystemCommand("cmd connectivity set-background-data true 2>/dev/null");
             CommandExecutor.executeSystemCommand("settings put global restrict_background_data 0 2>/dev/null");
@@ -452,6 +454,9 @@ public class NetworkOptimizer {
      */
     public static boolean disableBatterySaver() {
         try {
+            CommandExecutor.setSystemSetting("global", "low_power", "0");
+            CommandExecutor.setSystemSetting("global", "low_power_sticky", "0");
+            CommandExecutor.setSystemSetting("global", "low_power_trigger_level", "0");
             CommandExecutor.executeSystemCommand("settings put global low_power 0 2>/dev/null");
             CommandExecutor.executeSystemCommand("settings put global low_power_sticky 0 2>/dev/null");
             CommandExecutor.executeSystemCommand("settings put global low_power_trigger_level 0 2>/dev/null");
@@ -477,6 +482,10 @@ public class NetworkOptimizer {
      */
     public static boolean disableWifiPowerSaver() {
         try {
+            CommandExecutor.setSystemSetting("global", "wifi_power_save", "0");
+            CommandExecutor.setSystemSetting("global", "wifi_sleep_policy", "2");
+            CommandExecutor.setSystemSetting("global", "wifi_suspend_optimizations_enabled", "0");
+            CommandExecutor.setSystemSetting("global", "wifi_scan_always_enabled", "0");
             CommandExecutor.executeSystemCommand("settings put global wifi_power_save 0 2>/dev/null");
             CommandExecutor.executeSystemCommand("setprop persist.sys.wifi.power_save 0 2>/dev/null");
             CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.powersave 0 2>/dev/null");
