@@ -49,6 +49,7 @@ frida-server*
 **/frida-server*
 codm/
 /codm/
+!**/src/**/codm/**
 DumpDroid/
 /DumpDroid/
 codm_extracted/
