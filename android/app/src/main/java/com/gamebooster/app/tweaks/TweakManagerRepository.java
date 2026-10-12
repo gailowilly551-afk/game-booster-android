@@ -1362,5 +1362,29 @@ public class TweakManagerRepository {
         }
         return enabled;
     }
+
+    /**
+     * Verifies if a specific tweak is active by checking preferences and its verification probe.
+     */
+    public static boolean isTweakActive(Context context, TweakItem item) {
+        if (item == null) return false;
+        if (context != null && !TweakPreferences.isTweakApplied(context, item.getId())) {
+            return false;
+        }
+        String probe = item.getVerificationProbe();
+        if (probe != null && !probe.isEmpty()) {
+            String out = CommandExecutor.executeSystemCommand(probe);
+            if (out != null && !out.trim().isEmpty() && !out.contains("null") && !out.contains("error")) {
+                return true;
+            }
+        }
+        return item.isApplied();
+    }
+
+    public static boolean isTweakActive(Context context, String tweakId) {
+        if (tweakId == null) return false;
+        TweakItem item = getTweakById(tweakId);
+        return isTweakActive(context, item);
+    }
 }
 

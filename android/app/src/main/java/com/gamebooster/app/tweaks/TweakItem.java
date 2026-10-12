@@ -59,6 +59,22 @@ public class TweakItem {
         isApplied = applied;
     }
 
+    public String getVerificationProbe() {
+        if (applyCommand == null) return "";
+        String[] parts = applyCommand.split(";");
+        for (String p : parts) {
+            String trimmed = p.trim();
+            if (trimmed.startsWith("setprop ")) {
+                String[] tokens = trimmed.split("\\s+");
+                if (tokens.length >= 2) return "getprop " + tokens[1];
+            } else if (trimmed.startsWith("settings put ")) {
+                String[] tokens = trimmed.split("\\s+");
+                if (tokens.length >= 4) return "settings get " + tokens[2] + " " + tokens[3];
+            }
+        }
+        return "";
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
