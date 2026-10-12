@@ -2062,7 +2062,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         final Context ctx = getContext().getApplicationContext();
         // Track each op for the counted result toast
         final int[] applied = {0};
-        final int TOTAL_OPS = 10;
+        final int TOTAL_OPS = 12;
         AppExecutors.getInstance().executeCommand(() -> {
             try { NetworkOptimizer.disableDataSaver();         applied[0]++; } catch (Throwable ignored) {}
             try { NetworkOptimizer.disableBatterySaver();      applied[0]++; } catch (Throwable ignored) {}
@@ -2071,6 +2071,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             try { NetworkOptimizer.optimize5gAnd6gDataNetwork(true); applied[0]++; } catch (Throwable ignored) {}
             try { NetworkOptimizer.optimizeWifi6and7LowLatency(true); applied[0]++; } catch (Throwable ignored) {}
             try { NetworkOptimizer.setDualDataAndWifiAcceleration(true); applied[0]++; } catch (Throwable ignored) {}
+            try { NetworkOptimizer.setTetheringHwAcceleration(true); applied[0]++; } catch (Throwable ignored) {}
+            try { NetworkOptimizer.setForceFullGnss(true);      applied[0]++; } catch (Throwable ignored) {}
             try { NetworkOptimizer.enableRankedLowLatencySocketTuning(ctx); applied[0]++; } catch (Throwable ignored) {}
             try { NetworkOptimizer.flushDnsCache(); applied[0]++; } catch (Throwable ignored) {}
             try {
@@ -2105,7 +2107,10 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 ManualSettingsPreferences.setTcpBbrBuffersEnabled(ctx, true);
                 ManualSettingsPreferences.set5g6gDataEnabled(ctx, true);
                 ManualSettingsPreferences.setWifiLowLatencyEnabled(ctx, true);
+                ManualSettingsPreferences.setWifi5g6g7gTurboEnabled(ctx, true);
                 ManualSettingsPreferences.setDualDataWifiEnabled(ctx, true);
+                ManualSettingsPreferences.setTetherHwEnabled(ctx, true);
+                ManualSettingsPreferences.setAutoDnsFlushEnabled(ctx, true);
                 // P2 Fix #9 + P1 Fix #4: apply Cloudflare DNS as part of Apply All
                 ManualSettingsPreferences.setGamingDns(ctx, NetworkOptimizer.DnsMode.CLOUDFLARE_1_1_1_1.name());
                 try { NetworkOptimizer.applyGamingDns(ctx, NetworkOptimizer.DnsMode.CLOUDFLARE_1_1_1_1); } catch (Throwable ignored) {}
@@ -2120,7 +2125,10 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(true);
                 if (switch5g6gData != null) switch5g6gData.setChecked(true);
                 if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(true);
+                if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(true);
                 if (switchDualDataWifi != null) switchDualDataWifi.setChecked(true);
+                if (switchTetheringHw != null) switchTetheringHw.setChecked(true);
+                if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(true);
                 // Reflect active Cloudflare DNS on switches
                 updateDnsUiState(NetworkOptimizer.DnsMode.CLOUDFLARE_1_1_1_1.name());
                 isProgrammaticToggle = false;
