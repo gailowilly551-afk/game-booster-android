@@ -175,7 +175,30 @@ const CODM_RVAS = {
   WeaponController_RecoilModifier:  0x01E4A9C0,
   WeaponController_SpreadModifier:  0x01E4AD50,
   PlayerController_SpeedMultiplier: 0x01D382B0,
-  GAS_MeleeAttackTask_Damage:       0x01E5B400 // Entry point for melee/fire damage calculation
+  GAS_MeleeAttackTask_Damage:       0x01E5B400, // Entry point for melee/fire damage calculation
+  WeaponFireInterval:               0x01E4B120,
+  PlayerDamageMitigation:           0x01D39450,
+  PlayerMaxHealthScale:             0x01D38E20,
+  AimAssistanceColliderRadius:      0x01E4B890,
+  BasicBulletTrackThickness:        0x01E4BF10
+};
+
+const METADATA_TOKENS = {
+  ShotSpread:                   0x06014791,
+  RandomShotSpread:             0x060148bf,
+  UseAimAssist:                 0x0601480b,
+  AimAssistDis:                 0x06014815,
+  RecoilUpBase:                 0x06014851,
+  RecoilUpMax:                  0x06014853,
+  RecoilLateralModifier:        0x06014855,
+  EnableAimAssistanceForSniper: 0x0601d7c7,
+  AimAssistanceSpeed:           0x0601d7cd,
+  RecoilFactor:                 0x060202b1,
+  IsOpenAimAssist:              0x060203a5,
+  WeaponController:             0x0600519,
+  PlayerController:             0x0600b96f,
+  FieldOfView:                  0x06007d49,
+  Camera:                       0x06002d24
 };
 
 const FIELD_OFFSETS = {
@@ -508,7 +531,7 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
   if (CFG.attackSpeedMult > 1.0) {
     const fireIntervalPatterns = ['1F 04 00 71 ?? 00 00 54 ?? ?? ?? 1E'];
     // Reduces weapon reload interval and burst cycle by inverse of attack speed multiplier
-    safeHookCodm('WeaponFireInterval', 0x01E4B120, fireIntervalPatterns, null, function(retval) {
+    safeHookCodm('WeaponFireInterval', CODM_RVAS.WeaponFireInterval, fireIntervalPatterns, null, function(retval) {
       if (this.context && this.context.s0 !== undefined) {
         this.context.s0 = this.context.s0 / CFG.attackSpeedMult;
       }
@@ -525,7 +548,7 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
   // 8. Defense Damage Mitigation (0.80x Damage Taken / 20% Reduction)
   if (CFG.defenseMitigation < 1.0) {
     const defensePatterns = ['F4 4F 01 A9 ?? ?? ?? ?? 00 00 80 52'];
-    safeHookCodm('PlayerDamageMitigation', 0x01D39450, defensePatterns, null, function(retval) {
+    safeHookCodm('PlayerDamageMitigation', CODM_RVAS.PlayerDamageMitigation, defensePatterns, null, function(retval) {
       if (this.context && this.context.s0 !== undefined) {
         this.context.s0 = this.context.s0 * CFG.defenseMitigation;
       }
@@ -542,7 +565,7 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
   // 9. Max Health Pool & Armor Scaling (300% / 3.0x Max HP)
   if (CFG.healthMult > 1.0) {
     const hpPatterns = ['FD 7B 01 A9 E0 03 00 AA ?? ?? ?? ?? 00 00 80 52'];
-    safeHookCodm('PlayerMaxHealthScale', 0x01D38E20, hpPatterns, null, function(retval) {
+    safeHookCodm('PlayerMaxHealthScale', CODM_RVAS.PlayerMaxHealthScale, hpPatterns, null, function(retval) {
       if (this.context && this.context.s0 !== undefined) {
         this.context.s0 = this.context.s0 * CFG.healthMult;
       }
@@ -560,7 +583,7 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
   if (CFG.aimbot || CFG.magicBullet) {
     // Expand AimAssist collider and head magnet bounds
     const aimAssistPatterns = ['FD 7B 01 A9 ?? ?? ?? ?? 00 00 80 52'];
-    safeHookCodm('AimAssistanceColliderRadius', 0x01E4B890, aimAssistPatterns, null, function(retval) {
+    safeHookCodm('AimAssistanceColliderRadius', CODM_RVAS.AimAssistanceColliderRadius, aimAssistPatterns, null, function(retval) {
       if (this.context && this.context.s0 !== undefined) {
         this.context.s0 = 95.0; // 95m expanded snap radius
       }
@@ -568,7 +591,7 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
 
     // Bullet Track thickness & straight ballistic trajectory
     const bulletTrackPatterns = ['F4 4F 01 A9 ?? ?? ?? ?? 00 00 80 3F'];
-    safeHookCodm('BasicBulletTrackThickness', 0x01E4BF10, bulletTrackPatterns, null, function(retval) {
+    safeHookCodm('BasicBulletTrackThickness', CODM_RVAS.BasicBulletTrackThickness, bulletTrackPatterns, null, function(retval) {
       if (this.context && this.context.s0 !== undefined) {
         this.context.s0 = 10.0; // 10x bullet thickness
       }
