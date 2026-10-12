@@ -96,6 +96,9 @@ NewPatch/
 **/NewPatch/
 CODM-LATEST-PATCH/
 **/CODM-LATEST-PATCH/
+!**/CODM-LATEST-PATCH/*.py
+!**/CODM-LATEST-PATCH/*.md
+!**/CODM-LATEST-PATCH/**/codm_extracted_strings.json
 MLBB-LATES-Patch/
 **/MLBB-LATES-Patch/
 !**/MLBB-LATES-Patch/*.py
