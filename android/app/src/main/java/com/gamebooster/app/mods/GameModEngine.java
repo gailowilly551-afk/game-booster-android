@@ -212,15 +212,31 @@ public final class GameModEngine {
 
     public static void injectFrida(String packageName, String scriptPath) {
         try {
+            // Find active target PID immediately for instant zero-latency attach
+            String pidOut = ShizukuExecutor.executeShizukuCommand("pidof " + packageName + " 2>/dev/null || pgrep -f " + packageName + " 2>/dev/null");
+            String pid = (pidOut != null && !pidOut.trim().isEmpty() && !pidOut.startsWith("ERROR:")) ? pidOut.trim().split("[\\s\\n]+")[0] : null;
+
             String whichFrida = ShizukuExecutor.executeShizukuCommand("which frida 2>/dev/null || which frida-inject 2>/dev/null || [ -f /data/local/tmp/frida-inject ] && echo /data/local/tmp/frida-inject");
             if (whichFrida != null && !whichFrida.trim().isEmpty() && !whichFrida.startsWith("ERROR:")) {
                 String bin = whichFrida.trim().split("\n")[0].trim();
                 if (bin.contains("frida-inject")) {
-                    exec(bin + " -n " + packageName + " -s " + scriptPath + " &");
+                    if (pid != null && !pid.isEmpty()) {
+                        // Direct PID attachment is 10x faster than process name resolution
+                        exec(bin + " -p " + pid + " -s " + scriptPath + " &");
+                        Log.i(TAG, "[Frida-Instant] Attached to PID " + pid + " (" + packageName + ") via frida-inject ✓");
+                    } else {
+                        exec(bin + " -n " + packageName + " -s " + scriptPath + " &");
+                        Log.i(TAG, "[Frida-Instant] Attached to " + packageName + " via frida-inject ✓");
+                    }
                 } else {
-                    exec(bin + " -U -f " + packageName + " -l " + scriptPath + " --no-pause &");
+                    if (pid != null && !pid.isEmpty()) {
+                        exec(bin + " -U -p " + pid + " -l " + scriptPath + " --no-pause &");
+                        Log.i(TAG, "[Frida-Instant] Attached to PID " + pid + " (" + packageName + ") via frida CLI ✓");
+                    } else {
+                        exec(bin + " -U -f " + packageName + " -l " + scriptPath + " --no-pause &");
+                        Log.i(TAG, "[Frida-Instant] Spawned & injected into " + packageName + " ✓");
+                    }
                 }
-                Log.i(TAG, "[Frida] Injected into " + packageName + " with " + scriptPath + " using " + bin);
             } else {
                 Log.i(TAG, "ℹ️ Frida server running @ /data/local/tmp/frida-server; script ready @ " + scriptPath);
             }

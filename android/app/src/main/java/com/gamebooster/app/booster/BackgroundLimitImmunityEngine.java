@@ -132,6 +132,15 @@ public final class BackgroundLimitImmunityEngine {
             cmds.add("settings put global cached_apps_freezer disabled 2>/dev/null");
             cmds.add("cmd device_config put activity_manager freeze_debounce_timeout 86400000 2>/dev/null");
 
+            // Android 15 & 16 (Baklava/API 36) Strict Application Limits & Process Freeze Bypasses
+            cmds.add("cmd device_config put activity_manager use_freezer false 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager pkill_unresponsive_cached_processes false 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager procs_per_package_limit 100 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager max_cached_processes 128 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager kill_bg_restricted_cached_idle false 2>/dev/null");
+            cmds.add("cmd device_config put activity_manager modern_queue_enabled true 2>/dev/null");
+            cmds.add("setprop persist.sys.activity_manager.modern_queue_freezer false 2>/dev/null");
+
             // 5. Defeat Wireless Debugging / ADB Disconnect & Wi-Fi Sleep during Gaming
             cmds.add("settings put global adb_wifi_enabled 1 2>/dev/null");
             cmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
@@ -139,6 +148,12 @@ public final class BackgroundLimitImmunityEngine {
             cmds.add("settings put global wifi_wakeup_available 1 2>/dev/null");
             cmds.add("settings put global wifi_wakeup_enabled 1 2>/dev/null");
             cmds.add("settings put global wifi_mobile_data_transition_wakelock_timeout_ms 300000 2>/dev/null");
+            // Offline & Loopback Persistence (Keep ADB/Shizuku Daemon alive even when Wi-Fi is OFF)
+            cmds.add("setprop service.adb.tcp.port 5555 2>/dev/null");
+            cmds.add("settings put global stay_on_while_plugged_in 0 2>/dev/null");
+            cmds.add("settings put global development_settings_enabled 1 2>/dev/null");
+            cmds.add("settings put global adb_enabled 1 2>/dev/null");
+            cmds.add("cmd connectivity airplane-mode disable 2>/dev/null");
 
             // 6. OEM-Specific Background Killer Bypasses (MIUI / HyperOS, Transsion, ColorOS)
             cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " AUTO_START allow 2>/dev/null");
@@ -146,6 +161,11 @@ public final class BackgroundLimitImmunityEngine {
             cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " BOOT_COMPLETED allow 2>/dev/null");
             cmds.add("cmd appops set " + SHIZUKU_PACKAGE + " IGNORE_BATTERY_OPTIMIZATIONS allow 2>/dev/null");
             cmds.add("cmd appops set " + GAME_BOOSTER_PACKAGE + " IGNORE_BATTERY_OPTIMIZATIONS allow 2>/dev/null");
+            cmds.add("cmd appops set " + SHIZUKU_PACKAGE + " SYSTEM_ALERT_WINDOW allow 2>/dev/null");
+            cmds.add("cmd appops set " + SHIZUKU_PACKAGE + " REQUEST_IGNORE_BATTERY_OPTIMIZATIONS allow 2>/dev/null");
+
+            // Android 16 Battery Saver exempt mode
+            cmds.add("cmd power set-mode 0 2>/dev/null");
 
             // Execute batch privileged commands
             CommandExecutor.executeBatchCommands(cmds);
@@ -220,11 +240,13 @@ public final class BackgroundLimitImmunityEngine {
                 protectProcessOomScore(SHIZUKU_PACKAGE);
                 protectProcessOomScore(GAME_BOOSTER_PACKAGE);
 
-                // 2. Lock wireless debugging & anti-freezer settings
+                // 2. Lock wireless debugging, loopback port & anti-freezer settings (Keeps Shizuku alive when Wi-Fi is turned OFF)
                 List<String> pulseCmds = new ArrayList<>();
+                pulseCmds.add("setprop service.adb.tcp.port 5555 2>/dev/null");
                 pulseCmds.add("settings put global adb_wifi_enabled 1 2>/dev/null");
                 pulseCmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
                 pulseCmds.add("settings put global cached_apps_freezer disabled 2>/dev/null");
+                pulseCmds.add("cmd device_config put activity_manager use_freezer false 2>/dev/null");
                 pulseCmds.add("am set-standby-bucket " + SHIZUKU_PACKAGE + " active 2>/dev/null");
                 pulseCmds.add("cmd app_standby set " + SHIZUKU_PACKAGE + " active 2>/dev/null");
                 CommandExecutor.executeBatchCommands(pulseCmds);

@@ -60,7 +60,7 @@ const CFG = {
 
 console.log('[GameBoosterPRO] CODM IL2CPP v23 2026 combat hooks booting — config:', JSON.stringify(CFG));
 
-// ─── Resilient Multi-Library Watcher ──────────────────────────────────────────
+// ─── Instant Resilient Multi-Library Watcher (Zero-Delay dlopen + Micro-Pulse) ─
 function waitForModule(names, callback) {
   const nameList = Array.isArray(names) ? names : [names];
 
@@ -78,13 +78,46 @@ function waitForModule(names, callback) {
     return;
   }
 
-  const id = setInterval(() => {
-    const m = check();
-    if (m) {
-      clearInterval(id);
-      callback(m);
+  let triggered = false;
+  const dispatch = (mod) => {
+    if (!triggered && mod) {
+      triggered = true;
+      clearInterval(timerId);
+      callback(mod);
     }
-  }, 250);
+  };
+
+  // 1. Hook native dynamic loader (dlopen / android_dlopen_ext) for 0ms event-driven injection
+  try {
+    const dlopenNames = ['dlopen', 'android_dlopen_ext'];
+    dlopenNames.forEach(sym => {
+      const p = Module.findExportByName(null, sym);
+      if (p) {
+        Interceptor.attach(p, {
+          onEnter(args) {
+            this.path = args[0] ? args[0].readCString() : '';
+          },
+          onLeave(retval) {
+            if (this.path && !triggered) {
+              for (const name of nameList) {
+                if (this.path.indexOf(name) !== -1) {
+                  const m = Process.findModuleByName(name);
+                  if (m) dispatch(m);
+                  break;
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+  } catch(e) {}
+
+  // 2. High-speed 25ms micro-pulse fallback
+  const timerId = setInterval(() => {
+    const m = check();
+    if (m) dispatch(m);
+  }, 25);
 }
 
 // ─── Tencent ACE & Garena Security Cloak ──────────────────────────────────────
