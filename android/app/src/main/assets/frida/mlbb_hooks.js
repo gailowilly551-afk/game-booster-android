@@ -169,13 +169,21 @@ waitForModule([
 
   // RVAs from mlbb_il2cpp_offsets.json (v2.2.16.12322)
   const RVAS = {
-    damageCalc:    0x0182C4D0,
-    attackSpeed:   0x01831E20,
-    defenseArmor:  0x01859E40,
-    skillCooldown: 0x0184A100,
-    fowVisible:    0x019056B0,
-    cameraHeight:  0x019128A0,
-    manaEnergy:    0x01882350
+    damageCalc:       0x0182C4D0,
+    attackSpeed:      0x01831E20,
+    defenseArmor:     0x01859E40,
+    skillCooldown:    0x0184A100, // ISHOW_Init_SkillCoolDownCalc
+    skillAddCooldown: 0x0184A180, // ISHOW_AddSkillCoolDownCalc
+    syncCooldown:     0x0184A220, // Sync_Init_SkillCoolDownCalc
+    fowVisible:       0x019056B0, // FogOfWarManager_IsVisible
+    fowForceVisible:  0x019056E0, // FogOfWar_ShouldForceVisible
+    fowEntityHidden:  0x01905740, // FogOfWar_IsEntityHiddenByNewFOW
+    fowTerrainBlock:  0x01905680, // FogOfWar_IsBlockedByTerrain
+    visionSprite:     0x01905B80, // VisionSpriteFindEnemyHero_Refresh
+    cameraHeight:     0x019128A0, // m_iFieldOfView
+    manaEnergy:       0x01882350,
+    antiCheatReport:  0x018D2100, // Freeze142_AntiCheatReport
+    resCheckStart:    0x018C1500  // ResCheckStartHandler
   };
 
   // Safe multi-region pattern and RVA hook engine
@@ -389,7 +397,7 @@ waitForModule([
     );
 
     // 7b. Season 42 NewFOW Entity Blocker Bypass (FogOfWar_IsEntityHiddenByNewFOW return false 0)
-    safeHook('FogOfWar_IsEntityHiddenByNewFOW', 0x01905740, ['00 00 80 52 C0 03 5F D6'],
+    safeHook('FogOfWar_IsEntityHiddenByNewFOW', RVAS.fowEntityHidden, ['00 00 80 52 C0 03 5F D6'],
       null,
       function(retval) {
         try { retval.replace(ptr(0)); } catch(e) {}
@@ -397,7 +405,7 @@ waitForModule([
     );
 
     // 7c. Vision Sprite Find Enemy Hero Refresh (VisionSpriteFindEnemyHero_Refresh return 1)
-    safeHook('VisionSpriteFindEnemyHero', 0x01905B80, ['20 00 80 52 C0 03 5F D6'],
+    safeHook('VisionSpriteFindEnemyHero', RVAS.visionSprite, ['20 00 80 52 C0 03 5F D6'],
       null,
       function(retval) {
         try { retval.replace(ptr(1)); } catch(e) {}
@@ -429,20 +437,20 @@ waitForModule([
     );
 
     // 7f. Terrain Blocker & Force Visible (FogOfWar_IsBlockedByTerrain forced 0, ShouldForceVisible forced 1)
-    safeHook('FogOfWar_IsBlockedByTerrain', 0x01905680, ['00 00 80 52 C0 03 5F D6'],
+    safeHook('FogOfWar_IsBlockedByTerrain', RVAS.fowTerrainBlock, ['00 00 80 52 C0 03 5F D6'],
       null,
       function(retval) {
         try { retval.replace(ptr(0)); } catch(e) {}
       }
     );
-    safeHook('FogOfWar_ShouldForceVisible', 0x019056E0, ['20 00 80 52 C0 03 5F D6'],
+    safeHook('FogOfWar_ShouldForceVisible', RVAS.fowForceVisible, ['20 00 80 52 C0 03 5F D6'],
       null,
       function(retval) {
         try { retval.replace(ptr(1)); } catch(e) {}
       }
     );
 
-    // 7f. Unity Camera & Shader Fog Culling Override (libunity.so)
+    // 7g. Unity Camera & Shader Fog Culling Override (libunity.so)
     try {
       const setCulling = Module.findExportByName('libunity.so', '_ZN6Camera14set_cullingMaskEi')
         || Module.findExportByName('libunity.so', 'Camera_set_cullingMask');
@@ -462,6 +470,23 @@ waitForModule([
   // 8. No Recoil & Spread / Smart Aim Lock
   if (CFG.noSpread) {
     console.log('[GameBoosterPRO] MLBB No-Spread / Smart Aim Lock active ✓');
+  }
+
+  // 9. AntiCheat Cloak & ResCheck Validation Suppression
+  if (CFG.antiBan) {
+    safeHook('Freeze142_AntiCheatReport', RVAS.antiCheatReport, ['00 00 80 52 C0 03 5F D6'],
+      null,
+      function(retval) {
+        try { retval.replace(ptr(0)); } catch (e) {}
+      }
+    );
+    safeHook('ResCheckStartHandler', RVAS.resCheckStart, ['20 00 80 52 C0 03 5F D6'],
+      null,
+      function(retval) {
+        try { retval.replace(ptr(1)); } catch (e) {}
+      }
+    );
+    console.log('[GameBoosterPRO] Native AntiCheat & ResCheck stealth hooks active ✓');
   }
 });
 
