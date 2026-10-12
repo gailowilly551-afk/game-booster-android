@@ -53,5 +53,199 @@
     "GAS_MeleeAttackTask_RecoilLateralMax": "0x3C",
     "GAS_MeleeAttackTask_Damage": "0x54",
     "RootMotion_Dynamics_AimAssistRot": "0x68"
+  },
+  "string_patterns": {
+    "RecoilScaleWeaponShake": {
+      "identifier": "RecoilScaleWeaponShake",
+      "metadata_file_offset": "0x4f20f3",
+      "buffer_offset": "0x24c147"
+    },
+    "ShotSpread": {
+      "identifier": "IgnoreShotSpreadTime",
+      "metadata_file_offset": "0x4f43b7",
+      "buffer_offset": "0x24e40b"
+    },
+    "RandomShotSpread": {
+      "identifier": "RandomShotSpread",
+      "metadata_file_offset": "0x55d613",
+      "buffer_offset": "0x2b7667"
+    },
+    "CalcShotSpreadSize": {
+      "identifier": "CalcShotSpreadSize",
+      "metadata_file_offset": "0x55d63a",
+      "buffer_offset": "0x2b768e"
+    },
+    "UseAimAssist": {
+      "identifier": "UseAimAssist",
+      "metadata_file_offset": "0x4f7732",
+      "buffer_offset": "0x251786"
+    },
+    "AimAssistDis": {
+      "identifier": "AimAssistDis",
+      "metadata_file_offset": "0x4f7776",
+      "buffer_offset": "0x2517ca"
+    },
+    "AimAssistRot": {
+      "identifier": "get_AimAssistRot",
+      "metadata_file_offset": "0x55dbf1",
+      "buffer_offset": "0x2b7c45"
+    },
+    "IsOpenAimAssist": {
+      "identifier": "IsOpenAimAssist",
+      "metadata_file_offset": "0x4eabfc",
+      "buffer_offset": "0x244c50"
+    },
+    "AimAssistanceSpeed": {
+      "identifier": "AimAssistanceSpeed",
+      "metadata_file_offset": "0x4ea829",
+      "buffer_offset": "0x24487d"
+    },
+    "OverrideAimAssistanceSpeed": {
+      "identifier": "OverrideAimAssistanceSpeed",
+      "metadata_file_offset": "0x4fac60",
+      "buffer_offset": "0x254cb4"
+    },
+    "EnableAimAssistanceForSniper": {
+      "identifier": "get_EnableAimAssistanceForSniper",
+      "metadata_file_offset": "0x625c04",
+      "buffer_offset": "0x37fc58"
+    },
+    "AimAssistanceColliderRadius": {
+      "identifier": "AimAssistanceColliderRadius",
+      "metadata_file_offset": "0x78e93d",
+      "buffer_offset": "0x4e8991"
+    },
+    "MpIsOpenAimAssistSet": {
+      "identifier": "MpIsOpenAimAssistSet",
+      "metadata_file_offset": "0xab05e4",
+      "buffer_offset": "0x80a638"
+    },
+    "BrIsOpenAimAssistSet": {
+      "identifier": "BrIsOpenAimAssistSet",
+      "metadata_file_offset": "0xab0a46",
+      "buffer_offset": "0x80aa9a"
+    },
+    "ShotSpreadAngle": {
+      "identifier": "ShotSpreadAngle",
+      "metadata_file_offset": "0x4f8a45",
+      "buffer_offset": "0x252a99"
+    },
+    "MinShotSpreadSize": {
+      "identifier": "MinShotSpreadSize",
+      "metadata_file_offset": "0x4f9bc8",
+      "buffer_offset": "0x253c1c"
+    },
+    "MaxShotSpreadSize": {
+      "identifier": "MaxShotSpreadSize",
+      "metadata_file_offset": "0x4f9bda",
+      "buffer_offset": "0x253c2e"
+    },
+    "RecoilUpBase": {
+      "identifier": "RecoilUpBase",
+      "metadata_file_offset": "0x4f79a2",
+      "buffer_offset": "0x2519f6"
+    },
+    "RecoilUpMax": {
+      "identifier": "RecoilUpMax",
+      "metadata_file_offset": "0x4f79c0",
+      "buffer_offset": "0x251a14"
+    },
+    "RecoilLateralBase": {
+      "identifier": "RecoilLateralBase",
+      "metadata_file_offset": "0x4f79cc",
+      "buffer_offset": "0x251a20"
+    },
+    "RecoilLateralModifier": {
+      "identifier": "RecoilLateralModifier",
+      "metadata_file_offset": "0x4f79de",
+      "buffer_offset": "0x251a32"
+    },
+    "HeadshotKill": {
+      "identifier": "EActvCdtType_HeadshotKill",
+      "metadata_file_offset": "0x360ae5",
+      "buffer_offset": "0xbab39"
+    },
+    "A2DBuffEffect_CauseDamage": {
+      "identifier": "A2DBuffEffect_CauseDamageByExcessHPHeal",
+      "metadata_file_offset": "0x4145e3",
+      "buffer_offset": "0x16e637"
+    },
+    "A2DBuffEffect_DamageIncrease": {
+      "identifier": "A2DBuffEffect_DamageIncrease_FromEffectorNum",
+      "metadata_file_offset": "0x414998",
+      "buffer_offset": "0x16e9ec"
+    },
+    "DamageAddition": {
+      "identifier": "MonsterDamageAddition",
+      "metadata_file_offset": "0x5954c4",
+      "buffer_offset": "0x2ef518"
+    },
+    "DamageAmount": {
+      "identifier": "headFaintDamageAmount",
+      "metadata_file_offset": "0x8773c8",
+      "buffer_offset": "0x5d141c"
+    },
+    "BulletTrack": {
+      "identifier": "BasicBulletTrackThickness",
+      "metadata_file_offset": "0x4f3f7e",
+      "buffer_offset": "0x24dfd2"
+    },
+    "BasicBulletTrackThickness": {
+      "identifier": "BasicBulletTrackThickness",
+      "metadata_file_offset": "0x4f3f7e",
+      "buffer_offset": "0x24dfd2"
+    },
+    "TacticalRadarMySelfSprite": {
+      "identifier": "TacticalRadarMySelfSprite",
+      "metadata_file_offset": "0x41d868",
+      "buffer_offset": "0x1778bc"
+    },
+    "CreateRadarController": {
+      "identifier": "CreateRadarController",
+      "metadata_file_offset": "0x41ec22",
+      "buffer_offset": "0x178c76"
+    },
+    "IsEnemy": {
+      "identifier": "IsEnemyDead",
+      "metadata_file_offset": "0x5c6894",
+      "buffer_offset": "0x3208e8"
+    },
+    "bIsEnemy": {
+      "identifier": "bIsEnemy",
+      "metadata_file_offset": "0x5ce227",
+      "buffer_offset": "0x32827b"
+    },
+    "GetTargetEnemy": {
+      "identifier": "GetTargetEnemy",
+      "metadata_file_offset": "0x5300e2",
+      "buffer_offset": "0x28a136"
+    },
+    "CatPlayerController": {
+      "identifier": "get_CatPlayerController",
+      "metadata_file_offset": "0x41dca6",
+      "buffer_offset": "0x177cfa"
+    },
+    "BRCatGamePlayerController": {
+      "identifier": "BRCatGamePlayerController",
+      "metadata_file_offset": "0x41e76d",
+      "buffer_offset": "0x1787c1"
+    },
+    "GetSelectWeaponControllerType": {
+      "identifier": "GetSelectWeaponControllerType",
+      "metadata_file_offset": "0x442396",
+      "buffer_offset": "0x19c3ea"
+    },
+    "mSelectWeaponController": {
+      "identifier": "mSelectWeaponController",
+      "metadata_file_offset": "0x44268a",
+      "buffer_offset": "0x19c6de"
+    }
+  },
+  "combat_signatures": {
+    "BulletTrack": "24dfd2",
+    "TacticalRadar": "178c76",
+    "A2DBuffEffect_CauseDamage": "16eed1",
+    "DamageAddition": "38686b",
+    "AimAssistanceColliderRadius": "4e8991"
   }
 }

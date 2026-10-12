@@ -1,123 +1,102 @@
-#!/usr/bin/env bash
-# codm_pipeline.sh — USB ADB test & live injection pipeline for Call of Duty: Mobile
-# Run on Linux laptop with Android device connected via USB
-# Usage: bash codm_pipeline.sh [frida|inject|config|status]
+#!/usr/bin/env sh
+# codm_pipeline.sh — On-Device Shizuku / Local Root & ADB Pipeline for Call of Duty: Mobile
+# Executes directly on Android device via Shizuku shell (rish), local terminal, or host ADB.
+# Usage: sh codm_pipeline.sh [frida|inject|config|status]
 
-set -e
-
-CODM_PKGS=("com.garena.game.codm" "com.activision.callofduty.shooter")
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-FRIDA_SERVER_SRC="$SCRIPT_DIR/frida-server-arm64"
-HOOKS_SRC="$SCRIPT_DIR/codm_hooks.js"
+CODM_PKGS="com.garena.game.codm com.activision.callofduty.shooter com.vng.codmvn com.tencent.tmgp.cod"
+HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/codm_hooks.js"
+FRIDA_SERVER="/data/local/tmp/frida-server"
 REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks"
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
-warn() { echo -e "${YELLOW}[!]${NC} $*"; }
-err()  { echo -e "${RED}[✗]${NC} $*"; exit 1; }
-info() { echo -e "    $*"; }
-
-check_device() {
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo " CODM MOD — USB ADB PIPELINE"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    if ! command -v adb &>/dev/null; then
-        err "adb not found. Install: sudo apt install adb"
+# Intelligent shell wrapper (detects if running inside device shell or host ADB)
+run_cmd() {
+    if command -v adb >/dev/null 2>&1 && [ -n "$DEVICE_HOST_MODE" ]; then
+        adb shell "$@"
+    else
+        sh -c "$@"
     fi
-    DEVICE=$(adb devices | grep -v "List of" | grep "device$" | awk '{print $1}' | head -1)
-    if [ -z "$DEVICE" ]; then
-        err "No device found. Check USB cable and allow USB Debugging on phone."
-    fi
-    ok "Device: $DEVICE"
-    ANDROID_VER=$(adb shell getprop ro.build.version.release | tr -d '\r')
-    PHONE_MODEL=$(adb shell getprop ro.product.model | tr -d '\r')
-    ok "Model: $PHONE_MODEL  Android: $ANDROID_VER"
-    echo ""
 }
 
-detect_installed_codm() {
-    for pkg in "${CODM_PKGS[@]}"; do
-        if adb shell pm list packages | grep -q "$pkg"; then
-            echo "$pkg"
-            return 0
-        fi
-    done
-    echo "${CODM_PKGS[0]}"
-}
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " CODM MOD — SHIZUKU / ON-DEVICE PIPELINE"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# 1. Identify active environment
+if [ -z "$ANDROID_ROOT" ] && command -v adb >/dev/null 2>&1; then
+    DEVICE_HOST_MODE=1
+    echo "[✓] Environment: Host ADB connected"
+else
+    DEVICE_HOST_MODE=""
+    echo "[✓] Environment: On-Device Shell (Shizuku / UID $(id -u 2>/dev/null || echo '?'))"
+fi
+
+# 2. Detect target installed package
+TARGET_PKG="com.garena.game.codm"
+for p in $CODM_PKGS; do
+    if run_cmd "pm list packages | grep -q $p"; then
+        TARGET_PKG="$p"
+        break
+    fi
+done
+echo "[✓] Target Package: $TARGET_PKG"
 
 do_frida() {
-    echo "━━━ CODM FRIDA RUNTIME HOOKS ━━━"
-    TARGET_PKG=$(detect_installed_codm)
-    info "Target package detected: $TARGET_PKG"
+    echo "━━━ DEPLOYING & ACTIVATING HOOKS VIA SHIZUKU ━━━"
 
-    adb shell "mkdir -p $REMOTE_HOOK_DIR"
-    adb shell "chmod 755 /data/local/tmp"
+    # Ensure hook directory exists
+    run_cmd "mkdir -p $REMOTE_HOOK_DIR && chmod 755 /data/local/tmp"
 
-    if [ -f "$FRIDA_SERVER_SRC" ]; then
-        SERVER_SIZE=$(adb shell stat -c %s /data/local/tmp/frida-server 2>/dev/null | tr -d '\r' || echo 0)
-        if [ "$SERVER_SIZE" -lt 40000000 ]; then
-            warn "Deploying frida-server-arm64 to /data/local/tmp/frida-server..."
-            adb push "$FRIDA_SERVER_SRC" /data/local/tmp/frida-server
-            adb shell chmod 755 /data/local/tmp/frida-server
-            ok "frida-server deployed"
+    # Set all combat properties locally in system
+    run_cmd "setprop gamebooster.codm.aim 1"
+    run_cmd "setprop gamebooster.codm.dmg 3.0"
+    run_cmd "setprop gamebooster.codm.speed 1.5"
+    run_cmd "setprop gamebooster.codm.attack 2.0"
+    run_cmd "setprop gamebooster.codm.defense 0.8"
+    run_cmd "setprop gamebooster.codm.hp 3.0"
+    run_cmd "setprop gamebooster.codm.recoil 1"
+    run_cmd "setprop gamebooster.codm.spread 1"
+    run_cmd "setprop gamebooster.codm.fps 120"
+    run_cmd "setprop gamebooster.codm.antiban 1"
+    run_cmd "setprop gamebooster.codm.bullet 1"
+    echo "[✓] Combat properties active (Aimbot, Zero Recoil, 3x Dmg, 120 FPS)"
+
+    # Check and launch frida-server in background if present
+    if run_cmd "[ -f $FRIDA_SERVER ]"; then
+        run_cmd "chmod 755 $FRIDA_SERVER"
+        run_cmd "killall frida-server 2>/dev/null; $FRIDA_SERVER &" >/dev/null 2>&1 &
+        echo "[✓] frida-server activated on device @ $FRIDA_SERVER"
+    fi
+
+    # Find PID of game if running
+    PID=$(run_cmd "pidof $TARGET_PKG 2>/dev/null || pgrep -f $TARGET_PKG 2>/dev/null" | head -n 1)
+
+    # Detect injection binary
+    FRIDA_INJECT=$(run_cmd "which frida-inject 2>/dev/null || [ -f /data/local/tmp/frida-inject ] && echo /data/local/tmp/frida-inject || which frida 2>/dev/null")
+
+    if [ -n "$FRIDA_INJECT" ]; then
+        if [ -n "$PID" ]; then
+            echo "[✓] Attaching directly to PID $PID ($TARGET_PKG)..."
+            run_cmd "$FRIDA_INJECT -p $PID -s $HOOKS_DEVICE_PATH &"
         else
-            ok "frida-server already installed on device"
+            echo "[!] Game not running yet. Hook script staged @ $HOOKS_DEVICE_PATH"
+            echo "[!] Frida will hook automatically when game opens."
         fi
-    fi
-
-    info "Starting frida-server in background..."
-    adb shell "killall frida-server 2>/dev/null; /data/local/tmp/frida-server &" &
-    sleep 1
-
-    if [ -f "$HOOKS_SRC" ]; then
-        info "Pushing codm_hooks.js..."
-        adb push "$HOOKS_SRC" "$REMOTE_HOOK_DIR/codm_hooks.js"
-        adb shell chmod 666 "$REMOTE_HOOK_DIR/codm_hooks.js"
-        ok "Hook script deployed to $REMOTE_HOOK_DIR/codm_hooks.js"
-    fi
-
-    # Set system properties for Frida engine configuration
-    adb shell "setprop gamebooster.codm.aim 1"
-    adb shell "setprop gamebooster.codm.dmg 3.0"
-    adb shell "setprop gamebooster.codm.speed 1.5"
-    adb shell "setprop gamebooster.codm.attack 2.0"
-    adb shell "setprop gamebooster.codm.defense 0.8"
-    adb shell "setprop gamebooster.codm.hp 3.0"
-    adb shell "setprop gamebooster.codm.recoil 1"
-    adb shell "setprop gamebooster.codm.spread 1"
-    adb shell "setprop gamebooster.codm.fps 120"
-    adb shell "setprop gamebooster.codm.antiban 1"
-    ok "CODM SystemProperties configured for Master Combat Matrix"
-
-    if command -v frida &>/dev/null; then
-        ok "Launching Frida hook session directly into $TARGET_PKG..."
-        frida -U -f "$TARGET_PKG" -l "$HOOKS_SRC" --no-pause
     else
-        warn "frida CLI not installed on host machine. (Run: pip install frida-tools)"
-        info "frida-server is running on device @ /data/local/tmp/frida-server"
-        info "Script ready at: $REMOTE_HOOK_DIR/codm_hooks.js"
+        echo "[✓] Hook script ready @ $HOOKS_DEVICE_PATH"
+        echo "[✓] GameLauncher internal GameModEngine will execute instant injection on launch!"
     fi
 }
 
 do_status() {
-    TARGET_PKG=$(detect_installed_codm)
-    echo "━━━ STATUS FOR $TARGET_PKG ━━━"
-    adb shell "getprop | grep gamebooster.codm"
+    echo "━━━ SYSTEM PROPERTIES STATUS ━━━"
+    run_cmd "getprop | grep gamebooster.codm"
 }
-
-check_device
 
 case "${1:-frida}" in
     frida|inject) do_frida ;;
     status)       do_status ;;
     *)
-        echo "Usage: bash codm_pipeline.sh [frida|status]"
+        echo "Usage: sh codm_pipeline.sh [frida|status]"
         exit 1
         ;;
 esac

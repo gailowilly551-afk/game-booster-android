@@ -13,97 +13,434 @@
     "libunity.so"
   ],
   "libil2cpp_md5": "eb71177ed155806e3934b0d080baed15",
-
   "tokens": {
-    "Camera":              "0x02000059",
-    "World":               "0x02000002",
+    "Camera": "0x02000059",
+    "World": "0x02000002",
     "MolaBigFileDownloader": "0x02000003",
-    "FrameThreadDriver":   "0x02000020"
+    "FrameThreadDriver": "0x02000020",
+    "FogOfWar": "0x02000512",
+    "FOWRender": "0x02000514",
+    "FOWRevealer": "0x02000518",
+    "VisionSpriteFindEnemyHero": "0x02000520"
   },
-
   "methods": {
-    "HeroDamageCalc_CalculateDamage":   "0x0182C4D0",
-    "HeroAttackSpeed_GetMultiplier":    "0x01831E20",
-    "HeroDefense_GetArmor":             "0x01859E40",
-    "SkillManager_GetCooldownTime":     "0x0184A100",
-    "FogOfWarManager_IsVisible":        "0x019056B0",
-    "CameraManager_SetHeight":          "0x019128A0",
-    "MovementComponent_GetSpeed":       "0x0187B2C0",
-    "ManaEnergyRegen_GetRate":          "0x01882350"
+    "HeroDamageCalc_CalculateDamage": "0x0182C4D0",
+    "HeroAttackSpeed_GetMultiplier": "0x01831E20",
+    "HeroDefense_GetArmor": "0x01859E40",
+    "SkillManager_GetCooldownTime": "0x0184A100",
+    "FogOfWarManager_IsVisible": "0x019056B0",
+    "FogOfWar_ShouldForceVisible": "0x019056E0",
+    "FogOfWar_IsEntityHiddenByNewFOW": "0x01905740",
+    "VisionSpriteFindEnemyHero_Refresh": "0x01905B80",
+    "CameraManager_SetHeight": "0x019128A0",
+    "MovementComponent_GetSpeed": "0x0187B2C0",
+    "ManaEnergyRegen_GetRate": "0x01882350"
   },
-
   "fields": {
-    "Hero_CurrentHp":       "0x48",
-    "Hero_MaxHp":           "0x4C",
-    "Hero_AttackPower":     "0x54",
-    "Hero_AttackSpeed":     "0x5C",
-    "Hero_MovementSpeed":   "0x68",
-    "Hero_PhysDef":         "0x70",
-    "Hero_MagicDef":        "0x74",
-    "Hero_CritRate":        "0x7C",
-    "Hero_CritDmg":         "0x80",
-    "Hero_ManaPool":        "0x88",
-    "Hero_ManaRegen":       "0x8C",
-    "Hero_SpellVamp":       "0x90",
-    "Camera_FieldOfView":   "0xA4",
-    "Camera_OrthSize":      "0xA8",
-    "Camera_NearClip":      "0xAC",
-    "Camera_FarClip":       "0xB0"
+    "Hero_CurrentHp": "0x48",
+    "Hero_MaxHp": "0x4C",
+    "Hero_AttackPower": "0x54",
+    "Hero_AttackSpeed": "0x5C",
+    "Hero_MovementSpeed": "0x68",
+    "Hero_PhysDef": "0x70",
+    "Hero_MagicDef": "0x74",
+    "Hero_CritRate": "0x7C",
+    "Hero_CritDmg": "0x80",
+    "Hero_ManaPool": "0x88",
+    "Hero_ManaRegen": "0x8C",
+    "Hero_SpellVamp": "0x90",
+    "Camera_FieldOfView": "0xA4",
+    "Camera_OrthSize": "0xA8",
+    "Camera_NearClip": "0xAC",
+    "Camera_FarClip": "0xB0"
   },
-
   "drone_view": {
-    "1x":  { "fov": 60.0,  "height_key": "1",  "camera_distance": 80  },
-    "2x":  { "fov": 90.0,  "height_key": "2",  "camera_distance": 120 },
-    "3x":  { "fov": 120.0, "height_key": "3",  "camera_distance": 180 },
-    "4x":  { "fov": 150.0, "height_key": "4",  "camera_distance": 240 },
-    "5x":  { "fov": 180.0, "height_key": "5",  "camera_distance": 320 },
-    "10x": { "fov": 240.0, "height_key": "10", "camera_distance": 500 }
+    "1x": {
+      "fov": 60.0,
+      "height_key": "1",
+      "camera_distance": 80
+    },
+    "2x": {
+      "fov": 90.0,
+      "height_key": "2",
+      "camera_distance": 120
+    },
+    "3x": {
+      "fov": 120.0,
+      "height_key": "3",
+      "camera_distance": 180
+    },
+    "4x": {
+      "fov": 150.0,
+      "height_key": "4",
+      "camera_distance": 240
+    },
+    "5x": {
+      "fov": 180.0,
+      "height_key": "5",
+      "camera_distance": 320
+    },
+    "10x": {
+      "fov": 240.0,
+      "height_key": "10",
+      "camera_distance": 500
+    }
   },
-
   "combat_floors": {
-    "Fighter":   { "damage": 10000, "armor": 10000, "magic_def": 5000, "speed_mult": 1.45 },
-    "Assassin":  { "damage": 10000, "armor": 5000,  "magic_def": 3000, "speed_mult": 1.65 },
-    "Mage":      { "damage": 10000, "magic_power": 10000, "pen": 10000, "speed_mult": 1.25 },
-    "Marksman":  { "damage": 10000, "crit_rate": 100, "crit_dmg": 10.0, "speed_mult": 1.35 },
-    "Tank":      { "hp": 10000, "armor": 10000, "magic_def": 10000, "speed_mult": 1.15 },
-    "Support":   { "hp": 10000, "armor": 10000, "magic_def": 10000, "regen": 10000, "speed_mult": 1.15 }
+    "Fighter": {
+      "damage": 10000,
+      "armor": 10000,
+      "magic_def": 5000,
+      "speed_mult": 1.45
+    },
+    "Assassin": {
+      "damage": 10000,
+      "armor": 5000,
+      "magic_def": 3000,
+      "speed_mult": 1.65
+    },
+    "Mage": {
+      "damage": 10000,
+      "magic_power": 10000,
+      "pen": 10000,
+      "speed_mult": 1.25
+    },
+    "Marksman": {
+      "damage": 10000,
+      "crit_rate": 100,
+      "crit_dmg": 10.0,
+      "speed_mult": 1.35
+    },
+    "Tank": {
+      "hp": 10000,
+      "armor": 10000,
+      "magic_def": 10000,
+      "speed_mult": 1.15
+    },
+    "Support": {
+      "hp": 10000,
+      "armor": 10000,
+      "magic_def": 10000,
+      "regen": 10000,
+      "speed_mult": 1.15
+    }
   },
-
   "signatures": {
     "HeroDamageCalc_CalculateDamage": {
       "pattern": "4F000054000000000000000000008052",
-      "mask":    "xxxx????????xxxx"
+      "mask": "xxxx????????xxxx"
     },
     "HeroAttackSpeed_GetMultiplier": {
       "pattern": "1F01086B000000540000000000008052",
-      "mask":    "xxxx????xxxx????"
+      "mask": "xxxx????xxxx????"
     },
     "CameraManager_SetHeight": {
       "pattern": "F44F01A9FD7B02A9FD0300910000001E",
-      "mask":    "xxxxxxxxxxxx???x"
+      "mask": "xxxxxxxxxxxx???x"
     },
     "MovementComponent_GetSpeed": {
       "pattern": "E8031F2AFC6302910000001E00000000",
-      "mask":    "xxxxxxxxxxxx??xx"
+      "mask": "xxxxxxxxxxxx??xx"
     },
     "HeroDefense_GetArmor": {
       "pattern": "F44F3EA9FD7B01A9FD430091E0030091",
-      "mask":    "xxxxxxxxxxxxxxxx"
+      "mask": "xxxxxxxxxxxxxxxx"
     },
     "MolaDownloadBypass": {
       "pattern": "080080D2C0035FD6",
-      "mask":    "xxxxxxxx"
+      "mask": "xxxxxxxx"
     },
     "SkillCooldownReturn0": {
       "pattern": "000080520000001E",
-      "mask":    "xxxxxxxx"
+      "mask": "xxxxxxxx"
     }
   },
-
   "binary_patch_md5": {
-    "BattleConfig.unity3d":        "84432b8c9901e630556f077ca9162268",
-    "ResCheckConf.xml":            "1e1818e43b6eb2ebca6786ea5697c1df",
-    "global-metadata.dat":         "092874198c522c4e8e5a58ad85ac5baa",
-    "libil2cpp.so":                "eb71177ed155806e3934b0d080baed15"
+    "BattleConfig.unity3d": "84432b8c9901e630556f077ca9162268",
+    "ResCheckConf.xml": "1e1818e43b6eb2ebca6786ea5697c1df",
+    "global-metadata.dat": "092874198c522c4e8e5a58ad85ac5baa",
+    "libil2cpp.so": "eb71177ed155806e3934b0d080baed15"
+  },
+  "string_patterns": {
+    "RefFogOfWarMesh": {
+      "category": "FogOfWar",
+      "file_offset": "0x30624b",
+      "buffer_offset": "0xab873"
+    },
+    "RefFogOfWarCommandBuffer": {
+      "category": "FogOfWar",
+      "file_offset": "0x30625b",
+      "buffer_offset": "0xab883"
+    },
+    "IsFogOfWarMode": {
+      "category": "FogOfWar",
+      "file_offset": "0x320ea0",
+      "buffer_offset": "0xc64c8"
+    },
+    "FogOfWar_IsBlockedByTerrain": {
+      "category": "FogOfWar",
+      "file_offset": "0x3211f5",
+      "buffer_offset": "0xc681d"
+    },
+    "FogOfWar_IsEntityHiddenByNewFOW": {
+      "category": "IsEntityHidden",
+      "file_offset": "0x321211",
+      "buffer_offset": "0xc6839"
+    },
+    "FogOfWar_ShouldForceVisible": {
+      "category": "FogOfWar",
+      "file_offset": "0x321231",
+      "buffer_offset": "0xc6859"
+    },
+    "FogOfWar_IsAttackExposed": {
+      "category": "FogOfWar",
+      "file_offset": "0x32124d",
+      "buffer_offset": "0xc6875"
+    },
+    "FogOfWar_RegisterDropEffect": {
+      "category": "FogOfWar",
+      "file_offset": "0x321266",
+      "buffer_offset": "0xc688e"
+    },
+    "FogOfWar_UnregisterDropEffect": {
+      "category": "FogOfWar",
+      "file_offset": "0x321282",
+      "buffer_offset": "0xc68aa"
+    },
+    "FogOfWar_RegisterDynamicBlocker": {
+      "category": "FogOfWar",
+      "file_offset": "0x3212a0",
+      "buffer_offset": "0xc68c8"
+    },
+    "GetResInfoWithIndex": {
+      "category": "FOW",
+      "file_offset": "0x304d12",
+      "buffer_offset": "0xaa33a"
+    },
+    "fowValue": {
+      "category": "FOW",
+      "file_offset": "0x31e250",
+      "buffer_offset": "0xc3878"
+    },
+    "FowExactRectBlockerParams": {
+      "category": "FOW",
+      "file_offset": "0x32007c",
+      "buffer_offset": "0xc56a4"
+    },
+    "fOwnX": {
+      "category": "FOW",
+      "file_offset": "0x3279e0",
+      "buffer_offset": "0xcd008"
+    },
+    "fOwnY": {
+      "category": "FOW",
+      "file_offset": "0x3279e6",
+      "buffer_offset": "0xcd00e"
+    },
+    "fOwnRadis": {
+      "category": "FOW",
+      "file_offset": "0x3279ec",
+      "buffer_offset": "0xcd014"
+    },
+    "fOwnRadisMin": {
+      "category": "FOW",
+      "file_offset": "0x327a1a",
+      "buffer_offset": "0xcd042"
+    },
+    "InfoWithTag": {
+      "category": "FOW",
+      "file_offset": "0x38e49d",
+      "buffer_offset": "0x133ac5"
+    },
+    "ISHOW_Init_SkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x3072d7",
+      "buffer_offset": "0xac8ff"
+    },
+    "ISHOW_AddSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30a343",
+      "buffer_offset": "0xaf96b"
+    },
+    "ISHOW_RemoveSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30a35e",
+      "buffer_offset": "0xaf986"
+    },
+    "__ISHOW_AddSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30c17a",
+      "buffer_offset": "0xb17a2"
+    },
+    "__ISHOW_Init_SkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30d057",
+      "buffer_offset": "0xb267f"
+    },
+    "__ISHOW_RemoveSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30e1eb",
+      "buffer_offset": "0xb3813"
+    },
+    "IShowStruct_ISHOW_AddSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x30fc95",
+      "buffer_offset": "0xb52bd"
+    },
+    "IShowStruct_ISHOW_Init_SkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x31113a",
+      "buffer_offset": "0xb6762"
+    },
+    "IShowStruct_ISHOW_RemoveSkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x31292f",
+      "buffer_offset": "0xb7f57"
+    },
+    "Sync_Init_SkillCoolDownCalc": {
+      "category": "SkillCooldown",
+      "file_offset": "0x38c874",
+      "buffer_offset": "0x131e9c"
+    },
+    "WebCameraManager": {
+      "category": "CameraManager",
+      "file_offset": "0x4faa4c",
+      "buffer_offset": "0x2a0074"
+    },
+    "m_iFieldOfView": {
+      "category": "FieldOfView",
+      "file_offset": "0x3d3ce2",
+      "buffer_offset": "0x17930a"
+    },
+    "fieldOfView": {
+      "category": "FieldOfView",
+      "file_offset": "0x4c23a9",
+      "buffer_offset": "0x2679d1"
+    },
+    "fieldOfViewDict": {
+      "category": "FieldOfView",
+      "file_offset": "0x4c25db",
+      "buffer_offset": "0x267c03"
+    },
+    "sLogin_MolaDownloadPatch": {
+      "category": "MolaDownload",
+      "file_offset": "0x4a254b",
+      "buffer_offset": "0x247b73"
+    },
+    "DecodeMolaDownloadPatch": {
+      "category": "MolaDownload",
+      "file_offset": "0x4a69a2",
+      "buffer_offset": "0x24bfca"
+    },
+    "IsMolaDownloadPatch": {
+      "category": "MolaDownload",
+      "file_offset": "0x4a772e",
+      "buffer_offset": "0x24cd56"
+    },
+    "IsMolaDownloadPatchLog": {
+      "category": "MolaDownload",
+      "file_offset": "0x4a7742",
+      "buffer_offset": "0x24cd6a"
+    },
+    "IMiniPatchMolaDownloadProvider": {
+      "category": "MolaDownload",
+      "file_offset": "0x4b2019",
+      "buffer_offset": "0x257641"
+    },
+    "get_MolaDownloadProvider": {
+      "category": "MolaDownload",
+      "file_offset": "0x4b38e0",
+      "buffer_offset": "0x258f08"
+    },
+    "SetMolaDownloadProvider": {
+      "category": "MolaDownload",
+      "file_offset": "0x4b38f9",
+      "buffer_offset": "0x258f21"
+    },
+    "_molaDownloadProvider": {
+      "category": "MolaDownload",
+      "file_offset": "0x4b405d",
+      "buffer_offset": "0x259685"
+    },
+    "MolaDownloadProvider": {
+      "category": "MolaDownload",
+      "file_offset": "0x4b4321",
+      "buffer_offset": "0x259949"
+    },
+    "GetMolaDownloader": {
+      "category": "MolaDownload",
+      "file_offset": "0x4d9e41",
+      "buffer_offset": "0x27f469"
+    },
+    "Freeze142_AntiCheatReport": {
+      "category": "AntiCheat",
+      "file_offset": "0x3a62d3",
+      "buffer_offset": "0x14b8fb"
+    },
+    "SetAntiCheatReport": {
+      "category": "AntiCheat",
+      "file_offset": "0x3d5025",
+      "buffer_offset": "0x17a64d"
+    },
+    "m_bAntiCheatReport": {
+      "category": "AntiCheat",
+      "file_offset": "0x3dafa3",
+      "buffer_offset": "0x1805cb"
+    },
+    "AntiCheatReporter": {
+      "category": "AntiCheat",
+      "file_offset": "0x460e28",
+      "buffer_offset": "0x206450"
+    },
+    "ResCheckStartHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x3035cc",
+      "buffer_offset": "0xa8bf4"
+    },
+    "ResCheckProgressHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x3035e1",
+      "buffer_offset": "0xa8c09"
+    },
+    "ResCheckEndHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x30360d",
+      "buffer_offset": "0xa8c35"
+    },
+    "ResCheckListener": {
+      "category": "ResCheck",
+      "file_offset": "0x30363a",
+      "buffer_offset": "0xa8c62"
+    },
+    "OnResCheckStartHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x30364b",
+      "buffer_offset": "0xa8c73"
+    },
+    "OnResCheckProgressHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x303662",
+      "buffer_offset": "0xa8c8a"
+    },
+    "OnResCheckEndHandler": {
+      "category": "ResCheck",
+      "file_offset": "0x30367c",
+      "buffer_offset": "0xa8ca4"
+    },
+    "RegisterResCheckListener": {
+      "category": "ResCheck",
+      "file_offset": "0x303d62",
+      "buffer_offset": "0xa938a"
+    },
+    "UnregisterResCheckListener": {
+      "category": "ResCheck",
+      "file_offset": "0x303d7b",
+      "buffer_offset": "0xa93a3"
+    },
+    "ResCheck": {
+      "category": "ResCheck",
+      "file_offset": "0x303d96",
+      "buffer_offset": "0xa93be"
+    }
   }
 }

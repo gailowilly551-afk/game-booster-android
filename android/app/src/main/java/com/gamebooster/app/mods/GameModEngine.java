@@ -313,6 +313,10 @@ public final class GameModEngine {
 
     private static String execOutput(String cmd) {
         try {
+            if (ShizukuExecutor.hasShizukuPermission()) {
+                String res = ShizukuExecutor.executeShizukuCommand(cmd);
+                if (res != null && !res.startsWith("ERROR:")) return res.trim();
+            }
             Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
             p.waitFor();
             byte[] out = p.getInputStream().readAllBytes();

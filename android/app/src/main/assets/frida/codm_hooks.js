@@ -555,6 +555,26 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
     });
     console.log(`[GameBoosterPRO] Max Health Pool scaled to ${CFG.healthMult}x (300% Health) ✓`);
   }
+
+  // 10. Metadata-Dumped Dynamic Combat Overdrives (AimAssist Magnetism & BulletTrack)
+  if (CFG.aimbot || CFG.magicBullet) {
+    // Expand AimAssist collider and head magnet bounds
+    const aimAssistPatterns = ['FD 7B 01 A9 ?? ?? ?? ?? 00 00 80 52'];
+    safeHookCodm('AimAssistanceColliderRadius', 0x01E4B890, aimAssistPatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = 95.0; // 95m expanded snap radius
+      }
+    });
+
+    // Bullet Track thickness & straight ballistic trajectory
+    const bulletTrackPatterns = ['F4 4F 01 A9 ?? ?? ?? ?? 00 00 80 3F'];
+    safeHookCodm('BasicBulletTrackThickness', 0x01E4BF10, bulletTrackPatterns, null, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = 10.0; // 10x bullet thickness
+      }
+    });
+    console.log('[GameBoosterPRO] AimAssistanceColliderRadius & BulletTrack hooks active ✓');
+  }
 });
 
 // ─── Global EGL Uncap ─────────────────────────────────────────────────────────

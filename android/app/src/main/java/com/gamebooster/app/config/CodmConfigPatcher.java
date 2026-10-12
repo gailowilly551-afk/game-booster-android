@@ -321,7 +321,7 @@ public class CodmConfigPatcher {
         List<String> roots = resolveRootDirs(packageName);
         boolean anyDeployed = false;
 
-        String[] combatFiles = {"boot.config", "MSDKConfig.ini", "settings.xml"};
+        String[] combatFiles = {"boot.config", "MSDKConfig.ini", "settings.xml", "ControlsSettings.ini", "UserSetting.json"};
 
         for (String root : roots) {
             String filesDir = root + "/files";
