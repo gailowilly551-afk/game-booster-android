@@ -220,6 +220,11 @@ public class HardwareMaskEngine {
                 }
             }
 
+            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+                List<String> resetpropCmds = buildResetpropCommands(profile);
+                batchCommands.addAll(resetpropCmds);
+            }
+
             // Execute elevated commands via Shizuku
             List<String> execResults = ShizukuExecutor.executeShizukuCommandsWithResults(new ArrayList<>(batchCommands));
             boolean commandsExecuted = execResults != null && !execResults.isEmpty();
@@ -261,6 +266,110 @@ public class HardwareMaskEngine {
             Log.e(TAG, "Failed to apply full hardware mask: " + profile.id, t);
             return false;
         }
+    }
+
+    /**
+     * Builds dynamic resetprop shell commands for Magisk / KernelSU / APatch root (UID 0) environments.
+     */
+    public static List<String> buildResetpropCommands(SpoofProfile profile) {
+        List<String> cmds = new ArrayList<>();
+        if (profile == null) return cmds;
+
+        if (profile.model != null && !profile.model.isEmpty()) {
+            cmds.add("resetprop ro.product.model \"" + profile.model + "\"");
+            cmds.add("resetprop ro.product.system.model \"" + profile.model + "\"");
+            cmds.add("resetprop ro.product.vendor.model \"" + profile.model + "\"");
+            cmds.add("resetprop ro.product.odm.model \"" + profile.model + "\"");
+        }
+        if (profile.brand != null && !profile.brand.isEmpty()) {
+            cmds.add("resetprop ro.product.brand \"" + profile.brand + "\"");
+            cmds.add("resetprop ro.product.system.brand \"" + profile.brand + "\"");
+            cmds.add("resetprop ro.product.vendor.brand \"" + profile.brand + "\"");
+        }
+        if (profile.manufacturer != null && !profile.manufacturer.isEmpty()) {
+            cmds.add("resetprop ro.product.manufacturer \"" + profile.manufacturer + "\"");
+            cmds.add("resetprop ro.product.system.manufacturer \"" + profile.manufacturer + "\"");
+            cmds.add("resetprop ro.product.vendor.manufacturer \"" + profile.manufacturer + "\"");
+        }
+        if (profile.device != null && !profile.device.isEmpty()) {
+            cmds.add("resetprop ro.product.device \"" + profile.device + "\"");
+            cmds.add("resetprop ro.product.system.device \"" + profile.device + "\"");
+            cmds.add("resetprop ro.product.vendor.device \"" + profile.device + "\"");
+        }
+        if (profile.productName != null && !profile.productName.isEmpty()) {
+            cmds.add("resetprop ro.product.name \"" + profile.productName + "\"");
+            cmds.add("resetprop ro.product.system.name \"" + profile.productName + "\"");
+        }
+        if (profile.hardware != null && !profile.hardware.isEmpty()) {
+            cmds.add("resetprop ro.hardware \"" + profile.hardware + "\"");
+        }
+        if (profile.board != null && !profile.board.isEmpty()) {
+            cmds.add("resetprop ro.build.product \"" + profile.board + "\"");
+            cmds.add("resetprop ro.board.platform \"" + profile.board + "\"");
+        }
+        if (profile.socModel != null && !profile.socModel.isEmpty()) {
+            cmds.add("resetprop ro.soc.model \"" + profile.socModel + "\"");
+        }
+        if (profile.socManufacturer != null && !profile.socManufacturer.isEmpty()) {
+            cmds.add("resetprop ro.soc.manufacturer \"" + profile.socManufacturer + "\"");
+        }
+        if (profile.fingerprint != null && !profile.fingerprint.isEmpty()) {
+            cmds.add("resetprop ro.build.fingerprint \"" + profile.fingerprint + "\"");
+            cmds.add("resetprop ro.system.build.fingerprint \"" + profile.fingerprint + "\"");
+            cmds.add("resetprop ro.vendor.build.fingerprint \"" + profile.fingerprint + "\"");
+        }
+        if (profile.displayId != null && !profile.displayId.isEmpty()) {
+            cmds.add("resetprop ro.build.display.id \"" + profile.displayId + "\"");
+        }
+        return cmds;
+    }
+
+    /**
+     * Builds resetprop shell commands to restore pristine host device properties.
+     */
+    public static List<String> buildResetpropRestoreCommands(DeviceSpooferEngine.DeviceIdentitySnapshot snap) {
+        List<String> cmds = new ArrayList<>();
+        if (snap == null) return cmds;
+
+        if (snap.model != null && !snap.model.isEmpty()) {
+            cmds.add("resetprop ro.product.model \"" + snap.model + "\"");
+            cmds.add("resetprop ro.product.system.model \"" + snap.model + "\"");
+            cmds.add("resetprop ro.product.vendor.model \"" + snap.model + "\"");
+        }
+        if (snap.brand != null && !snap.brand.isEmpty()) {
+            cmds.add("resetprop ro.product.brand \"" + snap.brand + "\"");
+            cmds.add("resetprop ro.product.system.brand \"" + snap.brand + "\"");
+        }
+        if (snap.manufacturer != null && !snap.manufacturer.isEmpty()) {
+            cmds.add("resetprop ro.product.manufacturer \"" + snap.manufacturer + "\"");
+        }
+        if (snap.device != null && !snap.device.isEmpty()) {
+            cmds.add("resetprop ro.product.device \"" + snap.device + "\"");
+        }
+        if (snap.product != null && !snap.product.isEmpty()) {
+            cmds.add("resetprop ro.product.name \"" + snap.product + "\"");
+        }
+        if (snap.hardware != null && !snap.hardware.isEmpty()) {
+            cmds.add("resetprop ro.hardware \"" + snap.hardware + "\"");
+        }
+        if (snap.board != null && !snap.board.isEmpty()) {
+            cmds.add("resetprop ro.build.product \"" + snap.board + "\"");
+            cmds.add("resetprop ro.board.platform \"" + snap.board + "\"");
+        }
+        if (snap.socModel != null && !snap.socModel.isEmpty()) {
+            cmds.add("resetprop ro.soc.model \"" + snap.socModel + "\"");
+        }
+        if (snap.socManufacturer != null && !snap.socManufacturer.isEmpty()) {
+            cmds.add("resetprop ro.soc.manufacturer \"" + snap.socManufacturer + "\"");
+        }
+        if (snap.fingerprint != null && !snap.fingerprint.isEmpty()) {
+            cmds.add("resetprop ro.build.fingerprint \"" + snap.fingerprint + "\"");
+            cmds.add("resetprop ro.system.build.fingerprint \"" + snap.fingerprint + "\"");
+        }
+        if (snap.display != null && !snap.display.isEmpty()) {
+            cmds.add("resetprop ro.build.display.id \"" + snap.display + "\"");
+        }
+        return cmds;
     }
 
     /**
@@ -354,6 +463,17 @@ public class HardwareMaskEngine {
                     setStaticField(android.os.Build.class, "SOC_MANUFACTURER", snap.socManufacturer);
                 }
             } catch (Throwable ignored) {}
+
+            // Root resetprop restore if physical root UID 0 is available
+            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+                List<String> restoreCmds = buildResetpropRestoreCommands(snap);
+                for (String cmd : restoreCmds) {
+                    com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd + " 2>/dev/null || true");
+                }
+                try {
+                    com.gamebooster.app.engine.CommandExecutor.executeSystemCommand("umount /proc/cpuinfo 2>/dev/null || true");
+                } catch (Throwable ignored) {}
+            }
 
             Log.d(TAG, "Host Build reflection restored: " + snap.model);
         } catch (Throwable t) {

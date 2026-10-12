@@ -70,22 +70,47 @@ public class DeviceSpooferEngine {
         public final String socManufacturer;
 
         public DeviceIdentitySnapshot() {
-            this.model = android.os.Build.MODEL;
-            this.brand = android.os.Build.BRAND;
-            this.manufacturer = android.os.Build.MANUFACTURER;
-            this.device = android.os.Build.DEVICE;
-            this.product = android.os.Build.PRODUCT;
-            this.hardware = android.os.Build.HARDWARE;
-            this.board = android.os.Build.BOARD;
-            this.fingerprint = android.os.Build.FINGERPRINT;
-            this.display = android.os.Build.DISPLAY;
-            this.serial = getSafeSerial();
-            this.release = android.os.Build.VERSION.RELEASE;
-            this.sdkInt = android.os.Build.VERSION.SDK_INT;
-            this.securityPatch = android.os.Build.VERSION.SECURITY_PATCH;
-            this.incremental = android.os.Build.VERSION.INCREMENTAL;
-            this.socModel = getSafeField("SOC_MODEL");
-            this.socManufacturer = getSafeField("SOC_MANUFACTURER");
+            this(
+                android.os.Build.MODEL != null ? android.os.Build.MODEL : "Android Device",
+                android.os.Build.BRAND != null ? android.os.Build.BRAND : "Android",
+                android.os.Build.MANUFACTURER != null ? android.os.Build.MANUFACTURER : "Google",
+                android.os.Build.DEVICE != null ? android.os.Build.DEVICE : "generic",
+                android.os.Build.PRODUCT != null ? android.os.Build.PRODUCT : "generic",
+                android.os.Build.HARDWARE != null ? android.os.Build.HARDWARE : "generic",
+                android.os.Build.BOARD != null ? android.os.Build.BOARD : "generic",
+                android.os.Build.FINGERPRINT != null ? android.os.Build.FINGERPRINT : "generic/fingerprint",
+                android.os.Build.DISPLAY != null ? android.os.Build.DISPLAY : "generic-display",
+                getSafeSerial(),
+                android.os.Build.VERSION.RELEASE != null ? android.os.Build.VERSION.RELEASE : "14",
+                android.os.Build.VERSION.SDK_INT > 0 ? android.os.Build.VERSION.SDK_INT : 34,
+                android.os.Build.VERSION.SECURITY_PATCH != null ? android.os.Build.VERSION.SECURITY_PATCH : "2026-01-01",
+                android.os.Build.VERSION.INCREMENTAL != null ? android.os.Build.VERSION.INCREMENTAL : "1",
+                getSafeField("SOC_MODEL"),
+                getSafeField("SOC_MANUFACTURER")
+            );
+        }
+
+        public DeviceIdentitySnapshot(String model, String brand, String manufacturer, String device,
+                                      String product, String hardware, String board, String fingerprint,
+                                      String display, String serial, String release, int sdkInt,
+                                      String securityPatch, String incremental, String socModel,
+                                      String socManufacturer) {
+            this.model = model != null ? model : "Android Device";
+            this.brand = brand != null ? brand : "Android";
+            this.manufacturer = manufacturer != null ? manufacturer : "Google";
+            this.device = device != null ? device : "generic";
+            this.product = product != null ? product : "generic";
+            this.hardware = hardware != null ? hardware : "generic";
+            this.board = board != null ? board : "generic";
+            this.fingerprint = fingerprint != null ? fingerprint : "generic/fingerprint";
+            this.display = display != null ? display : "generic-display";
+            this.serial = serial != null ? serial : "unknown";
+            this.release = release != null ? release : "14";
+            this.sdkInt = sdkInt > 0 ? sdkInt : 34;
+            this.securityPatch = securityPatch != null ? securityPatch : "2026-01-01";
+            this.incremental = incremental != null ? incremental : "1";
+            this.socModel = socModel != null ? socModel : "";
+            this.socManufacturer = socManufacturer != null ? socManufacturer : "";
         }
 
         @android.annotation.SuppressLint({"MissingPermission", "HardwareIds"})
