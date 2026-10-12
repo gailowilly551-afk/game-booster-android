@@ -72,7 +72,10 @@ extern "C" {
 JNIEXPORT jlong JNICALL
 Java_com_gamebooster_app_engine_Il2cppDirectScanner_getIl2cppBase(
         JNIEnv* /*env*/, jclass /*clazz*/) {
-    return static_cast<jlong>(find_module_base("libil2cpp.so"));
+    uintptr_t base = find_module_base("libil2cpp.so");
+    if (!base) base = find_module_base("liblogic.so");
+    if (!base) base = find_module_base("libunity.so");
+    return static_cast<jlong>(base);
 }
 
 JNIEXPORT jlong JNICALL
@@ -82,6 +85,12 @@ Java_com_gamebooster_app_engine_Il2cppDirectScanner_scanPattern(
 
     size_t mod_size = 0;
     uintptr_t base = find_module_base("libil2cpp.so", &mod_size);
+    if (!base || mod_size == 0) {
+        base = find_module_base("liblogic.so", &mod_size);
+    }
+    if (!base || mod_size == 0) {
+        base = find_module_base("libunity.so", &mod_size);
+    }
     if (!base || mod_size == 0) return 0;
 
     jsize pat_len = env->GetArrayLength(jPattern);

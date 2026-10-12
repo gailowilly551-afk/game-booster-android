@@ -3,6 +3,15 @@
   "realversion": "2.2.16.1232.1",
   "arch": "arm64-v8a",
   "target": "libil2cpp.so",
+  "targets": [
+    "libil2cpp.so",
+    "libResources.so",
+    "libResources_z0_0.so",
+    "liblogic.so",
+    "libcsharp.so",
+    "libmoba.so",
+    "libunity.so"
+  ],
   "libil2cpp_md5": "eb71177ed155806e3934b0d080baed15",
 
   "tokens": {

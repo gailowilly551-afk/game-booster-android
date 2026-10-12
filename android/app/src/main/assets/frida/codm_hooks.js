@@ -156,10 +156,25 @@ const FIELD_OFFSETS = {
   RootMotion_Dynamics_AimAssistRot:           0x68
 };
 
+function getCodmModules() {
+  try {
+    const mods = Process.enumerateModules().filter(m =>
+      /lib(unity|il2cpp|main|gcloud|anort)\.so/i.test(m.name)
+    );
+    if (mods.length > 0) return mods;
+  } catch (e) {}
+  const list = [];
+  ['libunity.so', 'libil2cpp.so', 'libmain.so'].forEach(fn => {
+    const m = Process.findModuleByName(fn);
+    if (m && m.size > 0) list.push(m);
+  });
+  return list;
+}
+
 // ─── 3-Tier Adaptive Hook Resolver ───────────────────────────────────────────
 function safeHookCodm(name, rva, patterns, onEnterHandler, onLeaveHandler) {
   let hooked = false;
-  const candidateMods = ['libunity.so', 'libil2cpp.so', 'libmain.so'];
+  const candidateMods = getCodmModules();
 
   // 1. Try direct RVA offset in loaded engine modules
   for (const cName of candidateMods) {

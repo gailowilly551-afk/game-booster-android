@@ -106,8 +106,32 @@ if (CFG.antiBan && typeof Java !== 'undefined') {
   console.log('[GameBoosterPRO] Anti-ban SSL unpin active ✓');
 }
 
+// ─── Resilient Module Discovery (MLBB Split Libraries Support) ─────────────────
+function getMlbbModules() {
+  try {
+    const mods = Process.enumerateModules().filter(m =>
+      /lib(il2cpp|Resources.*|logic|csharp|moba|first|unity|main)\.so/i.test(m.name)
+    );
+    if (mods.length > 0) return mods;
+  } catch (e) {}
+
+  const fallbackNames = [
+    'libil2cpp.so', 'libResources.so', 'libResources_z0_0.so', 'libunity.so',
+    'liblogic.so', 'libcsharp.so', 'libmoba.so', 'libfirst.so', 'libmain.so'
+  ];
+  const list = [];
+  for (const fn of fallbackNames) {
+    const m = Process.findModuleByName(fn);
+    if (m && m.size > 0) list.push(m);
+  }
+  return list;
+}
+
 // ─── IL2CPP & Core Engine Hooks ───────────────────────────────────────────────
-waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], (mainMod) => {
+waitForModule([
+  'libil2cpp.so', 'libResources.so', 'libResources_z0_0.so', 'libunity.so',
+  'liblogic.so', 'libcsharp.so', 'libmoba.so', 'libfirst.so', 'libmain.so'
+], (mainMod) => {
   console.log('[GameBoosterPRO] Game engine library mounted: ' + mainMod.name + ' @ ' + mainMod.base + ' (size: ' + mainMod.size + ')');
 
   // RVAs from mlbb_il2cpp_offsets.json (v2.2.16.12322)
@@ -122,18 +146,26 @@ waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], 
   };
 
   // Safe multi-region pattern and RVA hook engine
-  function safeHook(name, rva, patterns, onLeaveHandler) {
+  function safeHook(name, rva, patterns, onEnterHandler, onLeaveHandler) {
+    // If only one handler is passed as 4th arg, treat as onLeave for backward compatibility
+    if (typeof onEnterHandler === 'function' && onLeaveHandler === undefined) {
+      onLeaveHandler = onEnterHandler;
+      onEnterHandler = null;
+    }
+
     let hooked = false;
+    const candidateMods = getMlbbModules();
 
     // 1. Try RVA in loaded modules
-    const candidateMods = ['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'];
-    for (const cName of candidateMods) {
-      const cm = Process.findModuleByName(cName);
+    for (const cm of candidateMods) {
       if (cm && rva > 0 && rva < cm.size) {
         try {
           const target = cm.base.add(rva);
-          Interceptor.attach(target, { onLeave: onLeaveHandler });
-          console.log('[GameBoosterPRO] ' + name + ' hooked @ RVA 0x' + rva.toString(16) + ' in ' + cm.name);
+          const callbacks = {};
+          if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+          if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+          Interceptor.attach(target, callbacks);
+          console.log('[GameBoosterPRO] ' + name + ' hooked @ RVA 0x' + rva.toString(16) + ' in ' + cm.name + ' ✓');
           hooked = true;
           break;
         } catch (e) {}
@@ -142,15 +174,17 @@ waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], 
 
     // 2. Fallback: Search candidate modules via signature patterns
     if (!hooked && patterns && patterns.length > 0) {
-      for (const cName of candidateMods) {
-        const cm = Process.findModuleByName(cName);
+      for (const cm of candidateMods) {
         if (cm && cm.size > 0) {
           for (const pattern of patterns) {
             try {
               const matches = Memory.scanSync(cm.base, cm.size, pattern);
               if (matches.length > 0) {
-                Interceptor.attach(matches[0].address, { onLeave: onLeaveHandler });
-                console.log('[GameBoosterPRO] ' + name + ' hooked via signature in ' + cm.name + ' @ ' + matches[0].address);
+                const callbacks = {};
+                if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+                if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+                Interceptor.attach(matches[0].address, callbacks);
+                console.log('[GameBoosterPRO] ' + name + ' hooked via signature in ' + cm.name + ' @ ' + matches[0].address + ' ✓');
                 hooked = true;
                 break;
               }
@@ -170,8 +204,11 @@ waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], 
             try {
               const matches = Memory.scanSync(range.base, range.size, pattern);
               if (matches.length > 0) {
-                Interceptor.attach(matches[0].address, { onLeave: onLeaveHandler });
-                console.log('[GameBoosterPRO] ' + name + ' hooked via global r-x scan @ ' + matches[0].address);
+                const callbacks = {};
+                if (onEnterHandler) callbacks.onEnter = onEnterHandler;
+                if (onLeaveHandler) callbacks.onLeave = onLeaveHandler;
+                Interceptor.attach(matches[0].address, callbacks);
+                console.log('[GameBoosterPRO] ' + name + ' hooked via global r-x scan @ ' + matches[0].address + ' ✓');
                 hooked = true;
                 break;
               }
@@ -183,7 +220,7 @@ waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], 
     }
 
     if (!hooked) {
-      console.log('[GameBoosterPRO] Note: ' + name + ' offset pending active match invocation');
+      console.log('[GameBoosterPRO] Note: ' + name + ' offset registered, awaiting direct invocation');
     }
   }
 
@@ -286,9 +323,19 @@ waitForModule(['libil2cpp.so', 'libResources.so', 'libunity.so', 'libmain.so'], 
     else camHeight = 90; // 1.5X
 
     const camPatterns = ['F4 4F 01 A9 FD 7B 02 A9 FD 03 00 91 ?? ?? ?? 1E'];
-    safeHook('CameraManager_SetHeight', RVAS.cameraHeight, camPatterns, function(retval) {
-      retval.replace(ptr(camHeight));
-    });
+    safeHook('CameraManager_SetHeight', RVAS.cameraHeight, camPatterns,
+      function(args) {
+        if (args[1] && !args[1].isNull()) {
+          try { args[1] = ptr(camHeight); } catch(e) {}
+        }
+        if (this.context && this.context.s0 !== undefined) {
+          this.context.s0 = camHeight;
+        }
+      },
+      function(retval) {
+        try { retval.replace(ptr(camHeight)); } catch(e) {}
+      }
+    );
   }
 
   // 7. Map Hack / Vision (Fog of War)
