@@ -5271,9 +5271,16 @@ public class NativeConfigInjector {
         }
         String[] fallbackKeys = {
             "DamageScale=1.90", "DamageMultiplier=1.90", "PhysicalDamageMultiplier=1.90",
-            "MagicDamageMultiplier=1.90", "TrueDamageEnforce=1", "CritMultiplier=3.5",
-            "AttackSpeedMultiplier=2.50", "AttackSpeedCapUnlock=1", "DefenseMultiplier=10.0",
-            "UnlimitedEnergy=1", "NoManaCost=1", "CastDelayMs=0", "SkillCastDelay=0",
+            "MagicDamageMultiplier=1.90", "PhysicalDamageBase=10000", "MagicDamageBase=10000",
+            "PhysicalAttackBoost=10000", "MagicPowerBoost=10000", "PhysicalPenBoost=10000",
+            "MagicPenBoost=10000", "PhysicalPenetration=10000", "MagicPenetration=10000",
+            "TrueDamageEnforce=1", "TrueDamageMultiplier=1.90", "TrueDmgConversion=1", "CritMultiplier=3.5",
+            "AttackSpeedMultiplier=2.50", "AttackSpeedBoost=10000", "AttackSpeedCap=10.0",
+            "AttackSpeedUnlock=1", "AttackSpeedMax=1", "BasicAttackRate=10.0", "AttackSpeedCapUnlock=1",
+            "DefenseMultiplier=10.0", "PhysicalDefense=10000", "MagicDefense=10000",
+            "PhysicalDefenseBoost=10000", "MagicDefenseBoost=10000", "ArmorBoost=10000",
+            "MagicResistBoost=10000", "DamageReductionPercent=0.99", "DamageReduction=0.99",
+            "UnlimitedEnergy=1", "NoManaCost=1", "ZeroSkillCost=1", "CastDelayMs=0", "SkillCastDelay=0",
             "FastJungleFarm=1", "TurtleDamageMultiplier=10.0", "LordStealMultiplier=10.0",
             "DroneView=1", "FieldOfView=120.0", "CameraHeight=3", "AllHeroUnlock=1"
         };

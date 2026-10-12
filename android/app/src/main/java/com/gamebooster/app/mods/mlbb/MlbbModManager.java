@@ -89,11 +89,12 @@ public final class MlbbModManager {
                             com.gamebooster.app.config.MlbbDroneViewPatcher.applyDroneViewAtomic(ctx, pkg, profile.mlbbDroneTier);
                         }
 
-                        // Apply 2026 8-Feature Master Combat Matrix
+                        // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
                         float dmg = profile.mlbbDamageEnabled ? profile.mlbbDamageMult : 1.0f;
                         float fov = profile.mlbbDroneViewEnabled ? (profile.mlbbDroneTier >= 100 ? 240.0f : 180.0f) : 0.0f;
                         float aspd = profile.mlbbAttackSpeedEnabled ? profile.mlbbAttackSpeedMult : 1.0f;
                         MlbbConfigPatcher.applyMasterCombatMatrix(pkg, dmg, fov, 1.45f, aspd, profile.mlbbMapHack);
+                        MlbbConfigPatcher.applyMlbbLatest2026Patch(pkg);
                         com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
                     } catch (Throwable t) {
                         Log.w(TAG, "MLBB master suite error: " + t.getMessage());

@@ -76,10 +76,11 @@ public final class CodmModManager {
                             CodmConfigPatcher.applyAutoHeadshotBulletKill(pkg);
                         }
 
-                        // Apply 2026 8-Feature Master Combat Matrix
+                        // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
                         float dmg = profile.codmDamageEnabled ? profile.codmDamageMult : 2.0f;
                         float spd = profile.codmSpeedEnabled ? profile.codmSpeedMult : 1.5f;
                         CodmConfigPatcher.applyMasterCombatMatrix(pkg, dmg, 120.0f, spd, 2.0f, true);
+                        CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
                         com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
                     } catch (Throwable t) {
                         Log.w(TAG, "CODM master suite error: " + t.getMessage());

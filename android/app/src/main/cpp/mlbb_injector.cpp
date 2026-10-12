@@ -3666,32 +3666,57 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     if (!jPath) return JNI_FALSE;
 
     std::vector<std::pair<std::string, std::string>> keys = {
-        // ── 1. Damage 90% & Burst Critical ──
+        // ── 1. Damage 90% & Burst Critical (Physical, Magic, True Damage) ──
         {"DamageLockMax",                   "1"},
         {"EffectiveDPSMode",                "3"},
         {"DamageScale",                     "1.90"},
         {"DamageMultiplier",                "1.90"},
         {"PhysicalDamageMultiplier",        "1.90"},
         {"MagicDamageMultiplier",           "1.90"},
+        {"PhysicalDamageBase",              "10000"},
+        {"MagicDamageBase",                 "10000"},
+        {"PhysicalAttackBoost",             "10000"},
+        {"MagicPowerBoost",                 "10000"},
+        {"PhysicalPenBoost",                "10000"},
+        {"MagicPenBoost",                   "10000"},
+        {"PhysicalPenetration",             "10000"},
+        {"MagicPenetration",                "10000"},
         {"TrueDamageEnforce",               "1"},
         {"TrueDamageMultiplier",            "1.90"},
+        {"TrueDmgConversion",               "1"},
         {"CritRateBoost",                   "1.0"},
         {"CritMultiplier",                  "3.5"},
         {"PenetrationBoost",                "1"},
 
         // ── 2. Attack Speed & Kinetic Unlock ──
         {"AttackSpeedMultiplier",           "2.50"},
+        {"AttackSpeedBoost",                "10000"},
+        {"AttackSpeedCap",                  "10.0"},
+        {"AttackSpeedUnlock",               "1"},
+        {"AttackSpeedMax",                  "1"},
+        {"BasicAttackRate",                 "10.0"},
+        {"AttackAnimSpeed",                 "10.0"},
         {"AttackIntervalMin",               "0.0"},
+        {"AutoAttackInterval",              "0.0"},
         {"AttackSpeedCapUnlock",            "1"},
         {"AutoAttackWeave",                 "1"},
 
-        // ── 3. Armor & Defense Floor ──
+        // ── 3. Armor & Defense Floor (Physical & Magic Defence) ──
         {"DamageMitigationMax",             "1"},
         {"DefenseMultiplier",               "10.0"},
-        {"PhysicalDefenseBoost",            "5000"},
-        {"MagicDefenseBoost",               "5000"},
+        {"PhysicalDefense",                 "10000"},
+        {"MagicDefense",                    "10000"},
+        {"PhysicalDefenseBoost",            "10000"},
+        {"MagicDefenseBoost",               "10000"},
+        {"ArmorBoost",                      "10000"},
+        {"MagicResistBoost",                "10000"},
         {"DamageReductionPercent",          "0.99"},
+        {"DamageReduction",                 "0.99"},
         {"ShieldAbsorptionMultiplier",      "5.0"},
+        {"ShieldBoost",                     "10000"},
+        {"PassiveShieldRegen",              "1000"},
+        {"LifestealPercent",                "100"},
+        {"SpellVampBoost",                  "100"},
 
         // ── 4. Infinite Mana & Energy ──
         {"UnlimitedEnergy",                 "1"},
