@@ -98,6 +98,9 @@ CODM-LATEST-PATCH/
 **/CODM-LATEST-PATCH/
 MLBB-LATES-Patch/
 **/MLBB-LATES-Patch/
+!**/MLBB-LATES-Patch/*.py
+!**/MLBB-LATES-Patch/*.md
+!**/MLBB-LATES-Patch/**/mlbb_extracted_strings.json
 *.extracted/
 **/.extracted/
 *.dump
