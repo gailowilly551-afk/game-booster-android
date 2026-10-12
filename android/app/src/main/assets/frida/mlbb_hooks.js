@@ -371,12 +371,62 @@ waitForModule([
     );
   }
 
-  // 7. Map Hack / Vision (Fog of War)
+  // 7. Full Map Hack / Absolute Enemy Vision Suite (Fog of War, Minimap & Shaders)
   if (CFG.mapHack) {
-    const fogPatterns = ['20 00 80 52 C0 03 5F D6'];
-    safeHook('FogOfWar', RVAS.fowVisible, fogPatterns, function(retval) {
-      retval.replace(ptr(1));
-    });
+    // 7a. Core FogOfWarManager_IsVisible: Force true (1) on every entity check
+    const fogPatterns = [
+      '20 00 80 52 C0 03 5F D6',
+      '00 00 80 52 C0 03 5F D6',
+      'E0 03 00 32 C0 03 5F D6'
+    ];
+    safeHook('FogOfWar_IsVisible', RVAS.fowVisible, fogPatterns,
+      null,
+      function(retval) {
+        try {
+          retval.replace(ptr(1));
+        } catch(e) {}
+      }
+    );
+
+    // 7b. Hero / Actor Visibility & Cull Bypass (HeroRenderer_SetVisible / Actor_IsVisible)
+    const actorVisRva = 0x01905B20;
+    const actorPatterns = ['F4 4F 01 A9 FD 7B 02 A9 ?? ?? ?? 1E 20 00 80 52'];
+    safeHook('Actor_ForceVisible', actorVisRva, actorPatterns,
+      function(args) {
+        if (args[1]) {
+          try { args[1] = ptr(1); } catch(e) {}
+        }
+      },
+      function(retval) {
+        try { retval.replace(ptr(1)); } catch(e) {}
+      }
+    );
+
+    // 7c. Minimap Radar Icon & Healthbar Display (MinimapEntity_SetVisible)
+    const minimapRva = 0x01906100;
+    const minimapPatterns = ['00 00 80 52 C0 03 5F D6'];
+    safeHook('Minimap_ForceShow', minimapRva, minimapPatterns,
+      null,
+      function(retval) {
+        try { retval.replace(ptr(1)); } catch(e) {}
+      }
+    );
+
+    // 7d. Unity Camera & Shader Fog Culling Override (libunity.so)
+    try {
+      const setCulling = Module.findExportByName('libunity.so', '_ZN6Camera14set_cullingMaskEi')
+        || Module.findExportByName('libunity.so', 'Camera_set_cullingMask');
+      if (setCulling) {
+        Interceptor.attach(setCulling, {
+          onEnter(args) {
+            // -1 sets culling mask to ~0 (Everything visible, including hidden bush/fog layers)
+            args[1] = ptr(-1);
+          }
+        });
+      }
+    } catch(e) {}
+
+    console.log('[GameBoosterPRO] Full Map Hack & Enemy Vision active (FOW + Minimap + CullingMask ~0) ✓');
   }
 
   // 8. No Recoil & Spread / Smart Aim Lock

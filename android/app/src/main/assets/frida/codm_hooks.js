@@ -192,12 +192,12 @@ const FIELD_OFFSETS = {
 function getCodmModules() {
   try {
     const mods = Process.enumerateModules().filter(m =>
-      /lib(unity|il2cpp|main|gcloud|anort)\.so/i.test(m.name)
+      /lib(unity|il2cpp|main|gcloud|anort|tmgp|garenamsdk)\.so/i.test(m.name)
     );
     if (mods.length > 0) return mods;
   } catch (e) {}
   const list = [];
-  ['libunity.so', 'libil2cpp.so', 'libmain.so'].forEach(fn => {
+  ['libunity.so', 'libil2cpp.so', 'libmain.so', 'libgcloud.so'].forEach(fn => {
     const m = Process.findModuleByName(fn);
     if (m && m.size > 0) list.push(m);
   });
@@ -210,9 +210,9 @@ function safeHookCodm(name, rva, patterns, onEnterHandler, onLeaveHandler) {
   const candidateMods = getCodmModules();
 
   // 1. Try direct RVA offset in loaded engine modules
-  for (const cName of candidateMods) {
-    const cm = Process.findModuleByName(cName);
-    if (cm && rva > 0 && rva < cm.size) {
+  for (const item of candidateMods) {
+    const cm = (typeof item === 'string') ? Process.findModuleByName(item) : item;
+    if (cm && cm.base && rva > 0 && rva < cm.size) {
       try {
         const target = cm.base.add(rva);
         const callbacks = {};
@@ -228,9 +228,9 @@ function safeHookCodm(name, rva, patterns, onEnterHandler, onLeaveHandler) {
 
   // 2. Candidate Module Scan via Signature Patterns
   if (!hooked && patterns && patterns.length > 0) {
-    for (const cName of candidateMods) {
-      const cm = Process.findModuleByName(cName);
-      if (cm && cm.size > 0) {
+    for (const item of candidateMods) {
+      const cm = (typeof item === 'string') ? Process.findModuleByName(item) : item;
+      if (cm && cm.base && cm.size > 0) {
         for (const pattern of patterns) {
           try {
             const matches = Memory.scanSync(cm.base, cm.size, pattern);
@@ -392,8 +392,24 @@ waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
         if (addr) {
           Interceptor.attach(addr, {
             onEnter(args) {
-              // args[0] is Ray pointer (Vector3 origin, Vector3 direction)
-              // Clamps trajectory straight toward target line
+              // args[0] is Ray struct pointer: Vector3 origin (offset 0..11), Vector3 direction (offset 12..23)
+              if (args[0] && !args[0].isNull()) {
+                try {
+                  // Normalize and stabilize forward bullet vector to eliminate bullet drop and sway
+                  const dirZ = args[0].add(20).readFloat();
+                  if (Math.abs(dirZ) < 0.001) {
+                    args[0].add(20).writeFloat(1.0);
+                  }
+                } catch(e) {}
+              }
+            },
+            onLeave(retval) {
+              // Raycast return boolean (1 if hit detected) - force hit registration
+              if (CFG.aimbot || CFG.magicBullet) {
+                try {
+                  retval.replace(ptr(1));
+                } catch(e) {}
+              }
             }
           });
         }
