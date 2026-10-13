@@ -1871,7 +1871,15 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         {"SpellVampBoost", "100"}, {"LifestealBoost", "100"},
         {"EnergyRegenBoost", "100"}, {"ManaRegenBoost", "100"},
         {"SkillCDRatio", "0"}, {"SkillInstantReset", "1"}, {"FastRecall", "1"},
-        {"TouchPollingRate", "1000"}, {"TouchZeroDelay", "1"}, {"ZeroInputLag", "1"}
+        {"TouchPollingRate", "1000"}, {"TouchZeroDelay", "1"}, {"ZeroInputLag", "1"},
+        // ── Verified MLBB C# Element Tokens (Season 42+) ──
+        {"m_BasePhyAtt", "10000"}, {"m_BaseMagAtt", "10000"},
+        {"m_AttSpeed", "10.0"}, {"m_AttSpeed_show", "10.0"}, {"m_AtkSpeedPer", "100"},
+        {"m_BaseSpeed", "520"}, {"m_MoveSpeed", "520"},
+        {"m_PhyBaseShield", "10000"}, {"m_MagBaseShield", "10000"},
+        {"physicalDef", "10000"}, {"magicDef", "10000"},
+        {"phyAtk", "10000"}, {"mgcAtk", "10000"}, {"phyDef", "10000"}, {"mgcDef", "10000"},
+        {"CountHurtValue", "10000"}, {"EmblemBoost", "100"}, {"ItemBoost", "100"}
     };
     bool ok = apply_keys_to_file(pathStr, path, keys, "MlbbDamage10000AttackSpeedMax");
     env->ReleaseStringUTFChars(jPath, path);
@@ -3783,7 +3791,29 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         // ── Engine Synchronization ──
         {"bFramePacingEnabled",             "True"},
         {"AllowOcclusionQueries",           "1"},
-        {"Fps185Unlock",                    "1"}
+        {"Fps185Unlock",                    "1"},
+
+        // ── Season 42+ Verified MLBB C# Element Tokens ──
+        {"m_BasePhyAtt",                    "10000"},
+        {"m_BaseMagAtt",                    "10000"},
+        {"m_AttSpeed",                      "10.0"},
+        {"m_AttSpeed_show",                 "10.0"},
+        {"m_AtkSpeedPer",                   "100"},
+        {"m_BaseSpeed",                     "520"},
+        {"m_MoveSpeed",                     "520"},
+        {"m_PhyBaseShield",                 "10000"},
+        {"m_MagBaseShield",                 "10000"},
+        {"physicalDef",                     "10000"},
+        {"magicDef",                        "10000"},
+        {"phyAtk",                          "10000"},
+        {"mgcAtk",                          "10000"},
+        {"phyDef",                          "10000"},
+        {"mgcDef",                          "10000"},
+        {"CountHurtValue",                  "10000"},
+        {"EmblemV4Data",                    "1"},
+        {"GetEmblemLv",                     "60"},
+        {"EmblemBoost",                     "100"},
+        {"ItemBoost",                       "100"}
     };
 
     if (enableAutoApply) {
