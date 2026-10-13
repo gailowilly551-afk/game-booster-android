@@ -92,4 +92,13 @@ public class MlbbIl2cppResolverTest {
         long atk = MlbbIl2cppResolver.getFieldOffset("Hero_AttackPower");
         assertEquals(0x54L, atk);
     }
+
+    @Test
+    public void testMlbbModManagerInjectionFlagState() {
+        MlbbModManager.resetInjectionState();
+        assertFalse("Initial injection flag must be false", MlbbModManager.isMlbbInjected());
+        boolean nullResult = MlbbModManager.injectMlbbModSuite(null, null, null);
+        assertFalse("Null profile injection must return false", nullResult);
+        assertFalse("Injection flag must remain false after failed injection", MlbbModManager.isMlbbInjected());
+    }
 }

@@ -221,7 +221,8 @@ public final class GameAutoInjectDispatcher {
                         MlbbConfigPatcher.applyMlbbLatest2026Patch(fPkg);
                         MlbbConfigPatcher.cleanLegacyLoadingLocks(fPkg);
                         try {
-                            com.gamebooster.app.mods.mlbb.MlbbModManager.applyProfile(fCtx, fPkg, com.gamebooster.app.mods.GameModProfile.load(fCtx));
+                            boolean injected = com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(fCtx, fPkg, com.gamebooster.app.mods.GameModProfile.load(fCtx));
+                            Log.i(TAG, "MLBB Mod Profile injection result: " + injected + " (isMlbbInjected=" + com.gamebooster.app.mods.mlbb.MlbbModManager.isMlbbInjected() + ")");
                         } catch (Throwable modErr) {
                             Log.w(TAG, "MLBB Mod Profile injection warning: " + modErr.getMessage());
                         }

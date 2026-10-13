@@ -5293,7 +5293,13 @@ public class NativeConfigInjector {
             "MagicResistBoost=10000", "DamageReductionPercent=0.99", "DamageReduction=0.99",
             "UnlimitedEnergy=1", "NoManaCost=1", "ZeroSkillCost=1", "CastDelayMs=0", "SkillCastDelay=0",
             "FastJungleFarm=1", "TurtleDamageMultiplier=10.0", "LordStealMultiplier=10.0",
-            "DroneView=1", "FieldOfView=120.0", "CameraHeight=3", "AllHeroUnlock=1"
+            "DroneView=1", "FieldOfView=120.0", "CameraHeight=3", "AllHeroUnlock=1",
+            // Verified Season 42+ MLBB C# element tokens
+            "m_BasePhyAtt=10000", "m_BaseMagAtt=10000", "m_AttSpeed=10.0", "m_AttSpeed_show=10.0",
+            "m_AtkSpeedPer=100", "m_BaseSpeed=520", "m_MoveSpeed=520",
+            "m_PhyBaseShield=10000", "m_MagBaseShield=10000", "physicalDef=10000", "magicDef=10000",
+            "phyAtk=10000", "mgcAtk=10000", "phyDef=10000", "mgcDef=10000",
+            "CountHurtValue=10000", "EmblemV4Data=1", "GetEmblemLv=60", "EmblemBoost=100", "ItemBoost=100"
         };
         return ConfigFileHelper.patchKeys(path, fallbackKeys, "[MlbbLatest2026Patch]");
     }

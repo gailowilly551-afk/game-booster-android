@@ -160,6 +160,14 @@ public final class GameModEngine {
         }
     }
 
+    /**
+     * Synchronously injects MLBB mod suite and returns true when fully hooked.
+     */
+    public static boolean injectMlbbSync(Context ctx, String packageName, GameModProfile profile) {
+        if (packageName == null) return false;
+        return com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(ctx, packageName, profile);
+    }
+
     // ─── APK Pull / Push ──────────────────────────────────────────────────────
 
     /**

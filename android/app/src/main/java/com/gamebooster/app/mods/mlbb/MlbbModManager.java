@@ -24,10 +24,137 @@ public final class MlbbModManager {
     public static final String PKG_MLBB = "com.mobile.legends";
     private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
 
+    private static volatile boolean sMlbbInjected = false;
+
     private MlbbModManager() {}
 
     /**
-     * Applies the complete MLBB mod configuration suite based on GameModProfile.
+     * Returns true if MLBB mod suite has been successfully injected and hooked.
+     */
+    public static boolean isMlbbInjected() {
+        return sMlbbInjected;
+    }
+
+    /**
+     * Resets the injection state flag.
+     */
+    public static void resetInjectionState() {
+        sMlbbInjected = false;
+    }
+
+    /**
+     * Synchronous 4-layer MLBB injector.
+     * Hooks IL2CPP methods, deploys assets, updates configs, sets runtime props, and dispatches Frida scripts.
+     * Returns true and sets sMlbbInjected = true when injection completes successfully.
+     */
+    public static synchronized boolean injectMlbbModSuite(Context ctx, String packageName, GameModProfile profile) {
+        if (profile == null) return false;
+        final String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_MLBB;
+
+        try {
+            Log.i(TAG, "⚡ [injectMlbbModSuite] Initializing MLBB Mod Pipeline for " + pkg + "...");
+
+            // Pre-load IL2CPP offsets and dynamic signatures from assets
+            try {
+                MlbbIl2cppResolver.loadOffsets(ctx);
+            } catch (Throwable t) {
+                Log.w(TAG, "IL2CPP offset load warning: " + t.getMessage());
+            }
+
+            // Purge any legacy corrupted files/AssetBundles causing black screen
+            try {
+                MlbbConfigPatcher.cleanLegacyLoadingLocks(pkg);
+            } catch (Throwable ignored) {}
+
+            // Layer 1: Display refresh rate & surface flinger unlock
+            if (profile.mlbbFpsUnlock) {
+                GameModEngine.enforceDisplayRefreshRate(profile.mlbbTargetFps);
+                try {
+                    MlbbConfigPatcher.patch(pkg, profile.mlbbTargetFps);
+                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.mlbbTargetFps);
+                } catch (Throwable t) {
+                    Log.w(TAG, "MLBB static config patch note: " + t.getMessage());
+                }
+            }
+
+            // Layer 2: Asset deployment, Drone View, and Hero scripts
+            try {
+                MlbbConfigPatcher.deployMlbbAssets(ctx, pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "MLBB asset deploy note: " + t.getMessage());
+            }
+
+            if (profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled ||
+                profile.mlbbDefenseEnabled || profile.mlbbCooldownReductionEnabled ||
+                profile.mlbbManaEnabled || profile.mlbbEnergyEnabled ||
+                profile.mlbbNoCooldown || profile.mlbbMapHack || profile.mlbbDroneViewEnabled ||
+                profile.mlbbNoSpread) {
+                try {
+                    MlbbConfigPatcher.applyBattleConfigOverdrive(pkg);
+                    MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
+                    MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
+                    MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
+                    MlbbConfigPatcher.applyMlbbMasterSuite(pkg);
+                    MlbbHeroScriptDispatcher.dispatchAllHeroes(ctx, pkg);
+
+                    if (profile.mlbbDroneViewEnabled) {
+                        com.gamebooster.app.config.MlbbDroneViewPatcher.applyDroneViewAtomic(ctx, pkg, profile.mlbbDroneTier);
+                    }
+
+                    // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
+                    float dmg = profile.mlbbDamageEnabled ? profile.mlbbDamageMult : 1.0f;
+                    float fov = profile.mlbbDroneViewEnabled ? (profile.mlbbDroneTier >= 100 ? 240.0f : 180.0f) : 0.0f;
+                    float aspd = profile.mlbbAttackSpeedEnabled ? profile.mlbbAttackSpeedMult : 1.0f;
+                    MlbbConfigPatcher.applyMasterCombatMatrix(pkg, dmg, fov, 1.45f, aspd, profile.mlbbMapHack);
+                    MlbbConfigPatcher.applyMlbbLatest2026Patch(pkg);
+                    com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
+                } catch (Throwable t) {
+                    Log.w(TAG, "MLBB master suite error: " + t.getMessage());
+                }
+            }
+
+            // Layer 3: SystemProperties for runtime bridge
+            setprop("gamebooster.mlbb.dmg",     profile.mlbbDamageEnabled ? String.valueOf(profile.mlbbDamageMult) : "1.0");
+            setprop("gamebooster.mlbb.aspd",    profile.mlbbAttackSpeedEnabled ? String.valueOf(profile.mlbbAttackSpeedMult) : "1.0");
+            setprop("gamebooster.mlbb.def",     profile.mlbbDefenseEnabled ? String.valueOf(profile.mlbbDefenseMult) : "1.0");
+            setprop("gamebooster.mlbb.cdr",     profile.mlbbCooldownReductionEnabled ? String.valueOf(profile.mlbbCooldownReductionPct) : (profile.mlbbNoCooldown ? "100" : "0"));
+            setprop("gamebooster.mlbb.mana",    profile.mlbbManaEnabled ? (profile.mlbbInfiniteMana ? "9999" : String.valueOf(profile.mlbbManaMult)) : "1.0");
+            setprop("gamebooster.mlbb.energy",  profile.mlbbEnergyEnabled ? (profile.mlbbInfiniteEnergy ? "9999" : String.valueOf(profile.mlbbEnergyMult)) : "1.0");
+            setprop("gamebooster.mlbb.nocool",  profile.mlbbNoCooldown ? "1" : "0");
+            setprop("gamebooster.mlbb.map",     profile.mlbbMapHack ? "1" : "0");
+            setprop("gamebooster.mlbb.spread",  profile.mlbbNoSpread ? "1" : "0");
+            setprop("gamebooster.mlbb.drone",   profile.mlbbDroneViewEnabled ? String.valueOf(profile.mlbbDroneTier) : "0");
+            setprop("gamebooster.mlbb.fps",     String.valueOf(profile.mlbbFpsUnlock ? profile.mlbbTargetFps : 60));
+            setprop("gamebooster.mlbb.antiban", profile.mlbbAntiBan ? "1" : "0");
+            setprop("gamebooster.mlbb.mspd",    "1.45");
+            setprop("gamebooster.mlbb.emblem",  "1");
+            setprop("gamebooster.mlbb.injected","1");
+
+            // Layer 4: Frida dynamic hooks injection
+            boolean anyModActive = profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled
+                    || profile.mlbbDefenseEnabled || profile.mlbbCooldownReductionEnabled
+                    || profile.mlbbManaEnabled || profile.mlbbEnergyEnabled
+                    || profile.mlbbDroneViewEnabled
+                    || profile.mlbbNoSpread
+                    || profile.mlbbNoCooldown || profile.mlbbMapHack || profile.mlbbFpsUnlock || profile.mlbbAntiBan;
+
+            if (anyModActive) {
+                GameModEngine.startFridaServer(ctx);
+                GameModEngine.pushScriptAssetToDevice(ctx, "frida/mlbb_hooks.js", FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
+                GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
+            }
+
+            sMlbbInjected = true;
+            Log.i(TAG, "✅ MLBB mod pipeline fully deployed and hooked for " + pkg + "; sMlbbInjected=" + sMlbbInjected);
+            return true;
+        } catch (Throwable t) {
+            Log.e(TAG, "MLBB mod pipeline error: " + t.getMessage(), t);
+            return false;
+        }
+    }
+
+    /**
+     * Applies the complete MLBB mod configuration suite asynchronously based on GameModProfile.
      */
     public static void applyProfile(Context ctx, GameModProfile profile) {
         applyProfile(ctx, PKG_MLBB, profile);
@@ -38,103 +165,7 @@ public final class MlbbModManager {
         final String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_MLBB;
 
         AppExecutors.getInstance().executeCommand(() -> {
-            try {
-                Log.i(TAG, "⚡ Initializing MLBB Mod Pipeline for " + pkg + "...");
-
-                // Pre-load IL2CPP offsets and dynamic signatures from assets
-                try {
-                    MlbbIl2cppResolver.loadOffsets(ctx);
-                } catch (Throwable t) {
-                    Log.w(TAG, "IL2CPP offset load warning: " + t.getMessage());
-                }
-
-                // Purge any legacy corrupted files/AssetBundles causing black screen
-                try {
-                    MlbbConfigPatcher.cleanLegacyLoadingLocks(pkg);
-                } catch (Throwable ignored) {}
-
-
-                // Layer 1: Display refresh rate & surface flinger unlock
-                if (profile.mlbbFpsUnlock) {
-                    GameModEngine.enforceDisplayRefreshRate(profile.mlbbTargetFps);
-                    try {
-                        MlbbConfigPatcher.patch(pkg, profile.mlbbTargetFps);
-                        HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.mlbbTargetFps);
-                    } catch (Throwable t) {
-                        Log.w(TAG, "MLBB static config patch note: " + t.getMessage());
-                    }
-                }
-
-                // Layer 2: Asset deployment, Drone View, and Hero scripts
-                try {
-                    MlbbConfigPatcher.deployMlbbAssets(ctx, pkg);
-                } catch (Throwable t) {
-                    Log.w(TAG, "MLBB asset deploy note: " + t.getMessage());
-                }
-
-                if (profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled ||
-                    profile.mlbbDefenseEnabled || profile.mlbbCooldownReductionEnabled ||
-                    profile.mlbbManaEnabled || profile.mlbbEnergyEnabled ||
-                    profile.mlbbNoCooldown || profile.mlbbMapHack || profile.mlbbDroneViewEnabled ||
-                    profile.mlbbNoSpread) {
-                    try {
-                        MlbbConfigPatcher.applyBattleConfigOverdrive(pkg);
-                        MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
-                        MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
-                        MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
-                        MlbbConfigPatcher.applyMlbbMasterSuite(pkg);
-                        MlbbHeroScriptDispatcher.dispatchAllHeroes(ctx, pkg);
-
-                        if (profile.mlbbDroneViewEnabled) {
-                            com.gamebooster.app.config.MlbbDroneViewPatcher.applyDroneViewAtomic(ctx, pkg, profile.mlbbDroneTier);
-                        }
-
-                        // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
-                        float dmg = profile.mlbbDamageEnabled ? profile.mlbbDamageMult : 1.0f;
-                        float fov = profile.mlbbDroneViewEnabled ? (profile.mlbbDroneTier >= 100 ? 240.0f : 180.0f) : 0.0f;
-                        float aspd = profile.mlbbAttackSpeedEnabled ? profile.mlbbAttackSpeedMult : 1.0f;
-                        MlbbConfigPatcher.applyMasterCombatMatrix(pkg, dmg, fov, 1.45f, aspd, profile.mlbbMapHack);
-                        MlbbConfigPatcher.applyMlbbLatest2026Patch(pkg);
-                        com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
-                    } catch (Throwable t) {
-                        Log.w(TAG, "MLBB master suite error: " + t.getMessage());
-                    }
-                }
-
-                // Layer 3: SystemProperties for runtime bridge
-                setprop("gamebooster.mlbb.dmg",     profile.mlbbDamageEnabled ? String.valueOf(profile.mlbbDamageMult) : "1.0");
-                setprop("gamebooster.mlbb.aspd",    profile.mlbbAttackSpeedEnabled ? String.valueOf(profile.mlbbAttackSpeedMult) : "1.0");
-                setprop("gamebooster.mlbb.def",     profile.mlbbDefenseEnabled ? String.valueOf(profile.mlbbDefenseMult) : "1.0");
-                setprop("gamebooster.mlbb.cdr",     profile.mlbbCooldownReductionEnabled ? String.valueOf(profile.mlbbCooldownReductionPct) : (profile.mlbbNoCooldown ? "100" : "0"));
-                setprop("gamebooster.mlbb.mana",    profile.mlbbManaEnabled ? (profile.mlbbInfiniteMana ? "9999" : String.valueOf(profile.mlbbManaMult)) : "1.0");
-                setprop("gamebooster.mlbb.energy",  profile.mlbbEnergyEnabled ? (profile.mlbbInfiniteEnergy ? "9999" : String.valueOf(profile.mlbbEnergyMult)) : "1.0");
-                setprop("gamebooster.mlbb.nocool",  profile.mlbbNoCooldown ? "1" : "0");
-                setprop("gamebooster.mlbb.map",     profile.mlbbMapHack ? "1" : "0");
-                setprop("gamebooster.mlbb.spread",  profile.mlbbNoSpread ? "1" : "0");
-                setprop("gamebooster.mlbb.drone",   profile.mlbbDroneViewEnabled ? String.valueOf(profile.mlbbDroneTier) : "0");
-                setprop("gamebooster.mlbb.fps",     String.valueOf(profile.mlbbFpsUnlock ? profile.mlbbTargetFps : 60));
-                setprop("gamebooster.mlbb.antiban", profile.mlbbAntiBan ? "1" : "0");
-                setprop("gamebooster.mlbb.mspd",    "1.45");
-                setprop("gamebooster.mlbb.emblem",  "1");
-
-                // Layer 4: Frida dynamic hooks injection
-                boolean anyModActive = profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled
-                        || profile.mlbbDefenseEnabled || profile.mlbbCooldownReductionEnabled
-                        || profile.mlbbManaEnabled || profile.mlbbEnergyEnabled
-                        || profile.mlbbDroneViewEnabled
-                        || profile.mlbbNoSpread
-                        || profile.mlbbNoCooldown || profile.mlbbMapHack || profile.mlbbFpsUnlock || profile.mlbbAntiBan;
-
-                if (anyModActive) {
-                    GameModEngine.startFridaServer(ctx);
-                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/mlbb_hooks.js", FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
-                    GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
-                }
-
-                Log.i(TAG, "✅ MLBB mod pipeline fully deployed for " + pkg);
-            } catch (Throwable t) {
-                Log.e(TAG, "MLBB mod pipeline error: " + t.getMessage(), t);
-            }
+            injectMlbbModSuite(ctx, pkg, profile);
         });
     }
 

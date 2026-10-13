@@ -579,4 +579,12 @@ if (CFG.fpsUnlock > 60) {
   });
 }
 
-console.log('[GameBoosterPRO] MLBB hooks loaded successfully ✓');
+try {
+  const propSet = Module.findExportByName('libc.so', '__system_property_set');
+  if (propSet) {
+    const fnSet = new NativeFunction(propSet, 'int', ['pointer', 'pointer']);
+    fnSet(Memory.allocUtf8String('gamebooster.mlbb.injected'), Memory.allocUtf8String('1'));
+  }
+} catch (e) {}
+
+console.log('[GameBoosterPRO] MLBB hooks loaded successfully ✓ — gamebooster.mlbb.injected=1');

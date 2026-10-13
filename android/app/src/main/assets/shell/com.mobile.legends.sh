@@ -96,3 +96,8 @@ done
 
 # GameMode API clamp removal for MLBB
 cmd game set --mode 2 --user 0 com.mobile.legends 2>/dev/null
+
+# ── Synchronized Combat SystemProperties ──
+setprop gamebooster.mlbb.mspd 1.45
+setprop gamebooster.mlbb.emblem 1
+setprop gamebooster.mlbb.injected 1
