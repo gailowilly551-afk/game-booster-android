@@ -2681,7 +2681,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     std::vector<std::pair<std::string, std::string>> keys = {
         // ── 🗡️ Basic Attack Damage Overdrive ──
         {"basic_attack_damage_overdrive",  "10000"},
-        {"basic_attack_speed_ratio",       "10.0"},
+        {"basic_attack_speed_ratio",       "20.0"},
         {"basic_attack_true_damage",       "1"},
         {"DamageLockMax",                  "10000"},
         {"TrueDamageFloor",                "10000"},
@@ -2697,17 +2697,17 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         {"mana_regen_rate",                "1000"},
         {"energy_regen_rate",              "1000"},
         {"life_still_passive_tick",        "1000"},
-        {"HpRegenMultiplier",              "10.0"},
-        {"ManaRegenMultiplier",            "10.0"},
-        {"EnergyRegenMultiplier",          "10.0"},
+        {"HpRegenMultiplier",              "20.0"},
+        {"ManaRegenMultiplier",            "20.0"},
+        {"EnergyRegenMultiplier",          "20.0"},
         {"InstantHpFullRestore",           "1"},
         {"PassiveLifeStill",               "1"},
         {"LifeStillRate",                  "1000"},
 
         // ── 🩸 Lifesteal + Spellvamp ──
-        {"all_hero_true_lifesteal",        "10.0"},
-        {"spellvamp_ratio",                "10.0"},
-        {"OmniLifestealMultiplier",        "10.0"},
+        {"all_hero_true_lifesteal",        "20.0"},
+        {"spellvamp_ratio",                "20.0"},
+        {"OmniLifestealMultiplier",        "20.0"},
         {"LifestealBoost",                 "1"},
         {"SpellVampBoost",                 "1"},
         {"OmniVampRate",                   "10.0"},
@@ -2734,9 +2734,9 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         {"DamageReduction",                "0.99"},
 
         // ── 🎯 Aim Lock Core (MLBB Basic Attack Targeting) ──
-        {"AimMagnetism",                   "3"},
+        {"AimMagnetism",                   "1"},
         {"HeadMagnetism",                  "1"},
-        {"AimSnapSpeed",                   "10"},
+        {"AimSnapSpeed",                   "20"},
         {"AimSmoothFactor",                "0"},
         {"AimMethod",                      "1"},
         {"SkillSmartAim",                  "1"},
