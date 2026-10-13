@@ -45,6 +45,8 @@ const CFG = {
   damageMultiplier:     parseFloat(getSystemProp('gamebooster.mlbb.dmg', '1.0')),
   attackSpeedMult:      parseFloat(getSystemProp('gamebooster.mlbb.aspd', '1.0')),
   defenseMultiplier:    parseFloat(getSystemProp('gamebooster.mlbb.def', '1.0')),
+  moveSpeedMult:        parseFloat(getSystemProp('gamebooster.mlbb.mspd', '1.0')),
+  emblemBoost:          getSystemProp('gamebooster.mlbb.emblem', '1') === '1',
   cooldownReductionPct: parseInt(getSystemProp('gamebooster.mlbb.cdr', '0')),
   manaBoost:            parseFloat(getSystemProp('gamebooster.mlbb.mana', '1.0')),
   energyBoost:          parseFloat(getSystemProp('gamebooster.mlbb.energy', '1.0')),
@@ -170,8 +172,12 @@ waitForModule([
   // RVAs from mlbb_il2cpp_offsets.json (v2.2.16.12322)
   const RVAS = {
     damageCalc:       0x0182C4D0,
+    countHurtValue:   0x0182C4D0, // LogicHurtCalc.CountHurtValue
     attackSpeed:      0x01831E20,
     defenseArmor:     0x01859E40,
+    moveSpeed:        0x0187B2C0, // MovementComponent_GetSpeed
+    emblemLv:         0x01865200, // EmblemV4Data.GetEmblemLv
+    emblemList:       0x01865280, // EmblemV4Data.GetEmblemListWithRec
     skillCooldown:    0x0184A100, // ISHOW_Init_SkillCoolDownCalc
     skillAddCooldown: 0x0184A180, // ISHOW_AddSkillCoolDownCalc
     syncCooldown:     0x0184A220, // Sync_Init_SkillCoolDownCalc
@@ -312,6 +318,31 @@ waitForModule([
         if (orig > 0) {
           retval.replace(ptr(Math.round(orig * CFG.defenseMultiplier)));
         }
+      } catch (e) {}
+    });
+  }
+
+  // 3b. Movement Speed Multiplier (1.0x to 3.0x)
+  if (CFG.moveSpeedMult > 1.0) {
+    const movePatterns = ['E8 03 1F 2A FC 63 02 91 ?? ?? ?? 1E'];
+    safeHook('MovementSpeed', RVAS.moveSpeed, movePatterns, function(retval) {
+      if (this.context && this.context.s0 !== undefined) {
+        this.context.s0 = this.context.s0 * CFG.moveSpeedMult;
+      }
+      try {
+        const orig = retval.toInt32();
+        if (orig > 0) {
+          retval.replace(ptr(Math.round(orig * CFG.moveSpeedMult)));
+        }
+      } catch (e) {}
+    });
+  }
+
+  // 3c. Emblem V4 Max Level (Lv 60) & Talent Max Boost
+  if (CFG.emblemBoost) {
+    safeHook('EmblemV4_GetLevel', RVAS.emblemLv, ['78 00 80 52 C0 03 5F D6'], null, function(retval) {
+      try {
+        retval.replace(ptr(60)); // Max Emblem Level 60
       } catch (e) {}
     });
   }
