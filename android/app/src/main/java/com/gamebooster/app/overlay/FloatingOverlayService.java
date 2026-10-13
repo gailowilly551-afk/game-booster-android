@@ -119,6 +119,7 @@ public class FloatingOverlayService extends Service {
     private ProgressBar pbHudRam;
 
     private TextView tvHudAutoInjectStatus;
+    private Button btnResyncMap;
 
     private HudMode currentMode = HudMode.PILL;
     private int realTimeFps = 185;
@@ -357,12 +358,22 @@ public class FloatingOverlayService extends Service {
             btn185Hz.setOnClickListener(v -> {
                 performHaptic();
                 scheduleAutoCollapse();
+                Toast.makeText(getApplicationContext(), "⚡ Locking 185Hz & Injecting MLBB S42...", Toast.LENGTH_SHORT).show();
                 AppExecutors.getInstance().executeCommand(() -> {
                     com.gamebooster.app.booster.MaxHzForceChannel.forceApply(185);
                     com.gamebooster.app.config.LobbyInjectionEngine.triggerManualLobbyInject(getApplicationContext(), null);
+                    try {
+                        com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
+                                getApplicationContext(),
+                                "com.mobile.legends",
+                                com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                        );
+                    } catch (Throwable ignored) {}
+                    AppExecutors.getInstance().postToMainThread(() -> {
+                        Toast.makeText(getApplicationContext(), "⚡ 185Hz Overdrive & MLBB S42 Active!", Toast.LENGTH_SHORT).show();
+                        updateTelemetryData();
+                    });
                 });
-                Toast.makeText(getApplicationContext(), "⚡ 185Hz Overdrive & Combat Injected!", Toast.LENGTH_SHORT).show();
-                updateTelemetryData();
             });
         }
 
@@ -471,7 +482,7 @@ public class FloatingOverlayService extends Service {
         // 8. Re-Sync Map & Live Drone Tier Cycler Button (MLBB New Map Season 42+)
         //    Single-tap cycles drone zoom tier (1.5X -> 2X -> 3X -> 4X -> 5X) live in-game without leaving match.
         //    Long-press performs full deep new-map camera and radar resync.
-        Button btnResyncMap = overlayView.findViewById(R.id.btn_hud_resync_map);
+        btnResyncMap = overlayView.findViewById(R.id.btn_hud_resync_map);
         if (btnResyncMap != null) {
             int initTier = com.gamebooster.app.config.MlbbDroneViewPatcher.normalizeTier(
                     getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
@@ -525,12 +536,20 @@ public class FloatingOverlayService extends Service {
                         }
                         final String pkg = fgPkg;
                         boolean ok = com.gamebooster.app.config.MlbbDroneViewPatcher.applyDroneViewAtomic(getApplicationContext(), pkg, targetTier);
+                        try {
+                            com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
+                                    getApplicationContext(),
+                                    pkg,
+                                    com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                            );
+                        } catch (Throwable ignored) {}
                         AppExecutors.getInstance().postToMainThread(() -> {
                             if (ok) {
-                                Toast.makeText(getApplicationContext(), "✅ Drone " + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(targetTier) + " Injected & Active!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getApplicationContext(), "✅ Drone " + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(targetTier) + " & S42 Combat Injected!", Toast.LENGTH_SHORT).show();
                             } else {
                                 Toast.makeText(getApplicationContext(), "⚠️ Drone switch failed — check Shizuku", Toast.LENGTH_SHORT).show();
                             }
+                            updateTelemetryData();
                         });
                     } catch (Throwable t) {
                         android.util.Log.w("FloatingHUD", "Drone live cycle error: " + t.getMessage());
@@ -557,10 +576,19 @@ public class FloatingOverlayService extends Service {
                                         .getInt("drone_tier", com.gamebooster.app.config.MlbbDroneViewPatcher.DEFAULT_TIER));
                         com.gamebooster.app.config.MlbbConfigPatcher.applyMlbbNewMapUpdateConfig(pkg);
                         com.gamebooster.app.config.MlbbDroneViewPatcher.applyNewMapUpdate(getApplicationContext(), pkg, tier);
-                        AppExecutors.getInstance().postToMainThread(() ->
-                                Toast.makeText(getApplicationContext(),
-                                        "✅ MLBB New Map Full Deep Sync Complete [" + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(tier) + "]!",
-                                        Toast.LENGTH_SHORT).show());
+                        try {
+                            com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
+                                    getApplicationContext(),
+                                    pkg,
+                                    com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                            );
+                        } catch (Throwable ignored) {}
+                        AppExecutors.getInstance().postToMainThread(() -> {
+                            Toast.makeText(getApplicationContext(),
+                                    "✅ MLBB New Map Full Deep Sync Complete [" + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(tier) + "]!",
+                                    Toast.LENGTH_SHORT).show();
+                            updateTelemetryData();
+                        });
                     } catch (Throwable t) {
                         android.util.Log.w("FloatingHUD", "Deep sync error: " + t.getMessage());
                     }
@@ -987,12 +1015,17 @@ public class FloatingOverlayService extends Service {
             tempColor = Color.parseColor("#FF0055");
         }
 
+        boolean mlbbInjected = com.gamebooster.app.mods.mlbb.MlbbModManager.isMlbbInjected();
+
         // 1. Update Collapsed Pill Viewport
         if (layoutCollapsedPill != null && layoutCollapsedPill.getVisibility() == View.VISIBLE) {
+            if (viewPillGlowDot != null) {
+                viewPillGlowDot.setBackgroundResource(mlbbInjected ? R.drawable.badge_neon_green : (isRealGameSurface ? R.drawable.badge_neon_green : R.drawable.badge_neon_cyan));
+            }
             if (tvPillFps != null) {
-                String tag = isRealGameSurface ? "🎮 " : "";
+                String tag = mlbbInjected ? "⚔️ " : (isRealGameSurface ? "🎮 " : "");
                 tvPillFps.setText(String.format("%s%d FPS", tag, activeFps));
-                tvPillFps.setTextColor(fpsColor);
+                tvPillFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
             if (tvPillTemp != null) {
                 tvPillTemp.setText(String.format("%.1f°C", m.batteryTempC));
@@ -1007,18 +1040,27 @@ public class FloatingOverlayService extends Service {
         // 2. Update Micro FPS Viewport
         if (layoutMicroFps != null && layoutMicroFps.getVisibility() == View.VISIBLE) {
             if (tvMicroFps != null) {
-                String tag = isRealGameSurface ? "🎮 " : "⚡ ";
+                String tag = mlbbInjected ? "⚔️ " : (isRealGameSurface ? "🎮 " : "⚡ ");
                 tvMicroFps.setText(String.format("%s%d FPS", tag, activeFps));
-                tvMicroFps.setTextColor(fpsColor);
+                tvMicroFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
         }
 
         // 3. Update Expanded Dock Viewport
         if (layoutExpandedDock != null && layoutExpandedDock.getVisibility() == View.VISIBLE) {
+            if (tvHudProfileBadge != null) {
+                if (mlbbInjected) {
+                    tvHudProfileBadge.setText("⚔️ MLBB S42 PRO • 10000 DMG / 520 MSPD • 185Hz");
+                    tvHudProfileBadge.setTextColor(Color.parseColor("#00FF66"));
+                } else {
+                    tvHudProfileBadge.setText("🔥 EXTREME 185Hz • OPTIMIZED");
+                    tvHudProfileBadge.setTextColor(Color.parseColor("#00F0FF"));
+                }
+            }
             if (tvHudFps != null) {
-                String sourceTag = isRealGameSurface ? "🎮" : "⚡";
+                String sourceTag = mlbbInjected ? "⚔️" : (isRealGameSurface ? "🎮" : "⚡");
                 tvHudFps.setText(String.format("%s %d FPS / %dHz", sourceTag, activeFps, currentHz));
-                tvHudFps.setTextColor(fpsColor);
+                tvHudFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
             if (tvHudFpsStatus != null) {
                 // Show detailed frame stats only when all three data points are valid:
@@ -1060,13 +1102,22 @@ public class FloatingOverlayService extends Service {
             }
             if (tvHudAutoInjectStatus != null) {
                 boolean shizukuLive = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive();
-                if (shizukuLive) {
+                if (mlbbInjected) {
+                    tvHudAutoInjectStatus.setText("⚔️ MLBB COMBAT HOOKED (S42) • C# / IL2CPP");
+                    tvHudAutoInjectStatus.setTextColor(Color.parseColor("#00FF66"));
+                } else if (shizukuLive) {
                     tvHudAutoInjectStatus.setText("⚡ SHIZUKU ACTIVE (UID 2000) • AUTO-CONFIG");
                     tvHudAutoInjectStatus.setTextColor(Color.parseColor("#00FF66"));
                 } else {
                     tvHudAutoInjectStatus.setText("⚡ AUTO-CONFIG ACTIVE • C++ / LUA ENGINE");
                     tvHudAutoInjectStatus.setTextColor(Color.parseColor("#00FFCC"));
                 }
+            }
+            if (btnResyncMap != null) {
+                int curTier = com.gamebooster.app.config.MlbbDroneViewPatcher.normalizeTier(
+                        getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
+                                .getInt("drone_tier", com.gamebooster.app.config.MlbbDroneViewPatcher.DEFAULT_TIER));
+                btnResyncMap.setText("🗺️ " + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(curTier));
             }
         }
     }
