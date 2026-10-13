@@ -10,17 +10,22 @@ def test_normalized_structure():
     assert "entries" in data or "by_identifier" in data, "Missing structured identifier dictionary in root"
     
     index = data.get("by_identifier", data.get("entries", {}))
-    assert "RefFogOfWarMesh" in index, "RefFogOfWarMesh must exist in identifier index"
-    assert "ISHOW_Init_SkillCoolDownCalc" in index, "ISHOW_Init_SkillCoolDownCalc must exist in identifier index"
-    assert "m_iFieldOfView" in index, "m_iFieldOfView must exist in identifier index"
-    assert "Freeze142_AntiCheatReport" in index, "Freeze142_AntiCheatReport must exist in identifier index"
-    assert "ResCheckStartHandler" in index, "ResCheckStartHandler must exist in identifier index"
+    # Combat and bypass token assertions
+    required_tokens = [
+        "RefFogOfWarMesh", "ISHOW_Init_SkillCoolDownCalc", "m_iFieldOfView",
+        "Freeze142_AntiCheatReport", "ResCheckStartHandler", "CountHurtValue",
+        "m_BasePhyAtt", "m_BaseMagAtt", "m_AttSpeed", "m_MoveSpeed",
+        "m_PhyBaseShield", "m_MagBaseShield", "EmblemV4Data", "GetEmblemLv"
+    ]
+    for token in required_tokens:
+        assert token in index, f"{token} must exist in identifier index"
 
     item = index["RefFogOfWarMesh"]
     for req in ["identifier", "exact_name", "category", "buffer_offset", "file_offset"]:
         assert req in item, f"Missing required property {req} in item"
 
-    print("✅ test_normalized_structure PASSED!")
+    print("✅ test_normalized_structure PASSED! All 14 required tokens and schema verified.")
 
 if __name__ == "__main__":
     test_normalized_structure()
+
