@@ -95,6 +95,7 @@ public final class MlbbModManager {
                     MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
                     MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
                     MlbbConfigPatcher.applyMlbbMasterSuite(pkg);
+                    MlbbConfigPatcher.applyMlbbCcImmunityOverdrive(pkg);
                     MlbbHeroScriptDispatcher.dispatchAllHeroes(ctx, pkg);
 
                     if (profile.mlbbDroneViewEnabled) {
