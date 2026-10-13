@@ -38,4 +38,14 @@ script.game_speed   = 2.0     -- Game tick rate multiplier (2026 new command)
 script.camera_lock   = true
 script.camera_height = 5.0    -- Drone elevation for pinned camera lock
 
+
+-- ── Verified Season 42+ Element Overrides ──
+script.m_BasePhyAtt = 10000
+script.m_BaseMagAtt = 10000
+script.m_AttSpeed = 10.0
+script.m_MoveSpeed = 520
+script.physical_def = 10000
+script.magic_def = 10000
+script.emblem_boost = 100
+
 return script

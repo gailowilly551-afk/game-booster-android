@@ -105,6 +105,34 @@ profile.all_hero_true_lifesteal = 10.0        -- 100% physical lifesteal + spell
 profile.stamina_fury_infinite = true          -- Unlimited rage/fury for fighter heroes
 profile.zero_skill_mana_cost = true           -- 0 mana/energy cost on all skills
 
+-- ── 🌟 Season 42+ C# Verified Element Attribute Scaling ──────────────────────
+profile.m_BasePhyAtt = 10000
+profile.m_BaseMagAtt = 10000
+profile.m_LevelPhyAtt = 10000
+profile.m_LevelMagAtt = 10000
+profile.m_AttSpeed = 10.0
+profile.m_AttSpeed_show = 10.0
+profile.m_AtkSpeedPer = 100
+profile.m_BaseSpeed = 520
+profile.m_MoveSpeed = 520
+profile.m_PhyBaseShield = 10000
+profile.m_MagBaseShield = 10000
+profile.m_PhyLevelShield = 10000
+profile.m_MagLevelShield = 10000
+profile.physicalDef = 10000
+profile.magicDef = 10000
+profile.phyAtk = 10000
+profile.mgcAtk = 10000
+profile.phyDef = 10000
+profile.mgcDef = 10000
+profile.mechArmorHp = 10000
+profile.maxMechArmorHp = 10000
+profile.shldAll = 10000
+profile.CountHurtValue = 10000
+profile.emblem_v4_boost = 100
+profile.emblem_level_max = 60
+profile.item_extra_boost = 100
+
 -- ── ⚔️ Hero-Specific Micro Overdrives ─────────────────────────────────────────
 -- Fanny: Zero cable delay, straight cable, full energy, wall reset
 profile.fanny_cable_speed = 10
