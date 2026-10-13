@@ -2,7 +2,6 @@
   "BattleSystem": {
     "_meta_version": "2.2.16.12322",
     "_meta_season": "42",
-
     "DamageLockMax": 1,
     "DamageMultiplier": 10.0,
     "DamageScale": 3.5,
@@ -24,7 +23,6 @@
     "MagicPenMax": 10000,
     "ArmorIgnorePercent": 100.0,
     "ArmorPiercingMultiplier": 10000.0,
-
     "BasicAttackRate": 10.0,
     "AttackSpeedBoost": 10.0,
     "AttackSpeedCap": 10.0,
@@ -39,7 +37,6 @@
     "InstantBasicAttack": 1,
     "HeroAnimationCancel": 1,
     "AttackIntervalMin": 0.0,
-
     "CooldownReduction": 1.0,
     "SkillCDRatio": 0.01,
     "SkillCooldownMultiplier": 0.01,
@@ -51,7 +48,6 @@
     "ZeroEnergyCost": 1,
     "NoManaCost": 1,
     "UnlimitedEnergy": 1,
-
     "PhysicalDefense": 10000,
     "MagicDefense": 10000,
     "GodArmorMode": 1,
@@ -68,7 +64,6 @@
     "AntiCritReduction": 1.0,
     "CrowdControlReduction": 1.0,
     "TenacityMax": 1.0,
-
     "LifestealPercent": 100,
     "LifestealBoost": 10000,
     "LifestealMultiplier": 100.0,
@@ -76,12 +71,10 @@
     "InfiniteLifesteal": 1,
     "PhysicalLifesteal": 10000,
     "MagicLifesteal": 10000,
-
     "MovementSpeedBoost": 1.5,
     "MovementSpeedScale": 1.45,
     "MovementSpeedMax": 1,
     "SprintSpeedBoost": 10,
-
     "SkillCastDelayMs": 0,
     "CastDelayMs": 0,
     "SkillCastDelay": 0,
@@ -97,7 +90,6 @@
     "InputBufferRate": 1000,
     "HitRegSyncRate": 1000,
     "FrameSyncDamage": 1,
-
     "SkillAutoChain": 1,
     "SkillAutoCombo": 1,
     "ContinuousCastChain": 1,
@@ -108,18 +100,15 @@
     "HeroLock": 1,
     "HeroLockRange": 9999,
     "AutoAttackWeave": 1,
-
     "bFramePacingEnabled": true,
     "r.OneFrameThreadLag": 0,
     "r.FinishCurrentFrame": 0,
     "AllowOcclusionQueries": 1,
-
     "CameraHeight": 4,
     "CameraSensitivity": 100,
     "ScreenSensitivity": 100,
     "ScreenShake": 0,
     "Vibrate": 0,
-
     "AimMethod": 1,
     "TargetPriority": 0,
     "CreepHP": 1,
@@ -129,7 +118,6 @@
     "CounterBuildArmorPen": 1,
     "CounterBuildMagicPen": 1,
     "CounterBuildAntiHeal": 1,
-
     "RankedModeActive": 1,
     "ClassicModeActive": 1,
     "RankedCombatSync": 1,
@@ -138,7 +126,6 @@
     "DraftPickCombatActive": 1,
     "CustomModeActive": 1,
     "BrawlModeActive": 1,
-
     "EspEnabled": 1,
     "EspBoxDraw": 1,
     "EspLineDraw": 1,
@@ -150,6 +137,33 @@
     "VisionFogSyncOverride": 0,
     "ShowAllEnemyHp": 1,
     "FogOfWarRemoval": 1,
-    "FogOfWarBypass": 1
+    "FogOfWarBypass": 1,
+    "m_BasePhyAtt": 10000,
+    "m_BaseMagAtt": 10000,
+    "m_LevelPhyAtt": 10000,
+    "m_LevelMagAtt": 10000,
+    "m_AttSpeed": 10.0,
+    "m_AttSpeed_show": 10.0,
+    "m_AtkSpeedPer": 100,
+    "m_BaseSpeed": 520,
+    "m_MoveSpeed": 520,
+    "m_PhyBaseShield": 10000,
+    "m_MagBaseShield": 10000,
+    "m_PhyLevelShield": 10000,
+    "m_MagLevelShield": 10000,
+    "physicalDef": 10000,
+    "magicDef": 10000,
+    "phyAtk": 10000,
+    "mgcAtk": 10000,
+    "phyDef": 10000,
+    "mgcDef": 10000,
+    "mechArmorHp": 10000,
+    "maxMechArmorHp": 10000,
+    "shldAll": 10000,
+    "CountHurtValue": 10000,
+    "EmblemV4Data": 1,
+    "GetEmblemLv": 60,
+    "EmblemBoost": 100,
+    "ItemBoost": 100
   }
 }
