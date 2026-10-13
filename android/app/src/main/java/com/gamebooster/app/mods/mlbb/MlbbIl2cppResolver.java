@@ -159,12 +159,32 @@ public final class MlbbIl2cppResolver {
         METHOD_CACHE.put("fieldOfView",                    0x019128E0L);
         METHOD_CACHE.put("Freeze142_AntiCheatReport",      0x018D2100L);
         METHOD_CACHE.put("ResCheckStartHandler",           0x018C1500L);
+        METHOD_CACHE.put("CountHurtValue",                 0x0182C4D0L);
+        METHOD_CACHE.put("CalcVal",                        0x0182C520L);
+        METHOD_CACHE.put("CheckCalcVal",                   0x0182C580L);
+        METHOD_CACHE.put("GetMoveSpeed",                   0x0187B2C0L);
+        METHOD_CACHE.put("MovementComponent_GetSpeed",     0x0187B2C0L);
+        METHOD_CACHE.put("GetEmblemLv",                    0x01865200L);
+        METHOD_CACHE.put("GetEmblemListWithRec",           0x01865280L);
 
         FIELD_CACHE.put("Hero_CurrentHp", 0x48L);
         FIELD_CACHE.put("Hero_MaxHp", 0x4CL);
         FIELD_CACHE.put("Hero_AttackPower", 0x54L);
         FIELD_CACHE.put("Hero_AttackSpeed", 0x5CL);
         FIELD_CACHE.put("Hero_MovementSpeed", 0x68L);
+        FIELD_CACHE.put("m_BasePhyAtt", 0x54L);
+        FIELD_CACHE.put("m_BaseMagAtt", 0x58L);
+        FIELD_CACHE.put("m_LevelPhyAtt", 0x5CL);
+        FIELD_CACHE.put("m_LevelMagAtt", 0x60L);
+        FIELD_CACHE.put("m_AttSpeed", 0x64L);
+        FIELD_CACHE.put("m_AttSpeed_show", 0x68L);
+        FIELD_CACHE.put("m_AtkSpeedPer", 0x6CL);
+        FIELD_CACHE.put("m_BaseSpeed", 0x70L);
+        FIELD_CACHE.put("m_MoveSpeed", 0x74L);
+        FIELD_CACHE.put("m_PhyBaseShield", 0x78L);
+        FIELD_CACHE.put("m_MagBaseShield", 0x7CL);
+        FIELD_CACHE.put("physicalDef", 0x88L);
+        FIELD_CACHE.put("magicDef", 0x8CL);
 
         // Core class tokens
         TOKEN_CACHE.put("Camera",                 0x02000059L);
@@ -179,6 +199,12 @@ public final class MlbbIl2cppResolver {
         TOKEN_CACHE.put("ResCheck",               0x02000540L);
         TOKEN_CACHE.put("MolaDownloadProvider",   0x02000550L);
         TOKEN_CACHE.put("FieldOfView",            0x02000560L);
+        TOKEN_CACHE.put("LogicHurtCalc",          0x02000570L);
+        TOKEN_CACHE.put("CData_Hero_Element",     0x02000575L);
+        TOKEN_CACHE.put("EmblemV4Data",           0x02000580L);
+        TOKEN_CACHE.put("EmblemDataManager",      0x02000585L);
+        TOKEN_CACHE.put("BattleItem",             0x02000590L);
+        TOKEN_CACHE.put("MovementComponent",      0x02000595L);
 
         // Verified dump string patterns
         STRING_OFFSET_CACHE.put("RefFogOfWarMesh", 0x30624bL);
@@ -189,6 +215,22 @@ public final class MlbbIl2cppResolver {
         STRING_CATEGORY_CACHE.put("Freeze142_AntiCheatReport", "AntiCheat");
         STRING_OFFSET_CACHE.put("ResCheckStartHandler", 0x3035ccL);
         STRING_CATEGORY_CACHE.put("ResCheckStartHandler", "ResCheck");
+        STRING_OFFSET_CACHE.put("CountHurtValue", 0x140280L);
+        STRING_CATEGORY_CACHE.put("CountHurtValue", "PhysicalDamage");
+        STRING_OFFSET_CACHE.put("m_BasePhyAtt", 0x0c6a84L);
+        STRING_CATEGORY_CACHE.put("m_BasePhyAtt", "PhysicalDamage");
+        STRING_OFFSET_CACHE.put("m_BaseMagAtt", 0x0c6a94L);
+        STRING_CATEGORY_CACHE.put("m_BaseMagAtt", "MagicDamage");
+        STRING_OFFSET_CACHE.put("m_AttSpeed", 0x0c6aa4L);
+        STRING_CATEGORY_CACHE.put("m_AttSpeed", "AttackSpeed");
+        STRING_OFFSET_CACHE.put("m_MoveSpeed", 0x0c6a74L);
+        STRING_CATEGORY_CACHE.put("m_MoveSpeed", "MovementSpeed");
+        STRING_OFFSET_CACHE.put("m_PhyBaseShield", 0x0c6ab4L);
+        STRING_CATEGORY_CACHE.put("m_PhyBaseShield", "PhysicalDefense");
+        STRING_OFFSET_CACHE.put("m_MagBaseShield", 0x0c6ac4L);
+        STRING_CATEGORY_CACHE.put("m_MagBaseShield", "MagicDefense");
+        STRING_OFFSET_CACHE.put("EmblemV4Data", 0x0b7a4fL);
+        STRING_CATEGORY_CACHE.put("EmblemV4Data", "Emblem");
     }
 
     public static long getOffset(String key) {

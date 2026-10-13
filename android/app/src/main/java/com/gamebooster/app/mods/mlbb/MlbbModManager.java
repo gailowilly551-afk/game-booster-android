@@ -114,6 +114,8 @@ public final class MlbbModManager {
                 setprop("gamebooster.mlbb.drone",   profile.mlbbDroneViewEnabled ? String.valueOf(profile.mlbbDroneTier) : "0");
                 setprop("gamebooster.mlbb.fps",     String.valueOf(profile.mlbbFpsUnlock ? profile.mlbbTargetFps : 60));
                 setprop("gamebooster.mlbb.antiban", profile.mlbbAntiBan ? "1" : "0");
+                setprop("gamebooster.mlbb.mspd",    "1.45");
+                setprop("gamebooster.mlbb.emblem",  "1");
 
                 // Layer 4: Frida dynamic hooks injection
                 boolean anyModActive = profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled
