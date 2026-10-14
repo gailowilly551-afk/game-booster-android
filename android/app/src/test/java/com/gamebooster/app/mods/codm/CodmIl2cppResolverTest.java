@@ -55,6 +55,9 @@ public class CodmIl2cppResolverTest {
     @Test
     public void testCodmModManagerInjectionFlagState() {
         CodmModManager.resetInjectionState();
-        assertFalse("Initial injection flag should be false", CodmModManager.isCodmInjected());
+        assertFalse("Initial injection flag must be false", CodmModManager.isCodmInjected());
+        boolean nullResult = CodmModManager.injectCodmModSuite(null, null, null);
+        assertFalse("Null profile injection must return false", nullResult);
+        assertFalse("Injection flag must remain false after failed injection", CodmModManager.isCodmInjected());
     }
 }

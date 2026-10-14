@@ -269,8 +269,8 @@ public final class GameAutoInjectDispatcher {
                 CodmConfigPatcher.applyCodmUltraDroneViewMaxFov(pkg);
                 CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
                 try {
-                    boolean codmOk = com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
-                    Log.i(TAG, "CODM Mod Profile injection result: " + codmOk + " (isCodmInjected=" + com.gamebooster.app.mods.codm.CodmModManager.isCodmInjected() + ")");
+                    boolean codmInjected = com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
+                    Log.i(TAG, "CODM Mod Profile injection result: " + codmInjected + " (isCodmInjected=" + com.gamebooster.app.mods.codm.CodmModManager.isCodmInjected() + ")");
                 } catch (Throwable modErr) {
                     Log.w(TAG, "CODM Mod Profile injection warning: " + modErr.getMessage());
                 }
