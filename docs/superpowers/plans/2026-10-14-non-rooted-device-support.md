@@ -33,11 +33,11 @@
 - Modify: `android/app/src/main/java/com/gamebooster/app/mods/GameModEngine.java:230-260,318-345`
 - Test: `android/app/src/test/java/com/gamebooster/app/engine/NonRootedEngineTest.java`
 
-- [ ] Inspect lines 318–345 of `GameModEngine.java` containing `Runtime.getRuntime().exec(new String[]{"su", "-c", cmd})`.
-- [ ] Replace `exec(String cmd)` to invoke `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
-- [ ] Replace `execOutput(String cmd)` to invoke `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)` and trim clean non-error output.
-- [ ] Update `injectFrida()` to use `CommandExecutor.executeSystemCommand()` for process and binary discovery instead of raw Shizuku calls.
-- [ ] Verify no unhandled `su` exceptions occur when running on non-rooted environments.
+- [x] Inspect lines 318–345 of `GameModEngine.java` containing `Runtime.getRuntime().exec(new String[]{"su", "-c", cmd})`.
+- [x] Replace `exec(String cmd)` to invoke `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
+- [x] Replace `execOutput(String cmd)` to invoke `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)` and trim clean non-error output.
+- [x] Update `injectFrida()` to use `CommandExecutor.executeSystemCommand()` for process and binary discovery instead of raw Shizuku calls.
+- [x] Verify no unhandled `su` exceptions occur when running on non-rooted environments.
 
 ---
 
@@ -47,10 +47,10 @@
 - Modify: `android/app/src/main/java/com/gamebooster/app/mods/mlbb/MlbbModManager.java:175-195,210-225`
 - Test: `android/app/src/test/java/com/gamebooster/app/mods/mlbb/MlbbIl2cppResolverTest.java`
 
-- [ ] Inspect lines 213–223 of `MlbbModManager.java` containing fallback to `Runtime.getRuntime().exec("su")`.
-- [ ] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
-- [ ] Update `injectFrida()` binary lookup to use `CommandExecutor.executeSystemCommand()`.
-- [ ] Ensure MLBB 4-layer injection operates smoothly through Shizuku (UID 2000) and `ShizukuFileManager`.
+- [x] Inspect lines 213–223 of `MlbbModManager.java` containing fallback to `Runtime.getRuntime().exec("su")`.
+- [x] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
+- [x] Update `injectFrida()` binary lookup to use `CommandExecutor.executeSystemCommand()`.
+- [x] Ensure MLBB 4-layer injection operates smoothly through Shizuku (UID 2000) and `ShizukuFileManager`.
 
 ---
 
@@ -61,11 +61,11 @@
 - Modify: `android/app/src/main/java/com/gamebooster/app/mods/codm/CodmSecurityCloak.java:55-68`
 - Test: `android/app/src/test/java/com/gamebooster/app/mods/codm/CodmIl2cppResolverTest.java`
 
-- [ ] Inspect lines 209–219 of `CodmModManager.java` containing fallback to `Runtime.getRuntime().exec("su")`.
-- [ ] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
-- [ ] Update `injectFrida()` binary lookup in `CodmModManager.java` to use `CommandExecutor.executeSystemCommand()`.
-- [ ] In `CodmSecurityCloak.java`, replace lines 57–67 `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
-- [ ] Ensure CODM 5-layer injection and security cloaking operate smoothly without root.
+- [x] Inspect lines 209–219 of `CodmModManager.java` containing fallback to `Runtime.getRuntime().exec("su")`.
+- [x] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
+- [x] Update `injectFrida()` binary lookup in `CodmModManager.java` to use `CommandExecutor.executeSystemCommand()`.
+- [x] In `CodmSecurityCloak.java`, replace lines 57–67 `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
+- [x] Ensure CODM 5-layer injection and security cloaking operate smoothly without root.
 
 ---
 
@@ -75,9 +75,9 @@
 - Modify: `android/app/src/main/java/com/gamebooster/app/config/CodmAceBypassPatcher.java:55-67`
 - Test: `android/app/src/test/java/com/gamebooster/app/mods/codm/CodmIl2cppResolverTest.java`
 
-- [ ] Inspect lines 56–66 of `CodmAceBypassPatcher.java` containing fallback to `Runtime.getRuntime().exec("su")`.
-- [ ] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
-- [ ] Verify ACE folder suppression runs safely through Shizuku shell on non-rooted devices.
+- [x] Inspect lines 56–66 of `CodmAceBypassPatcher.java` containing fallback to `Runtime.getRuntime().exec("su")`.
+- [x] Replace `exec(String cmd)` with `com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd)`.
+- [x] Verify ACE folder suppression runs safely through Shizuku shell on non-rooted devices.
 
 ---
 
@@ -86,13 +86,13 @@
 **Files:**
 - Create: `android/app/src/test/java/com/gamebooster/app/engine/NonRootedEngineTest.java`
 
-- [ ] Create test cases for `PrivilegeBridgeEngine.unwrapSuCommand()` verifying:
+- [x] Create test cases for `PrivilegeBridgeEngine.unwrapSuCommand()` verifying:
   - `"su -c 'settings put system peak_refresh_rate 120'"` -> `"settings put system peak_refresh_rate 120"`.
   - `"sudo rm -rf /data/local/tmp/test"` -> `"rm -rf /data/local/tmp/test"`.
   - `"su"` -> `"sh"`.
-- [ ] Create test case for `CommandExecutor.getActiveEngineMode()` verifying fallback modes (`SHIZUKU` or `SYSTEM_SETTINGS`) when root is absent.
-- [ ] Create test case for `CommandExecutor.isSuccessOutput()` verifying detection of failure keywords and error strings.
-- [ ] Run `./gradlew testDebugUnitTest` and ensure all tests pass.
+- [x] Create test case for `CommandExecutor.getActiveEngineMode()` verifying fallback modes (`SHIZUKU` or `SYSTEM_SETTINGS`) when root is absent.
+- [x] Create test case for `CommandExecutor.isSuccessOutput()` verifying detection of failure keywords and error strings.
+- [x] Run `./gradlew testDebugUnitTest` and ensure all tests pass.
 
 ---
 
@@ -102,6 +102,6 @@
 - Test execution: `./gradlew testDebugUnitTest`
 - Build execution: `./gradlew assembleDebug`
 
-- [ ] Run full JUnit test suite to ensure 0 regressions across all tests.
-- [ ] Build release/debug APK with `./gradlew assembleDebug`.
-- [ ] Verify clean APK compilation and packaging.
+- [x] Run full JUnit test suite to ensure 0 regressions across all tests.
+- [x] Build release/debug APK with `./gradlew assembleDebug`.
+- [x] Verify clean APK compilation and packaging.
