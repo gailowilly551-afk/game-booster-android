@@ -55,14 +55,11 @@ public final class CodmSecurityCloak {
     }
 
     private static void exec(String cmd) {
+        if (cmd == null || cmd.trim().isEmpty()) return;
         try {
-            ShizukuExecutor.executeShizukuCommand(cmd);
-        } catch (Throwable ignored) {
-            try {
-                Runtime.getRuntime().exec(new String[]{"su", "-c", cmd}).waitFor();
-            } catch (Exception e) {
-                Log.w(TAG, "exec: " + cmd + " → " + e.getMessage());
-            }
+            com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd);
+        } catch (Throwable t) {
+            Log.w(TAG, "exec: " + cmd + " → " + t.getMessage());
         }
     }
 }

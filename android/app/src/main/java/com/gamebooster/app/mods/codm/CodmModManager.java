@@ -172,7 +172,7 @@ public final class CodmModManager {
 
     private static void injectFrida(String packageName, String scriptPath) {
         try {
-            String whichFrida = ShizukuExecutor.executeShizukuCommand("which frida 2>/dev/null || which frida-inject 2>/dev/null");
+            String whichFrida = com.gamebooster.app.engine.CommandExecutor.executeSystemCommand("which frida 2>/dev/null || which frida-inject 2>/dev/null");
             if (whichFrida != null && !whichFrida.trim().isEmpty() && !whichFrida.startsWith("ERROR:")) {
                 String bin = whichFrida.trim().split("\n")[0].trim();
                 if (bin.contains("frida-inject")) {
@@ -207,14 +207,11 @@ public final class CodmModManager {
     }
 
     private static void exec(String cmd) {
+        if (cmd == null || cmd.trim().isEmpty()) return;
         try {
-            ShizukuExecutor.executeShizukuCommand(cmd);
-        } catch (Throwable ignored) {
-            try {
-                Runtime.getRuntime().exec(new String[]{"su", "-c", cmd}).waitFor();
-            } catch (Exception e) {
-                Log.w(TAG, "exec: " + cmd + " → " + e.getMessage());
-            }
+            com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd);
+        } catch (Throwable t) {
+            Log.w(TAG, "exec: " + cmd + " → " + t.getMessage());
         }
     }
 }
