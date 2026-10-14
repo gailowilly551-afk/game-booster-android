@@ -51,4 +51,10 @@ public class CodmIl2cppResolverTest {
         assertEquals(0L, CodmIl2cppResolver.getStringOffset("NonExistent_String"));
         assertEquals("", CodmIl2cppResolver.getStringCategory("NonExistent_String"));
     }
+
+    @Test
+    public void testCodmModManagerInjectionFlagState() {
+        CodmModManager.resetInjectionState();
+        assertFalse("Initial injection flag should be false", CodmModManager.isCodmInjected());
+    }
 }

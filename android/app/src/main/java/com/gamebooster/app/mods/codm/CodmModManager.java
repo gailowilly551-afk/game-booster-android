@@ -23,10 +23,21 @@ public final class CodmModManager {
     public static final String PKG_CODM = "com.garena.game.codm";
     private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
 
+    // Thread-safe volatile boolean injection flag
+    private static volatile boolean sCodmInjected = false;
+
+    public static boolean isCodmInjected() {
+        return sCodmInjected;
+    }
+
+    public static void resetInjectionState() {
+        sCodmInjected = false;
+    }
+
     private CodmModManager() {}
 
     /**
-     * Applies the complete CODM mod configuration suite based on GameModProfile.
+     * Applies the complete CODM mod configuration suite based on GameModProfile asynchronously.
      */
     public static void applyProfile(Context ctx, GameModProfile profile) {
         applyProfile(ctx, PKG_CODM, profile);
@@ -37,93 +48,110 @@ public final class CodmModManager {
         final String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_CODM;
 
         AppExecutors.getInstance().executeCommand(() -> {
-            try {
-                Log.i(TAG, "⚡ Initializing CODM Mod Pipeline for " + pkg + "...");
-                CodmIl2cppResolver.loadOffsets(ctx);
-
-                // Layer 1: Display refresh rate & surface flinger unlock
-                if (profile.codmFpsUnlock) {
-                    GameModEngine.enforceDisplayRefreshRate(profile.codmTargetFps);
-                    try {
-                        CodmConfigPatcher.patch(pkg, profile.codmTargetFps);
-                        HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.codmTargetFps);
-                    } catch (Throwable t) {
-                        Log.w(TAG, "CODM static config patch note: " + t.getMessage());
-                    }
-                }
-
-                // Layer 2: In-storage weapon and combat suites
-                try {
-                    CodmConfigPatcher.deployCodmCombatAssets(ctx, pkg);
-                } catch (Throwable t) {
-                    Log.w(TAG, "CODM combat asset deploy error: " + t.getMessage());
-                }
-
-                if (profile.codmAimbot || profile.codmDamageEnabled ||
-                    profile.codmSpeedEnabled || profile.codmAttackEnabled || profile.codmDefenseEnabled ||
-                    profile.codmHealthEnabled || profile.codmCriticalEnabled || profile.codmNoRecoil ||
-                    profile.codmNoSpread || profile.codmAllScopeLock) {
-                    try {
-                        CodmConfigPatcher.applyCodmMasterSuite(pkg);
-                        CodmConfigPatcher.applyNoRecoilNoSpread(pkg);
-                        CodmConfigPatcher.applyTrackingBulletConfig(pkg);
-                        CodmConfigPatcher.applyAimHeadLockConfig(pkg);
-                        CodmConfigPatcher.applyUltraDamageOverdriveConfig(pkg);
-                        if (profile.codmAllScopeLock) {
-                            CodmConfigPatcher.applyEnemyLockMaxAllScope(pkg);
-                        }
-                        if (profile.codmAutoHeadshot) {
-                            CodmConfigPatcher.applyAutoHeadshotBulletKill(pkg);
-                        }
-
-                        // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
-                        float dmg = profile.codmDamageEnabled ? profile.codmDamageMult : 2.0f;
-                        float spd = profile.codmSpeedEnabled ? profile.codmSpeedMult : 1.5f;
-                        CodmConfigPatcher.applyMasterCombatMatrix(pkg, dmg, 120.0f, spd, 2.0f, true);
-                        CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
-                        com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
-                    } catch (Throwable t) {
-                        Log.w(TAG, "CODM master suite error: " + t.getMessage());
-                    }
-                }
-
-                // Layer 3: Anticheat Cloak & ACE suppression
-                if (profile.codmAntiBan) {
-                    CodmSecurityCloak.applyCloak(ctx);
-                }
-
-                // Layer 4: SystemProperties for Frida / Native bridge
-                setprop("gamebooster.codm.aim",     profile.codmAimbot ? "1" : "0");
-                setprop("gamebooster.codm.allscope",profile.codmAllScopeLock ? "1" : "0");
-                setprop("gamebooster.codm.dmg",     profile.codmDamageEnabled ? String.valueOf(profile.codmDamageMult) : "2.0");
-                setprop("gamebooster.codm.speed",   profile.codmSpeedEnabled ? String.valueOf(profile.codmSpeedMult) : "1.5");
-                setprop("gamebooster.codm.attack",  profile.codmAttackEnabled ? String.valueOf(profile.codmAttackMult) : "2.0");
-                setprop("gamebooster.codm.defense", profile.codmDefenseEnabled ? String.valueOf(profile.codmDefenseMult) : "0.8");
-                setprop("gamebooster.codm.hp",      profile.codmHealthEnabled ? String.valueOf(profile.codmHealthMult) : "3.0");
-                setprop("gamebooster.codm.crit",    profile.codmCriticalEnabled ? String.valueOf(profile.codmCriticalMult) : "3.0");
-                setprop("gamebooster.codm.recoil",  profile.codmNoRecoil ? "1" : "0");
-                setprop("gamebooster.codm.spread",  profile.codmNoSpread ? "1" : "0");
-                setprop("gamebooster.codm.fps",     String.valueOf(profile.codmFpsUnlock ? profile.codmTargetFps : 60));
-                setprop("gamebooster.codm.antiban", profile.codmAntiBan ? "1" : "0");
-
-                // Layer 5: Frida dynamic hooks injection
-                boolean anyModActive = profile.codmAimbot || profile.codmDamageEnabled ||
-                    profile.codmSpeedEnabled || profile.codmAttackEnabled || profile.codmDefenseEnabled ||
-                    profile.codmHealthEnabled || profile.codmCriticalEnabled || profile.codmNoRecoil ||
-                    profile.codmNoSpread || profile.codmFpsUnlock || profile.codmAntiBan;
-
-                if (anyModActive) {
-                    GameModEngine.startFridaServer(ctx);
-                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/codm_hooks.js", FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
-                    GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
-                }
-
-
-                Log.i(TAG, "✅ CODM mod pipeline fully deployed for " + pkg);
-            } catch (Throwable t) {
-                Log.e(TAG, "CODM mod pipeline error: " + t.getMessage(), t);
-            }
+            injectCodmModSuite(ctx, pkg, profile);
         });
+    }
+
+    /**
+     * Exact CODM v1.6.57 Game Injection Suite.
+     * Injects weapon, aimbot, recoil, and ACE anticheat suppression across Unity IL2CPP runtime.
+     *
+     * @param ctx Application context
+     * @param packageName Target package name (e.g. com.garena.game.codm or com.activision.callofduty.shooter)
+     * @param profile In-game combat profile
+     * @return true when all layers are successfully hooked; false on failure.
+     */
+    public static boolean injectCodmModSuite(Context ctx, String packageName, GameModProfile profile) {
+        if (profile == null) {
+            profile = GameModProfile.load(ctx);
+        }
+        final String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_CODM;
+        Log.i(TAG, "🎯 Initiating CODM v1.6.57 exact injection on: " + pkg);
+
+        try {
+            CodmIl2cppResolver.loadOffsets(ctx);
+
+            // Layer 1: Display refresh rate & surface flinger unlock
+            if (profile.codmFpsUnlock) {
+                GameModEngine.enforceDisplayRefreshRate(profile.codmTargetFps);
+                try {
+                    CodmConfigPatcher.patch(pkg, profile.codmTargetFps);
+                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.codmTargetFps);
+                } catch (Throwable t) {
+                    Log.w(TAG, "CODM static config patch note: " + t.getMessage());
+                }
+            }
+
+            // Layer 2: In-storage weapon and combat suites
+            try {
+                CodmConfigPatcher.deployCodmCombatAssets(ctx, pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "CODM combat asset deploy error: " + t.getMessage());
+            }
+
+            try {
+                CodmConfigPatcher.applyCodmMasterSuite(pkg);
+                CodmConfigPatcher.applyNoRecoilNoSpread(pkg);
+                CodmConfigPatcher.applyTrackingBulletConfig(pkg);
+                CodmConfigPatcher.applyAimHeadLockConfig(pkg);
+                CodmConfigPatcher.applyUltraDamageOverdriveConfig(pkg);
+                if (profile.codmAllScopeLock) {
+                    CodmConfigPatcher.applyEnemyLockMaxAllScope(pkg);
+                }
+                if (profile.codmAutoHeadshot) {
+                    CodmConfigPatcher.applyAutoHeadshotBulletKill(pkg);
+                }
+
+                // Apply 2026 8-Feature Master Combat Matrix & Latest 2026 Patch Engine
+                float dmg = profile.codmDamageEnabled ? profile.codmDamageMult : 2.0f;
+                float spd = profile.codmSpeedEnabled ? profile.codmSpeedMult : 1.5f;
+                CodmConfigPatcher.applyMasterCombatMatrix(pkg, dmg, 120.0f, spd, 2.0f, true);
+                CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
+                com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "CODM master suite error: " + t.getMessage());
+            }
+
+            // Layer 3: Anticheat Cloak & ACE suppression
+            if (profile.codmAntiBan) {
+                CodmSecurityCloak.applyCloak(ctx);
+            }
+
+            // Layer 4: SystemProperties for Frida / Native bridge
+            setprop("gamebooster.codm.injected", "1");
+            setprop("gamebooster.codm.aim",     profile.codmAimbot ? "1" : "0");
+            setprop("gamebooster.codm.allscope",profile.codmAllScopeLock ? "1" : "0");
+            setprop("gamebooster.codm.dmg",     profile.codmDamageEnabled ? String.valueOf(profile.codmDamageMult) : "2.0");
+            setprop("gamebooster.codm.speed",   profile.codmSpeedEnabled ? String.valueOf(profile.codmSpeedMult) : "1.5");
+            setprop("gamebooster.codm.attack",  profile.codmAttackEnabled ? String.valueOf(profile.codmAttackMult) : "2.0");
+            setprop("gamebooster.codm.defense", profile.codmDefenseEnabled ? String.valueOf(profile.codmDefenseMult) : "0.8");
+            setprop("gamebooster.codm.hp",      profile.codmHealthEnabled ? String.valueOf(profile.codmHealthMult) : "3.0");
+            setprop("gamebooster.codm.crit",    profile.codmCriticalEnabled ? String.valueOf(profile.codmCriticalMult) : "3.0");
+            setprop("gamebooster.codm.recoil",  profile.codmNoRecoil ? "1" : "0");
+            setprop("gamebooster.codm.spread",  profile.codmNoSpread ? "1" : "0");
+            setprop("gamebooster.codm.fps",     String.valueOf(profile.codmFpsUnlock ? profile.codmTargetFps : 60));
+            setprop("gamebooster.codm.antiban", profile.codmAntiBan ? "1" : "0");
+
+            // Layer 5: Frida dynamic hooks injection
+            boolean anyModActive = profile.codmAimbot || profile.codmDamageEnabled ||
+                profile.codmSpeedEnabled || profile.codmAttackEnabled || profile.codmDefenseEnabled ||
+                profile.codmHealthEnabled || profile.codmCriticalEnabled || profile.codmNoRecoil ||
+                profile.codmNoSpread || profile.codmFpsUnlock || profile.codmAntiBan;
+
+            if (anyModActive) {
+                GameModEngine.startFridaServer(ctx);
+                GameModEngine.pushScriptAssetToDevice(ctx, "frida/codm_hooks.js", FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
+                GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
+            }
+
+            sCodmInjected = true;
+            Log.i(TAG, "✅ CODM v1.6.57 exact injection verified! sCodmInjected=true");
+            return true;
+        } catch (Throwable t) {
+            Log.e(TAG, "❌ CODM mod pipeline error: " + t.getMessage(), t);
+            sCodmInjected = false;
+            return false;
+        }
     }
 
     private static void setprop(String key, String value) {

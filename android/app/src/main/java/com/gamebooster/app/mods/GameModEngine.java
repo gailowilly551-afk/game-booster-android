@@ -168,6 +168,14 @@ public final class GameModEngine {
         return com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(ctx, packageName, profile);
     }
 
+    /**
+     * Synchronously injects CODM mod suite and returns true when fully hooked.
+     */
+    public static boolean injectCodmSync(Context ctx, String packageName, GameModProfile profile) {
+        if (packageName == null) return false;
+        return com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, packageName, profile);
+    }
+
     // ─── APK Pull / Push ──────────────────────────────────────────────────────
 
     /**

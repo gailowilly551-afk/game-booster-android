@@ -358,19 +358,33 @@ public class FloatingOverlayService extends Service {
             btn185Hz.setOnClickListener(v -> {
                 performHaptic();
                 scheduleAutoCollapse();
-                Toast.makeText(getApplicationContext(), "⚡ Locking 185Hz & Injecting MLBB S42...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "⚡ Locking 185Hz & Injecting Combat Suite...", Toast.LENGTH_SHORT).show();
                 AppExecutors.getInstance().executeCommand(() -> {
                     com.gamebooster.app.booster.MaxHzForceChannel.forceApply(185);
                     com.gamebooster.app.config.LobbyInjectionEngine.triggerManualLobbyInject(getApplicationContext(), null);
-                    try {
-                        com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
-                                getApplicationContext(),
-                                "com.mobile.legends",
-                                com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
-                        );
-                    } catch (Throwable ignored) {}
+                    String fgPkg = com.gamebooster.app.games.ForegroundGameDetector.detectActiveGame(getApplicationContext());
+                    if (fgPkg == null || fgPkg.isEmpty()) {
+                        fgPkg = com.gamebooster.app.config.LobbyInjectionEngine.getActiveGamePackage();
+                    }
+                    if (fgPkg != null && (fgPkg.contains("cod") || fgPkg.contains("callofduty"))) {
+                        try {
+                            com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(
+                                    getApplicationContext(),
+                                    fgPkg,
+                                    com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                            );
+                        } catch (Throwable ignored) {}
+                    } else {
+                        try {
+                            com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
+                                    getApplicationContext(),
+                                    "com.mobile.legends",
+                                    com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                            );
+                        } catch (Throwable ignored) {}
+                    }
                     AppExecutors.getInstance().postToMainThread(() -> {
-                        Toast.makeText(getApplicationContext(), "⚡ 185Hz Overdrive & MLBB S42 Active!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "⚡ 185Hz Overdrive & Game Suite Active!", Toast.LENGTH_SHORT).show();
                         updateTelemetryData();
                     });
                 });
@@ -1016,16 +1030,18 @@ public class FloatingOverlayService extends Service {
         }
 
         boolean mlbbInjected = com.gamebooster.app.mods.mlbb.MlbbModManager.isMlbbInjected();
+        boolean codmInjected = com.gamebooster.app.mods.codm.CodmModManager.isCodmInjected();
+        boolean anyGameInjected = mlbbInjected || codmInjected;
 
         // 1. Update Collapsed Pill Viewport
         if (layoutCollapsedPill != null && layoutCollapsedPill.getVisibility() == View.VISIBLE) {
             if (viewPillGlowDot != null) {
-                viewPillGlowDot.setBackgroundResource(mlbbInjected ? R.drawable.badge_neon_green : (isRealGameSurface ? R.drawable.badge_neon_green : R.drawable.badge_neon_cyan));
+                viewPillGlowDot.setBackgroundResource(anyGameInjected ? R.drawable.badge_neon_green : (isRealGameSurface ? R.drawable.badge_neon_green : R.drawable.badge_neon_cyan));
             }
             if (tvPillFps != null) {
-                String tag = mlbbInjected ? "⚔️ " : (isRealGameSurface ? "🎮 " : "");
+                String tag = mlbbInjected ? "⚔️ " : (codmInjected ? "🎯 " : (isRealGameSurface ? "🎮 " : ""));
                 tvPillFps.setText(String.format("%s%d FPS", tag, activeFps));
-                tvPillFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
+                tvPillFps.setTextColor(anyGameInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
             if (tvPillTemp != null) {
                 tvPillTemp.setText(String.format("%.1f°C", m.batteryTempC));
@@ -1040,9 +1056,9 @@ public class FloatingOverlayService extends Service {
         // 2. Update Micro FPS Viewport
         if (layoutMicroFps != null && layoutMicroFps.getVisibility() == View.VISIBLE) {
             if (tvMicroFps != null) {
-                String tag = mlbbInjected ? "⚔️ " : (isRealGameSurface ? "🎮 " : "⚡ ");
+                String tag = mlbbInjected ? "⚔️ " : (codmInjected ? "🎯 " : (isRealGameSurface ? "🎮 " : "⚡ "));
                 tvMicroFps.setText(String.format("%s%d FPS", tag, activeFps));
-                tvMicroFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
+                tvMicroFps.setTextColor(anyGameInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
         }
 
@@ -1052,15 +1068,18 @@ public class FloatingOverlayService extends Service {
                 if (mlbbInjected) {
                     tvHudProfileBadge.setText("⚔️ MLBB S42 PRO • 10000 DMG / 520 MSPD • 185Hz");
                     tvHudProfileBadge.setTextColor(Color.parseColor("#00FF66"));
+                } else if (codmInjected) {
+                    tvHudProfileBadge.setText("🎯 CODM v1.6.57 PRO • NO RECOIL / AIM LOCK • 185Hz");
+                    tvHudProfileBadge.setTextColor(Color.parseColor("#00FF66"));
                 } else {
                     tvHudProfileBadge.setText("🔥 EXTREME 185Hz • OPTIMIZED");
                     tvHudProfileBadge.setTextColor(Color.parseColor("#00F0FF"));
                 }
             }
             if (tvHudFps != null) {
-                String sourceTag = mlbbInjected ? "⚔️" : (isRealGameSurface ? "🎮" : "⚡");
+                String sourceTag = mlbbInjected ? "⚔️" : (codmInjected ? "🎯" : (isRealGameSurface ? "🎮" : "⚡"));
                 tvHudFps.setText(String.format("%s %d FPS / %dHz", sourceTag, activeFps, currentHz));
-                tvHudFps.setTextColor(mlbbInjected ? Color.parseColor("#00FF66") : fpsColor);
+                tvHudFps.setTextColor(anyGameInjected ? Color.parseColor("#00FF66") : fpsColor);
             }
             if (tvHudFpsStatus != null) {
                 // Show detailed frame stats only when all three data points are valid:
@@ -1104,6 +1123,9 @@ public class FloatingOverlayService extends Service {
                 boolean shizukuLive = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive();
                 if (mlbbInjected) {
                     tvHudAutoInjectStatus.setText("⚔️ MLBB COMBAT HOOKED (S42) • C# / IL2CPP");
+                    tvHudAutoInjectStatus.setTextColor(Color.parseColor("#00FF66"));
+                } else if (codmInjected) {
+                    tvHudAutoInjectStatus.setText("🎯 CODM COMBAT HOOKED (v1.6.57) • UNITY IL2CPP");
                     tvHudAutoInjectStatus.setTextColor(Color.parseColor("#00FF66"));
                 } else if (shizukuLive) {
                     tvHudAutoInjectStatus.setText("⚡ SHIZUKU ACTIVE (UID 2000) • AUTO-CONFIG");
