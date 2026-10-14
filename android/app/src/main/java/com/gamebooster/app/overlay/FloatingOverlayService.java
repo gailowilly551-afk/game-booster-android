@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -78,6 +79,7 @@ public class FloatingOverlayService extends Service {
         PILL,
         MICRO_FPS,
         EXPANDED_DOCK,
+        BUBBLE,
         HIDDEN_EDGE,
         FULL_INVISIBLE
     }
@@ -94,9 +96,14 @@ public class FloatingOverlayService extends Service {
     private View layoutCollapsedPill;
     private View layoutMicroFps;
     private View layoutExpandedDock;
+    private View layoutFloatingBubble;
+    private ImageView ivBubbleIcon;
+    private View viewBubbleGlowDot;
     private View layoutHudHeader;
     private View layoutEdgeHandle;
     private View viewEdgeHandleDot;
+    private Button btnRoomOptimizer;
+    private HudMode previousCollapsedMode = HudMode.PILL;
 
     // Collapsed Pill views
     private View viewPillGlowDot;
@@ -145,7 +152,7 @@ public class FloatingOverlayService extends Service {
 
     private final Runnable autoCollapseRunnable = () -> {
         if (currentMode == HudMode.EXPANDED_DOCK) {
-            switchHudMode(HudMode.PILL);
+            switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
         }
     };
 
@@ -254,6 +261,9 @@ public class FloatingOverlayService extends Service {
         } catch (Exception e) {
             currentMode = HudMode.PILL;
         }
+        if (currentMode == HudMode.PILL || currentMode == HudMode.MICRO_FPS || currentMode == HudMode.BUBBLE) {
+            previousCollapsedMode = currentMode;
+        }
 
         applyViewportVisibility(currentMode);
 
@@ -270,6 +280,9 @@ public class FloatingOverlayService extends Service {
         layoutCollapsedPill = overlayView.findViewById(R.id.layout_collapsed_pill);
         layoutMicroFps = overlayView.findViewById(R.id.layout_micro_fps);
         layoutExpandedDock = overlayView.findViewById(R.id.layout_expanded_dock);
+        layoutFloatingBubble = overlayView.findViewById(R.id.layout_floating_bubble);
+        ivBubbleIcon = overlayView.findViewById(R.id.iv_bubble_icon);
+        viewBubbleGlowDot = overlayView.findViewById(R.id.view_bubble_glow_dot);
         layoutHudHeader = overlayView.findViewById(R.id.layout_hud_header);
 
         // Pill
@@ -286,14 +299,24 @@ public class FloatingOverlayService extends Service {
         viewEdgeHandleDot = overlayView.findViewById(R.id.view_edge_handle_dot);
 
         // Header controls
+        View btnBubbleToggle = overlayView.findViewById(R.id.btn_hud_bubble_toggle);
         View btnMicroToggle = overlayView.findViewById(R.id.btn_hud_micro_toggle);
         View btnHide = overlayView.findViewById(R.id.btn_hud_hide);
         View btnMinimize = overlayView.findViewById(R.id.btn_hud_minimize);
         View btnClose = overlayView.findViewById(R.id.btn_hud_close);
 
+        if (btnBubbleToggle != null) {
+            btnBubbleToggle.setOnClickListener(v -> {
+                performHaptic();
+                previousCollapsedMode = HudMode.BUBBLE;
+                switchHudMode(HudMode.BUBBLE);
+                Toast.makeText(getApplicationContext(), "⚡ 1-Tap Bubble Mode — Tap icon to expand", Toast.LENGTH_SHORT).show();
+            });
+        }
         if (btnMicroToggle != null) {
             btnMicroToggle.setOnClickListener(v -> {
                 performHaptic();
+                previousCollapsedMode = HudMode.MICRO_FPS;
                 switchHudMode(HudMode.MICRO_FPS);
             });
         }
@@ -307,7 +330,7 @@ public class FloatingOverlayService extends Service {
         if (btnMinimize != null) {
             btnMinimize.setOnClickListener(v -> {
                 performHaptic();
-                switchHudMode(HudMode.PILL);
+                switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
             });
         }
         if (btnClose != null) {
@@ -482,6 +505,41 @@ public class FloatingOverlayService extends Service {
                         });
                     });
                 }, 300);
+            });
+        }
+
+        // Smart Room Detector & Match Balancer (Esports Network & Ranked Optimizer)
+        btnRoomOptimizer = overlayView.findViewById(R.id.btn_hud_room_optimizer);
+        if (btnRoomOptimizer != null) {
+            btnRoomOptimizer.setOnClickListener(v -> {
+                performHaptic();
+                scheduleAutoCollapse();
+                Toast.makeText(getApplicationContext(), "👑 Optimizing Room & Balancing Matchmaking...", Toast.LENGTH_SHORT).show();
+                AppExecutors.getInstance().executeCommand(() -> {
+                    String fgPkg = com.gamebooster.app.games.ForegroundGameDetector.detectActiveGame(getApplicationContext());
+                    if (fgPkg == null || fgPkg.isEmpty()) {
+                        fgPkg = com.gamebooster.app.config.LobbyInjectionEngine.getActiveGamePackage();
+                    }
+                    if (fgPkg == null || (!fgPkg.contains("mobile.legends") && !fgPkg.contains("mobilelegends"))) {
+                        fgPkg = "com.mobile.legends";
+                    }
+                    final String pkg = fgPkg;
+                    try {
+                        com.gamebooster.app.config.MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
+                        com.gamebooster.app.config.MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
+                        com.gamebooster.app.config.MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
+                        com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
+                        com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(
+                                "ndc resolver setnetdns 100 8.8.8.8 1.1.1.1 2>/dev/null; " +
+                                "setprop net.rmnet0.dns1 1.1.1.1; setprop net.dns1 1.1.1.1; " +
+                                "settings put global wifi_sleep_policy 2"
+                        );
+                    } catch (Throwable ignored) {}
+                    AppExecutors.getInstance().postToMainThread(() -> {
+                        Toast.makeText(getApplicationContext(), "👑 Smart Room Detector & Match Balancer Active! (No Root ✓)", Toast.LENGTH_SHORT).show();
+                        updateTelemetryData();
+                    });
+                });
             });
         }
 
@@ -661,7 +719,7 @@ public class FloatingOverlayService extends Service {
                                     pendingClickRunnable = null;
                                 }
                                 if (currentMode == HudMode.HIDDEN_EDGE) {
-                                    switchHudMode(HudMode.PILL);
+                                    switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
                                     Toast.makeText(getApplicationContext(), "⚡ HUD Restored", Toast.LENGTH_SHORT).show();
                                 } else {
                                     switchHudMode(HudMode.HIDDEN_EDGE);
@@ -672,12 +730,15 @@ public class FloatingOverlayService extends Service {
                             lastClickTimestamp = now;
 
                             // Debounce single tap: wait 280ms so double-tap can cancel it
-                            if (currentMode == HudMode.PILL || currentMode == HudMode.MICRO_FPS) {
+                            if (currentMode == HudMode.PILL || currentMode == HudMode.MICRO_FPS || currentMode == HudMode.BUBBLE) {
                                 if (pendingClickRunnable != null) {
                                     clickDebounceHandler.removeCallbacks(pendingClickRunnable);
                                 }
                                 pendingClickRunnable = () -> {
-                                    if (currentMode == HudMode.PILL || currentMode == HudMode.MICRO_FPS) {
+                                    if (currentMode == HudMode.PILL || currentMode == HudMode.MICRO_FPS || currentMode == HudMode.BUBBLE) {
+                                        if (currentMode != HudMode.EXPANDED_DOCK) {
+                                            previousCollapsedMode = currentMode;
+                                        }
                                         switchHudMode(HudMode.EXPANDED_DOCK);
                                         scheduleAutoCollapse();
                                     }
@@ -715,8 +776,9 @@ public class FloatingOverlayService extends Service {
         if (layoutCollapsedPill != null) layoutCollapsedPill.setOnTouchListener(dragListener);
         if (layoutMicroFps != null) layoutMicroFps.setOnTouchListener(dragListener);
         if (layoutHudHeader != null) layoutHudHeader.setOnTouchListener(dragListener);
+        if (layoutFloatingBubble != null) layoutFloatingBubble.setOnTouchListener(dragListener);
 
-        // Edge handle touch listener: single click to restore Pill mode, drag up/down along edge
+        // Edge handle touch listener: single click to restore previous mode, drag up/down along edge
         if (layoutEdgeHandle != null) {
             layoutEdgeHandle.setOnTouchListener(new View.OnTouchListener() {
                 private int startY;
@@ -741,7 +803,7 @@ public class FloatingOverlayService extends Service {
                         case MotionEvent.ACTION_UP:
                             if (isTap) {
                                 performHaptic();
-                                switchHudMode(HudMode.PILL);
+                                switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
                             } else {
                                 if (windowManager != null && overlayView != null) {
                                     params.y = Math.max(20, Math.min(params.y, getResources().getDisplayMetrics().heightPixels - 150));
@@ -793,6 +855,7 @@ public class FloatingOverlayService extends Service {
                 layoutMicroFps.setVisibility(View.GONE);
                 layoutExpandedDock.setVisibility(View.GONE);
                 if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.GONE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.GONE);
                 overlayView.setAlpha(0.85f);
                 break;
 
@@ -801,6 +864,7 @@ public class FloatingOverlayService extends Service {
                 layoutMicroFps.setVisibility(View.VISIBLE);
                 layoutExpandedDock.setVisibility(View.GONE);
                 if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.GONE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.GONE);
                 overlayView.setAlpha(0.70f);
                 break;
 
@@ -809,7 +873,17 @@ public class FloatingOverlayService extends Service {
                 layoutMicroFps.setVisibility(View.GONE);
                 layoutExpandedDock.setVisibility(View.VISIBLE);
                 if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.GONE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.GONE);
                 overlayView.setAlpha(1.0f);
+                break;
+
+            case BUBBLE:
+                layoutCollapsedPill.setVisibility(View.GONE);
+                layoutMicroFps.setVisibility(View.GONE);
+                layoutExpandedDock.setVisibility(View.GONE);
+                if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.GONE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.VISIBLE);
+                overlayView.setAlpha(0.95f);
                 break;
 
             case HIDDEN_EDGE:
@@ -817,6 +891,7 @@ public class FloatingOverlayService extends Service {
                 layoutMicroFps.setVisibility(View.GONE);
                 layoutExpandedDock.setVisibility(View.GONE);
                 if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.VISIBLE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.GONE);
                 overlayView.setAlpha(0.40f);
                 if (windowManager != null && params != null) {
                     int screenWidth = getResources().getDisplayMetrics().widthPixels;
@@ -837,6 +912,7 @@ public class FloatingOverlayService extends Service {
                 layoutMicroFps.setVisibility(View.GONE);
                 layoutExpandedDock.setVisibility(View.GONE);
                 if (layoutEdgeHandle != null) layoutEdgeHandle.setVisibility(View.GONE);
+                if (layoutFloatingBubble != null) layoutFloatingBubble.setVisibility(View.GONE);
                 if (overlayView != null) {
                     overlayView.setVisibility(View.GONE);
                 }
@@ -1144,6 +1220,13 @@ public class FloatingOverlayService extends Service {
                 btnResyncMap.setText("🗺️ " + com.gamebooster.app.config.MlbbDroneViewPatcher.getTierLabel(curTier));
             }
         }
+
+        // 4. Update Floating Game Bubble Viewport
+        if (layoutFloatingBubble != null && layoutFloatingBubble.getVisibility() == View.VISIBLE) {
+            if (viewBubbleGlowDot != null) {
+                viewBubbleGlowDot.setBackgroundResource(gameInjected ? R.drawable.badge_neon_green : (isRealGameSurface ? R.drawable.badge_neon_green : R.drawable.badge_neon_cyan));
+            }
+        }
     }
 
     private void performHaptic() {
@@ -1166,7 +1249,7 @@ public class FloatingOverlayService extends Service {
             if (ACTION_TOGGLE_HUD.equals(action)) {
                 performHaptic();
                 if (currentMode == HudMode.HIDDEN_EDGE || currentMode == HudMode.FULL_INVISIBLE) {
-                    switchHudMode(HudMode.PILL);
+                    switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
                     Toast.makeText(getApplicationContext(), "⚡ Gaming HUD Restored", Toast.LENGTH_SHORT).show();
                 } else {
                     switchHudMode(HudMode.HIDDEN_EDGE);
@@ -1179,7 +1262,7 @@ public class FloatingOverlayService extends Service {
                 updateNotification();
             } else if (ACTION_SHOW_HUD.equals(action)) {
                 performHaptic();
-                switchHudMode(HudMode.PILL);
+                switchHudMode(previousCollapsedMode != null ? previousCollapsedMode : HudMode.PILL);
                 updateNotification();
             } else if (ACTION_CLOSE_HUD.equals(action)) {
                 stopSelf();

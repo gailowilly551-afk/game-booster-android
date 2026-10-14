@@ -140,6 +140,18 @@
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
 
+            <!-- 1-Click Floating Bubble Toggle Button -->
+            <TextView
+                android:id="@+id/btn_hud_bubble_toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔘"
+                android:textSize="11sp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+
             <!-- Micro Viewport Toggle Button -->
             <TextView
                 android:id="@+id/btn_hud_micro_toggle"
@@ -523,6 +535,19 @@
                     android:padding="0dp" />
             </LinearLayout>
 
+            <!-- Smart Room Detector & Match Balancer (Esports Network & Ranked Optimizer) -->
+            <Button
+                android:id="@+id/btn_hud_room_optimizer"
+                android:layout_width="match_parent"
+                android:layout_height="27dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/hud_btn_cyber_dark"
+                android:text="👑 SMART ROOM &amp; MATCH BALANCER"
+                android:textColor="@color/accent_neon_green"
+                android:textSize="8.5sp"
+                android:textStyle="bold"
+                android:padding="0dp" />
+
             <!-- Full-Width Tuck / Hide Button -->
             <Button
                 android:id="@+id/btn_hud_hide_dock"
@@ -563,5 +588,35 @@
             android:layout_height="28dp"
             android:background="@drawable/badge_neon_green" />
     </LinearLayout>
+
+    <!-- ================================================================= -->
+    <!-- VIEWPORT 5: FLOATING GAME BUBBLE ICON (QUICK 1-CLICK COLLAPSE)    -->
+    <!-- ================================================================= -->
+    <FrameLayout
+        android:id="@+id/layout_floating_bubble"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/hud_bubble_bg"
+        android:elevation="12dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/iv_bubble_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:src="@mipmap/ic_launcher_round"
+            android:scaleType="fitCenter" />
+
+        <!-- Glowing Active Neon Dot -->
+        <View
+            android:id="@+id/view_bubble_glow_dot"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/badge_neon_green" />
+    </FrameLayout>
 
 </FrameLayout>
