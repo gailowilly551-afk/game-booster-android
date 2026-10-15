@@ -1,5 +1,10 @@
 {
   "version": "1.6.57.0",
+  "versionCode": "28028",
+  "uid": "10656",
+  "package": "com.garena.game.codm",
+  "directory_1": "/data/user/0/com.garena.game.codm",
+  "directory_2": "/storage/emulated/0/Android/data/com.garena.game.codm",
   "arch": "arm64-v8a",
   "il2cpp_metadata_version": 23,
   "targets": {

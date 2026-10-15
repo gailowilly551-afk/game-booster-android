@@ -97,19 +97,49 @@ onModuleLoaded('libCrashSight.so', (mod) => {
     });
 });
 
-// ─── 4. Memory Ptrace / Debugger Trap Shield ────────────────────────────────
-Interceptor.attach(Module.findExportByName(null, 'ptrace'), {
-    onEnter(args) {
-        const request = args[0].toInt32();
-        // PTRACE_TRACEME = 0
-        if (request === 0) {
-            console.log('[AntiBan-CODM] Suppressed PTRACE_TRACEME anti-debug check');
-            this.fake = true;
-        }
-    },
-    onLeave(retval) {
-        if (this.fake) {
-            retval.replace(ptr(0));
-        }
+// ─── 5. Permanent Zero-Revert Inode & Config Shielding ────────────────────────
+(function shieldConfigFiles() {
+    const protectedNames = [
+        'UserSetting.json', 'GameConfig.xml', 'ControlsSettings.ini',
+        'GraphicsSettings.ini', 'MSDKConfig.ini', 'res_skip_patch'
+    ];
+    const openatPtr = Module.findExportByName(null, 'openat');
+    if (openatPtr) {
+        Interceptor.attach(openatPtr, {
+            onEnter(args) {
+                const pathPtr = args[1];
+                if (pathPtr) {
+                    const path = pathPtr.readCString();
+                    if (path && protectedNames.some(p => path.includes(p))) {
+                        const flags = args[2].toInt32();
+                        // Strip O_TRUNC (0x200 / 512) to prevent reverting injected configs
+                        if ((flags & 0x200) !== 0) {
+                            args[2] = ptr(flags & ~0x200);
+                        }
+                    }
+                }
+            }
+        });
     }
-});
+
+    const unlinkPtr = Module.findExportByName(null, 'unlink');
+    if (unlinkPtr) {
+        Interceptor.attach(unlinkPtr, {
+            onEnter(args) {
+                const pathPtr = args[0];
+                if (pathPtr) {
+                    const path = pathPtr.readCString();
+                    if (path && protectedNames.some(p => path.includes(p))) {
+                        this.suppress = true;
+                    }
+                }
+            },
+            onLeave(retval) {
+                if (this.suppress) {
+                    retval.replace(ptr(0)); // Pretend unlinked, keep permanent mod
+                }
+            }
+        });
+    }
+})();
+

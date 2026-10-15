@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
+#include <sys/ioctl.h>
+#include <linux/fs.h>
 #include <utime.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -152,9 +154,62 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
+#ifndef FS_IOC_GETFLAGS
+#define FS_IOC_GETFLAGS _IOR('f', 1, long)
+#endif
+#ifndef FS_IOC_SETFLAGS
+#define FS_IOC_SETFLAGS _IOW('f', 2, long)
+#endif
+#ifndef FS_IMMUTABLE_FL
+#define FS_IMMUTABLE_FL 0x00000010
+#endif
+
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeSetImmutableLock
+  (JNIEnv *env, jclass, jstring jPath, jboolean lock) {
+    if (!jPath) return JNI_FALSE;
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    if (!path) return JNI_FALSE;
+
+    int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    bool ok = false;
+    if (fd >= 0) {
+        long flags = 0;
+        if (ioctl(fd, FS_IOC_GETFLAGS, &flags) == 0) {
+            if (lock) {
+                flags |= FS_IMMUTABLE_FL;
+            } else {
+                flags &= ~FS_IMMUTABLE_FL;
+            }
+            ok = (ioctl(fd, FS_IOC_SETFLAGS, &flags) == 0);
+        }
+        close(fd);
+    }
+    // Fallback: enforce read-only 0444 to guarantee zero revert even on filesystems where ioctl is unsupported
+    if (lock) {
+        chmod(path, 0444);
+    } else {
+        chmod(path, 0666);
+    }
+
+    env->ReleaseStringUTFChars(jPath, path);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeEnforceGameOwnership
+  (JNIEnv *env, jclass, jstring jPath, jint uid, jint gid) {
+    if (!jPath) return JNI_FALSE;
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    if (!path) return JNI_FALSE;
+
+    bool ok = (chown(path, (uid_t)uid, (gid_t)gid) == 0);
+    env->ReleaseStringUTFChars(jPath, path);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ─── 5. Direct Kernel SELinux & Android Driver Bypass ─────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
+
 static void write_sysfs_fast(const char* path, const char* value) {
     if (!path || !value) return;
     int fd = open(path, O_WRONLY | O_NONBLOCK | O_CLOEXEC);

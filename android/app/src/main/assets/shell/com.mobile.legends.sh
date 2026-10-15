@@ -72,21 +72,34 @@ setprop vendor.thermal.mode performance
 # Drop caches before first frame
 echo 1 > /proc/sys/vm/drop_caches 2>/dev/null
 
-# ── MLBB permissions — ensure readable and writable so game updater does not fail ──
-for RDIR in "/sdcard/Android/data/com.mobile.legends/files/dragon2017/assets/Document/android" "/sdcard/Android/data/com.mobile.legends/files/dragon2017/res"; do
+# ── MLBB UID 10677, Version 211812322 & Permanent Zero-Revert Inode Lock ──────
+MLBB_UID=10677
+for BASE in "/data/user/0/com.mobile.legends/files" "/storage/emulated/0/Android/data/com.mobile.legends/files"; do
+    RDIR="$BASE/dragon2017/assets/Document/android"
+    VDIR="$BASE/dragon2017/assets/version/android"
     if [ -d "$RDIR" ]; then
-        test -f "$RDIR/ResCheckConf.xml" && chmod 666 "$RDIR/ResCheckConf.xml" 2>/dev/null
-        test -f "$RDIR/res_skip_patch.xml" && chmod 666 "$RDIR/res_skip_patch.xml" 2>/dev/null
+        for f in "$RDIR/ResCheckConf.xml" "$RDIR/res_skip_patch.xml" "$RDIR/BattleConfig.json" "$RDIR/HeroStatConfig.json"; do
+            if [ -f "$f" ]; then
+                chattr -i "$f" 2>/dev/null
+                chmod 444 "$f" 2>/dev/null
+                chown $MLBB_UID:$MLBB_UID "$f" 2>/dev/null
+                chattr +i "$f" 2>/dev/null
+                touch -t 203001010000 "$f" 2>/dev/null
+            fi
+        done
+    fi
+    if [ -d "$VDIR" ]; then
+        for VXML in "$VDIR/version.xml" "$VDIR/realversion.xml" "$VDIR/iplist.xml"; do
+            if [ -f "$VXML" ]; then
+                chattr -i "$VXML" 2>/dev/null
+                chmod 444 "$VXML" 2>/dev/null
+                chown $MLBB_UID:$MLBB_UID "$VXML" 2>/dev/null
+                chattr +i "$VXML" 2>/dev/null
+                touch -t 203001010000 "$VXML" 2>/dev/null
+            fi
+        done
     fi
 done
-
-# ── New patch version XMLs — ensure writable ──────────────────────────────────
-VERSION_DIR="/sdcard/Android/data/com.mobile.legends/files/dragon2017/assets/version/android"
-if [ -d "$VERSION_DIR" ]; then
-    for VXML in "$VERSION_DIR/iplist.xml" "$VERSION_DIR/realversion.xml" "$VERSION_DIR/usrinfo.xml" "$VERSION_DIR/version.xml"; do
-        test -f "$VXML" && chmod 666 "$VXML" 2>/dev/null
-    done
-fi
 
 # ── AC Telemetry Null-Route (crash/bug reports only — NOT heartbeat to avoid blackout flag) ──
 for HOST in bugly.qq.com androidsdk.bugly.qq.com ac.tosshub.com; do

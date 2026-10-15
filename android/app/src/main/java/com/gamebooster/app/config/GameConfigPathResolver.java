@@ -75,11 +75,9 @@ public class GameConfigPathResolver {
         if (ShizukuExecutor.hasShizukuPermission()) {
             try {
                 StringBuilder scanRoots = new StringBuilder();
+                scanRoots.append("/data/user/0/").append(pkg).append("/ ");
+                scanRoots.append("/data/data/").append(pkg).append("/ ");
                 scanRoots.append("/storage/emulated/0/Android/data/").append(pkg).append("/ ");
-                if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-                    scanRoots.append("/data/data/").append(pkg).append("/ ");
-                    scanRoots.append("/data/user/0/").append(pkg).append("/ ");
-                }
                 // Prune huge non-config asset hierarchies (e.g. Unity asset bundles, game archives, media, crash logs)
                 // This reduces discovery from 112,000+ files (26s) down to < 50 files (< 40ms), eliminating pipe truncation
                 String cmd = "find " + scanRoots.toString() + "\\( "
@@ -371,14 +369,13 @@ public class GameConfigPathResolver {
      */
     public static List<String> generateBasePaths(String pkg) {
         List<String> roots = new ArrayList<>();
-        // 1. Primary User 0 standard storage locations (highest priority)
-        roots.add("/storage/emulated/0/Android/data/" + pkg);
+        // 1. Directory 1: App-private data root (/data/user/0/ and /data/data/)
+        roots.add("/data/user/0/" + pkg);
+        roots.add("/data/data/" + pkg);
 
-        // App-private data roots are only accessible when true root (su) is available
-        if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-            roots.add("/data/user/0/" + pkg);
-            roots.add("/data/data/" + pkg);
-        }
+        // 2. Directory 2: Primary User 0 standard storage locations
+        roots.add("/storage/emulated/0/Android/data/" + pkg);
+        roots.add("/sdcard/Android/data/" + pkg);
 
         // 2. Multi-profile / Dual App / Private Space roots only if secondary user dir and game directory exist
         int[] secondaryUserIds = {10, 11, 12, 13, 14, 15, 999};

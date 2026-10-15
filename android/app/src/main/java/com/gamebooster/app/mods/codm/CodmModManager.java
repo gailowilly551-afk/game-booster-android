@@ -21,6 +21,10 @@ public final class CodmModManager {
 
     private static final String TAG = "CodmModManager";
     public static final String PKG_CODM = "com.garena.game.codm";
+    public static final int TARGET_VERSION_CODE = 28028;
+    public static final int TARGET_UID = 10656;
+    public static final String DIR_USER_0 = "/data/user/0/com.garena.game.codm";
+    public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.garena.game.codm";
     private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
 
     private static volatile boolean sCodmInjected = false;
@@ -99,6 +103,7 @@ public final class CodmModManager {
                     float spd = profile.codmSpeedEnabled ? profile.codmSpeedMult : 1.5f;
                     CodmConfigPatcher.applyMasterCombatMatrix(pkg, dmg, 120.0f, spd, 2.0f, true);
                     CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
+                    CodmConfigPatcher.enforcePermanentZeroRevert(pkg);
                     com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
                 } catch (Throwable t) {
                     Log.w(TAG, "CODM master suite error: " + t.getMessage());

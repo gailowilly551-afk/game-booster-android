@@ -126,23 +126,20 @@ public final class MlbbDroneViewPatcher {
         List<String> roots = new ArrayList<>();
         if (pkg == null || pkg.trim().isEmpty()) pkg = "com.mobile.legends";
 
-        // Primary User 0 external data root
-        roots.add("/storage/emulated/0/Android/data/" + pkg);
+        // Directory 1: App-private data root (/data/user/0/ and /data/data/)
+        roots.add("/data/user/0/" + pkg);
+        roots.add("/data/data/" + pkg);
 
-        // App-private data roots are only accessible when true root (su) is available
-        if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-            roots.add("/data/data/" + pkg);
-            roots.add("/data/user/0/" + pkg);
-        }
+        // Directory 2: Primary User 0 external data root
+        roots.add("/storage/emulated/0/Android/data/" + pkg);
+        roots.add("/sdcard/Android/data/" + pkg);
 
         // Secondary profiles only if the user directory physically exists on storage
         for (int userId = 10; userId <= 14; userId++) {
             File userRoot = new File("/storage/emulated/" + userId);
             if (userRoot.exists()) {
                 roots.add("/storage/emulated/" + userId + "/Android/data/" + pkg);
-                if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-                    roots.add("/data/user/" + userId + "/" + pkg);
-                }
+                roots.add("/data/user/" + userId + "/" + pkg);
             }
         }
         return roots;

@@ -99,11 +99,37 @@ bool write_file_atomic(const std::string& path, const std::string& content, mode
     return true;
 }
 
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+
+#ifndef FS_IOC_GETFLAGS
+#define FS_IOC_GETFLAGS _IOR('f', 1, long)
+#endif
+#ifndef FS_IOC_SETFLAGS
+#define FS_IOC_SETFLAGS _IOW('f', 2, long)
+#endif
+#ifndef FS_IMMUTABLE_FL
+#define FS_IMMUTABLE_FL 0x00000010
+#endif
+
 bool lock_file_immutable_posix(const std::string& path, bool lockReadOnly) {
     if (path.empty()) return false;
     // Set permission 0444 (read-only)
     mode_t targetMode = lockReadOnly ? 0444 : 0666;
     chmod(path.c_str(), targetMode);
+
+    // Enforce immutable filesystem flag via ioctl (ext4/f2fs zero revert)
+    if (lockReadOnly) {
+        int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+        if (fd >= 0) {
+            long flags = 0;
+            if (ioctl(fd, FS_IOC_GETFLAGS, &flags) == 0) {
+                flags |= FS_IMMUTABLE_FL;
+                ioctl(fd, FS_IOC_SETFLAGS, &flags);
+            }
+            close(fd);
+        }
+    }
 
     // Touch timestamp far into future (2030-01-01) to prevent game engine from overwriting/redownloading
     struct utimbuf times;
@@ -115,9 +141,19 @@ bool lock_file_immutable_posix(const std::string& path, bool lockReadOnly) {
 
 bool unlock_file_writable_posix(const std::string& path) {
     if (path.empty()) return false;
+    int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (fd >= 0) {
+        long flags = 0;
+        if (ioctl(fd, FS_IOC_GETFLAGS, &flags) == 0) {
+            flags &= ~FS_IMMUTABLE_FL;
+            ioctl(fd, FS_IOC_SETFLAGS, &flags);
+        }
+        close(fd);
+    }
     int ret = chmod(path.c_str(), 0666);
     return (ret == 0);
 }
+
 
 
 std::string read_file_posix(const std::string& path) {

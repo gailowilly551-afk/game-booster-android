@@ -5,11 +5,13 @@
 ### **Next-Generation Android Performance Engine & Competitive MOBA / Battle Royale Hardware Accelerator**
 
 [![Android](https://img.shields.io/badge/Android-14%20|%2015%20|%2016%20(API%2034--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/Version-19.9.3-blueviolet?style=for-the-badge)](https://github.com/willygailo/Game-Launcher)
+[![Version](https://img.shields.io/badge/Version-20.1.0-blueviolet?style=for-the-badge)](https://github.com/willygailo/Game-Launcher)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Arch-arm64--v8a%20|%20armeabi--v7a%20|%20x86__64-red?style=for-the-badge)](https://developer.android.com/ndk)
 [![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/willygailo/Game-Launcher)
 [![Privilege](https://img.shields.io/badge/Privilege-Root%20|%20Shizuku%20|%20Non--Root-yellow?style=for-the-badge)](https://shizuku.rikka.app)
+[![GitHub](https://img.shields.io/badge/GitHub-willygailo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/willygailo)
+[![Facebook](https://img.shields.io/badge/Facebook-Connect-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/share/14tdhV1h92S/)
 
 <p align="center">
   <b>A state-of-the-art gaming environment engineered for elite competitive esports.</b><br>
@@ -18,7 +20,7 @@
 
 ---
 
-[Key Highlights](#-key-highlights) • [Architecture](#-performance-channels--architecture) • [Supported Games](#-game-engines--competitive-presets) • [Installation & Setup](#-installation--privilege-tiers) • [Verification](#-verification--telemetry-audit) • [Build Guide](#-build--development)
+[Key Highlights](#-key-highlights) • [Architecture](#-performance-channels--architecture) • [Supported Games](#-game-engines--competitive-presets) • [Installation & Setup](#-installation--privilege-tiers) • [Shizuku Guide](#-step-by-step-guide-how-to-use-shizuku-with-game-space) • [Verification](#-verification--telemetry-audit) • [Build Guide](#-build--development) • [Developer & Socials](#-developer--socials)
 
 ---
 
@@ -261,6 +263,59 @@ Game Launcher PRO adapts dynamically to the permissions granted on your Android 
 
 ---
 
+## 📱 Step-by-Step Guide: How to Use Shizuku with Game Space
+
+If your device is **not rooted**, you can unlock privileged hardware acceleration (8-layer display refresh rate override, 1000 Hz digitizer touch overclocking, and elevated game config tuning) using **Shizuku**.
+
+### 📋 Prerequisites
+1. **Shizuku App:** Download and install [Shizuku from GitHub](https://github.com/RikkaApps/Shizuku/releases) or the [Google Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
+2. **Wi-Fi Connection:** Connect your device to any Wi-Fi network (or turn on your phone's personal hotspot and connect another device).
+3. **Developer Options:** Enable Developer Options:
+   * Go to `Settings` ➔ `About Phone` ➔ tap **Build Number** 7 times until you see *"You are now a developer!"*.
+
+---
+
+### 🚀 Step-by-Step Instructions
+
+#### 1️⃣ Step 1: Open the Shizuku App
+* Launch the **Shizuku** application on your device from the app drawer or home screen.
+
+#### 2️⃣ Step 2: Start Shizuku (and Re-Start to Stabilize)
+* **Enable Wireless Debugging:**
+  1. Open your phone's `Settings` ➔ `System` / `Additional Settings` ➔ `Developer Options`.
+  2. Scroll down to **Wireless Debugging** and toggle it **ON**. Tap **Allow** when prompted.
+* **Pair with Shizuku (First-time only):**
+  1. Inside the Shizuku app, tap **Pairing** under the *"Start via Wireless debugging"* section.
+  2. Tap **Developer options** to jump directly to your settings.
+  3. Under Wireless Debugging, tap **Pair device with pairing code**. Note the **6-digit Wi-Fi pairing code**.
+  4. Pull down your notification bar, type the 6-digit code into the Shizuku notification prompt, and tap **Send**.
+  5. You will see a notification confirming *"Pairing successful"*.
+* **Start the Shizuku Service:**
+  1. Return to the Shizuku app.
+  2. Tap the **Start** button under *"Start via Wireless debugging"*.
+  3. A terminal window will briefly run and Shizuku will display **"Shizuku is running (Version xx, UID 2000)"**.
+* **Pro-Tip: Re-Start Shizuku After Starting ("Start again after starting")**
+  > [!TIP]
+  > On many Android OEM skins (HyperOS/MIUI, One UI, ColorOS, OxygenOS, RealmeUI), the wireless ADB socket may pause or stall during the initial handshake.
+  > **To ensure maximum stability for Game Space:**
+  > 1. After Shizuku shows "running", tap **Stop** (or toggle Wireless Debugging off and back on).
+  > 2. Tap **Start** once again.
+  > 3. This fresh restart fully primes the `rish` privileged IPC daemon and prevents connection dropouts during gaming sessions.
+
+#### 3️⃣ Step 3: Authorize Game Space in Shizuku
+1. In the Shizuku app main menu, tap **Authorized applications** (or *"Use Shizuku in authorized apps"*).
+2. Scroll down and locate **Game Space / Game Launcher PRO** (`com.gamebooster.app`).
+3. Toggle the switch to **ON** to grant Shizuku access.
+
+#### 4️⃣ Step 4: Launch and Boost Games
+1. Open **Game Launcher PRO (Game Space)**.
+2. The privilege indicator in the top header will now display **⚡ Shizuku Privileged Mode**.
+3. Select your game (e.g., **Mobile Legends: Bang Bang** or **Call of Duty: Mobile**).
+4. Configure your desired target refresh rate (90 Hz, 120 Hz, 144 Hz, or maximum panel capability) and hardware tuning preset.
+5. Tap **Launch & Boost**! Game Space will atomically enforce privileged display rates and zero-revert hardware optimization without root.
+
+---
+
 ## 🔍 Verification & Telemetry Audit
 
 Verify that your hardware boosts are actively engaged using ADB or a local root terminal:
@@ -309,6 +364,15 @@ cd Game-Launcher/android
 ```
 
 To create signed production releases, define `keystore.properties` inside `android/` with your signing keys.
+
+---
+
+## 👤 Developer & Socials
+
+Developed and maintained by **willygailo**. Connect, follow, or contribute:
+
+* 🐙 **GitHub:** [https://github.com/willygailo](https://github.com/willygailo)
+* 📘 **Facebook:** [Connect on Facebook](https://www.facebook.com/share/14tdhV1h92S/)
 
 ---
 

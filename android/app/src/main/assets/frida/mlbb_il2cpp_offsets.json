@@ -1,6 +1,11 @@
 {
   "version": "2.2.16.12322",
   "realversion": "2.2.16.1232.1",
+  "versionCode": "211812322",
+  "uid": "10677",
+  "package": "com.mobile.legends",
+  "directory_1": "/data/user/0/com.mobile.legends",
+  "directory_2": "/storage/emulated/0/Android/data/com.mobile.legends",
   "arch": "arm64-v8a",
   "target": "libil2cpp.so",
   "targets": [

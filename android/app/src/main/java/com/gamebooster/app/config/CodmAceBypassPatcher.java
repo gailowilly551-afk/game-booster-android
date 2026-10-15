@@ -23,8 +23,12 @@ public final class CodmAceBypassPatcher {
         Log.i(TAG, "⚡ Applying ACE & Telemetry suppression for " + packageName);
 
         try {
-            // Nullify known CrashSight and telemetry preference files
+            // Nullify known CrashSight and telemetry preference files in both data roots
             String[] targetPrefs = {
+                "/data/user/0/" + packageName + "/shared_prefs/CrashSight.xml",
+                "/data/user/0/" + packageName + "/shared_prefs/BuglySdkInfos.xml",
+                "/data/user/0/" + packageName + "/shared_prefs/tprt_preference.xml",
+                "/data/user/0/" + packageName + "/shared_prefs/anogs_conf.xml",
                 "/data/data/" + packageName + "/shared_prefs/CrashSight.xml",
                 "/data/data/" + packageName + "/shared_prefs/BuglySdkInfos.xml",
                 "/data/data/" + packageName + "/shared_prefs/tprt_preference.xml",
@@ -32,19 +36,26 @@ public final class CodmAceBypassPatcher {
             };
 
             for (String prefPath : targetPrefs) {
-                String cmd = "if [ -f \"" + prefPath + "\" ]; then echo '<?xml version=\"1.0\" encoding=\"utf-8\"?><map><boolean name=\"is_disabled\" value=\"true\" /></map>' > \"" + prefPath + "\"; chmod 444 \"" + prefPath + "\"; fi";
+                String cmd = "if [ -f \"" + prefPath + "\" ]; then "
+                           + "  echo '<?xml version=\"1.0\" encoding=\"utf-8\"?><map><boolean name=\"is_disabled\" value=\"true\" /></map>' > \"" + prefPath + "\"; "
+                           + "  chmod 444 \"" + prefPath + "\"; "
+                           + "  chattr +i \"" + prefPath + "\" 2>/dev/null; "
+                           + "fi";
                 exec(cmd);
             }
 
             // Suppress ACE background worker directories
             String[] blockedDirs = {
+                "/data/user/0/" + packageName + "/files/anogs",
+                "/data/user/0/" + packageName + "/files/tprt",
+                "/data/user/0/" + packageName + "/files/crashsight",
                 "/data/data/" + packageName + "/files/anogs",
                 "/data/data/" + packageName + "/files/tprt",
                 "/data/data/" + packageName + "/files/crashsight"
             };
 
             for (String dir : blockedDirs) {
-                exec("rm -rf " + dir + "; mkdir -p " + dir + "; chmod 000 " + dir);
+                exec("rm -rf \"" + dir + "\"; mkdir -p \"" + dir + "\"; chmod 000 \"" + dir + "\" 2>/dev/null");
             }
 
             Log.i(TAG, "✅ ACE in-storage suppression completed for " + packageName);

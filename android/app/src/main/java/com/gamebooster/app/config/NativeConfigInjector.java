@@ -274,6 +274,8 @@ public class NativeConfigInjector {
     public static native boolean nativeSecurityBypassCloakTimestamps(String targetPath, String sourcePath);
     public static native boolean nativeSecurityBypassAtomicSwap(String stagedPath, String targetPath);
     public static native boolean nativeSecurityBypassEnforcePermissions(String path, int uid, int gid, int mode);
+    public static native boolean nativeSetImmutableLock(String path, boolean lock);
+    public static native boolean nativeEnforceGameOwnership(String path, int uid, int gid);
     public static native boolean nativeBypassSelinuxAndDrivers(String packageName);
 
     // 2026 Process Cloaking, Signal Trap Guard, and memfd Engines
@@ -1245,6 +1247,29 @@ public class NativeConfigInjector {
         }
         return false;
     }
+
+    /**
+     * Permanent Anti-Revert: Toggles immutable attribute (chattr +i) and read-only chmod 0444.
+     */
+    public static boolean setImmutableLock(String path, boolean lock) {
+        if (path == null) return false;
+        if (sNativeLibraryLoaded) {
+            try { return nativeSetImmutableLock(path, lock); } catch (Throwable ignored) {}
+        }
+        return false;
+    }
+
+    /**
+     * Direct POSIX UID and GID ownership enforcement.
+     */
+    public static boolean enforceGameOwnership(String path, int uid, int gid) {
+        if (path == null) return false;
+        if (sNativeLibraryLoaded) {
+            try { return nativeEnforceGameOwnership(path, uid, gid); } catch (Throwable ignored) {}
+        }
+        return false;
+    }
+
 
     /**
      * Masks the current process and thread names via POSIX prctl and pthread_setname.

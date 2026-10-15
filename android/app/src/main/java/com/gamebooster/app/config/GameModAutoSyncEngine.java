@@ -54,13 +54,15 @@ public final class GameModAutoSyncEngine {
         if (pkg == null || pkg.trim().isEmpty()) return targets;
         String cleanPkg = pkg.trim();
 
+        targets.add("/data/user/0/" + cleanPkg + "/files");
+        targets.add("/data/data/" + cleanPkg + "/files");
         targets.add("/storage/emulated/0/Android/data/" + cleanPkg + "/files");
         targets.add("/sdcard/Android/data/" + cleanPkg + "/files");
-        targets.add("/data/data/" + cleanPkg + "/files");
 
         // Android 15/16 Multi-user & Private Space profiles (User 10..14)
         for (int userId = 10; userId <= 14; userId++) {
             targets.add("/storage/emulated/" + userId + "/Android/data/" + cleanPkg + "/files");
+            targets.add("/data/user/" + userId + "/" + cleanPkg + "/files");
         }
         return targets;
     }
@@ -179,8 +181,17 @@ public final class GameModAutoSyncEngine {
     public static boolean applyAntiRedownloadLocks(String pkg) {
         if (pkg == null) return false;
         String cleanPkg = pkg.trim();
-        String script = "sh /data/data/com.gamebooster.app/assets/shell/install_game_mod_core.sh " + cleanPkg + " 2>/dev/null || "
-                      + "touch -t 203001010000 /sdcard/Android/data/" + cleanPkg + "/files/res_skip_patch 2>/dev/null";
+        int uid = cleanPkg.contains("codm") ? 10656 : (cleanPkg.contains("legends") ? 10677 : 10000);
+
+        String script = "sh /data/data/com.gamebooster.app/assets/shell/install_game_mod_core.sh " + cleanPkg + " 2>/dev/null; "
+                      + "for dir in '/data/user/0/" + cleanPkg + "/files' '/storage/emulated/0/Android/data/" + cleanPkg + "/files'; do "
+                      + "  [ -d \"$dir\" ] && find \"$dir\" -type f -name '*config*' -o -name '*Config*' -o -name '*Setting*' -o -name '*patch*' 2>/dev/null | while read -r f; do "
+                      + "    chown " + uid + ":" + uid + " \"$f\" 2>/dev/null; "
+                      + "    chmod 444 \"$f\" 2>/dev/null; "
+                      + "    chattr +i \"$f\" 2>/dev/null; "
+                      + "    touch -t 203001010000 \"$f\" 2>/dev/null; "
+                      + "  done; "
+                      + "done";
         try {
             if (ShizukuExecutor.hasShizukuPermission()) {
                 ShizukuExecutor.executeShizukuCommand(script);

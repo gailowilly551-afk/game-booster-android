@@ -73,5 +73,23 @@ for HOST in bugly.qq.com crash.tencent.com androidsdk.bugly.qq.com ac.tosshub.co
     ip6tables -A OUTPUT -d "$HOST" -j DROP 2>/dev/null
 done
 
+# ── CODM UID 10656, Version 28028 & Permanent Zero-Revert Inode Lock ──────────
+CODM_UID=10656
+for BASE in "/data/user/0/com.garena.game.codm/files" "/storage/emulated/0/Android/data/com.garena.game.codm/files"; do
+    CFG_DIR="$BASE/Config"
+    if [ -d "$CFG_DIR" ]; then
+        for f in "$CFG_DIR/UserSetting.json" "$CFG_DIR/GameConfig.xml" "$CFG_DIR/ControlsSettings.ini" "$CFG_DIR/GraphicsSettings.ini" "$BASE/res_skip_patch"; do
+            if [ -f "$f" ]; then
+                chattr -i "$f" 2>/dev/null
+                chmod 444 "$f" 2>/dev/null
+                chown $CODM_UID:$CODM_UID "$f" 2>/dev/null
+                chattr +i "$f" 2>/dev/null
+                touch -t 203001010000 "$f" 2>/dev/null
+            fi
+        done
+    fi
+done
+
 # GameMode API clamp removal for CODM (Garena)
 cmd game set --mode 2 --user 0 com.garena.game.codm 2>/dev/null
+

@@ -12,6 +12,50 @@ import java.util.List;
  */
 public class CodmConfigPatcher {
 
+    public static final String PKG_CODM = "com.garena.game.codm";
+    public static final String TARGET_PACKAGE = "com.garena.game.codm";
+    public static final int TARGET_VERSION_CODE = 28028;
+    public static final int TARGET_UID = 10656;
+    public static final String DIR_USER_0 = "/data/user/0/com.garena.game.codm";
+    public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.garena.game.codm";
+
+    /**
+     * Enforces permanent zero-revert lock across all injected CODM config files and directories.
+     * Applies chmod 0444, immutable ioctl flag (chattr +i), future timestamp (2030), and UID 10656.
+     */
+    public static void enforcePermanentZeroRevert(String pkg) {
+        if (pkg == null || pkg.trim().isEmpty()) pkg = PKG_CODM;
+        List<String> roots = resolveRootDirs(pkg);
+        for (String root : roots) {
+            String[] targetFiles = {
+                root + "/files/Config/UserSetting.json",
+                root + "/files/Config/GameConfig.xml",
+                root + "/files/Config/ControlsSettings.ini",
+                root + "/files/Config/GraphicsSettings.ini",
+                root + "/files/res_skip_patch",
+                root + "/files/MSDKConfig.ini"
+            };
+            for (String f : targetFiles) {
+                NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
+                NativeConfigInjector.setImmutableLock(f, true);
+            }
+        }
+        String shellLock = "for f in '/data/user/0/" + pkg + "/files/Config/'* "
+                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/Config/'*; do "
+                         + "  [ -f \"$f\" ] && chown " + TARGET_UID + ":" + TARGET_UID + " \"$f\" 2>/dev/null && "
+                         + "  chmod 444 \"$f\" 2>/dev/null && chattr +i \"$f\" 2>/dev/null && "
+                         + "  touch -t 203001010000 \"$f\" 2>/dev/null; "
+                         + "done";
+        try {
+            if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellLock);
+            } else {
+                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellLock);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+
 
     // ── 2026 Lock Methods ─────────────────────────────────────────────────────
 
@@ -422,11 +466,10 @@ public class CodmConfigPatcher {
         }
 
         for (String targetPkg : targets) {
+            roots.add("/data/user/0/" + targetPkg);
+            roots.add("/data/data/" + targetPkg);
             roots.add("/storage/emulated/0/Android/data/" + targetPkg);
-            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-                roots.add("/data/data/" + targetPkg);
-                roots.add("/data/user/0/" + targetPkg);
-            }
+            roots.add("/sdcard/Android/data/" + targetPkg);
         }
         return roots;
     }

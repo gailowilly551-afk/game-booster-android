@@ -22,39 +22,48 @@ public class RishManager {
     private static final String DIR_NAME = "shizuku";
     private static final String RISH_BIN_NAME = "rish";
     private static final String RISH_DEX_NAME = "rish_shizuku.dex";
+    public static final long EXPECTED_DEX_SIZE = 59672L;
 
     private static volatile boolean isInitialized = false;
-    private static volatile boolean isRishBrokenOnThisDevice = false; // set true if boot.art ART crash detected
+    private static volatile boolean isRishBrokenOnThisDevice = false;
     private static File rishBinFile = null;
     private static File rishDexFile = null;
 
-    /** Android 16 (API 36) ships a new ART format. Old rish binaries crash on startup. */
-    private static final boolean RISH_MIGHT_BE_BROKEN = Build.VERSION.SDK_INT >= 36;
-
     public static boolean isRishAvailable() {
-        if (isRishBrokenOnThisDevice || RISH_MIGHT_BE_BROKEN) return false;
-        return (isInitialized && rishBinFile != null && rishBinFile.exists()) ||
-                (rishBinFile != null && rishBinFile.exists());
+        if (isRishBrokenOnThisDevice) return false;
+        return (isInitialized && rishBinFile != null && rishBinFile.exists() && rishDexFile != null && rishDexFile.exists() && rishDexFile.length() > 0) ||
+                (rishBinFile != null && rishBinFile.exists() && rishDexFile != null && rishDexFile.exists() && rishDexFile.length() > 0);
     }
 
     /**
-     * Initializes and extracts rish and rish_shizuku.dex to internal app storage.
+     * Tests if the rish shell channel is actively communicating with Shizuku daemon.
+     */
+    public static boolean testRishLiveness(Context context) {
+        if (!isAvailable(context)) return false;
+        try {
+            String out = executeRishCommand(context, "echo ping");
+            return out != null && "ping".equals(out.trim());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Initializes and extracts official stable rish and rish_shizuku.dex to internal app storage.
      */
     @android.annotation.SuppressLint({"SetWorldReadable", "SetWorldWritable"})
     public static synchronized boolean initialize(Context context) {
         if (context == null) return false;
-        if (isInitialized && rishBinFile != null && rishBinFile.exists() && rishDexFile != null && rishDexFile.exists()) {
-            return true;
-        }
+        Context appContext = context.getApplicationContext();
 
         try {
-            Context appContext = context.getApplicationContext();
             File shizukuDir = new File(appContext.getFilesDir(), DIR_NAME);
             if (!shizukuDir.exists()) {
                 shizukuDir.mkdirs();
             }
             try {
                 appContext.getFilesDir().setExecutable(true, false);
+                appContext.getFilesDir().setReadable(true, false);
                 shizukuDir.setExecutable(true, false);
                 shizukuDir.setReadable(true, false);
             } catch (Throwable ignored) {}
@@ -62,11 +71,16 @@ public class RishManager {
             rishBinFile = new File(shizukuDir, RISH_BIN_NAME);
             rishDexFile = new File(shizukuDir, RISH_DEX_NAME);
 
-            // Extract rish_shizuku.dex if missing or size differs
-            if (!rishDexFile.exists() || rishDexFile.length() == 0) {
-                // If read-only from previous run, make writable before overwriting
+            // Re-extract rish_shizuku.dex if missing, empty, or size mismatch from stable asset
+            if (!rishDexFile.exists() || rishDexFile.length() != EXPECTED_DEX_SIZE) {
                 if (rishDexFile.exists()) {
-                    rishDexFile.setWritable(true, true);
+                    try {
+                        rishDexFile.setWritable(true, false);
+                        boolean deleted = rishDexFile.delete();
+                        if (!deleted) {
+                            Log.w(TAG, "Old rishDexFile delete failed, attempting direct overwrite");
+                        }
+                    } catch (Throwable ignored) {}
                 }
                 copyAssetToFile(appContext, DIR_NAME + "/" + RISH_DEX_NAME, rishDexFile);
             }
@@ -89,7 +103,8 @@ public class RishManager {
             rishBinFile.setReadable(true, false);
 
             isInitialized = true;
-            Log.i(TAG, "RishManager 13.5 successfully initialized at: " + rishBinFile.getAbsolutePath());
+            isRishBrokenOnThisDevice = false;
+            Log.i(TAG, "Stable RishManager successfully initialized at: " + rishBinFile.getAbsolutePath() + " (dexSize=" + rishDexFile.length() + ")");
             return true;
 
         } catch (Throwable t) {
@@ -99,19 +114,18 @@ public class RishManager {
     }
 
     /**
-     * Executes a command using Shizuku 13.5 rish shell.
+     * Executes a command using Shizuku stable rish shell.
      */
     public static String executeRishCommand(Context context, String command) {
         if (command == null || command.trim().isEmpty()) {
             return "SUCCESS";
         }
 
-        // Fast-fail if rish was confirmed broken at runtime (Android 16 ART header crash)
         if (isRishBrokenOnThisDevice) {
             return "ERROR: rish binary not available";
         }
 
-        if (!isInitialized) {
+        if (!isInitialized || rishBinFile == null || !rishBinFile.exists() || rishDexFile == null || !rishDexFile.exists()) {
             initialize(context);
         }
 
@@ -128,42 +142,43 @@ public class RishManager {
 
             ProcessBuilder pb = new ProcessBuilder("sh", rishBinFile.getAbsolutePath(), "-c", command);
             pb.environment().put("RISH_APPLICATION_ID", pkgName);
+            pb.environment().put("PATH", "/system/bin:/system/xbin:/vendor/bin");
             pb.directory(rishBinFile.getParentFile());
 
             process = pb.start();
 
-            stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             StringBuilder stdout = new StringBuilder();
             String line;
             while ((line = stdoutReader.readLine()) != null) {
                 stdout.append(line).append("\n");
             }
 
-            stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
             StringBuilder stderr = new StringBuilder();
             while ((line = stderrReader.readLine()) != null) {
                 stderr.append(line).append("\n");
             }
 
-            // Timeout 1500ms to prevent infinite hang on stalled process (Android 16 fix)
-            boolean finished = process.waitFor(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            // Timeout 5000ms to allow complex shell pipelines under high CPU load
+            boolean finished = process.waitFor(5000, java.util.concurrent.TimeUnit.MILLISECONDS);
             if (!finished) {
-                process.destroy();
-                Log.w(TAG, "rish command timed out after 1500ms, killing process");
-                return "ERROR: Command timed out after 1500ms";
+                try {
+                    process.destroy();
+                } catch (Throwable ignored) {}
+                Log.w(TAG, "rish command timed out after 5000ms: " + command);
+                return "ERROR: Command timed out after 5000ms";
             }
 
             int exitCode = process.exitValue();
             String stdoutStr = stdout.toString().trim();
             String stderrStr = stderr.toString().trim();
 
-            // Detect Android 16 ART boot image crash — mark rish permanently broken
-            // so subsequent calls fail-fast instead of spawning more crashing processes.
-            if (RISH_MIGHT_BE_BROKEN && exitCode != 0
-                    && (stderrStr.contains("boot.art") || stderrStr.contains("invalid") || stderrStr.contains("Image header"))) {
-                Log.w(TAG, "rish ART boot image incompatibility detected on Android " + Build.VERSION.SDK_INT + " — disabling rish for this session");
+            // Detect fatal ART image incompatibility
+            if (exitCode != 0 && (stderrStr.contains("boot.art") || stderrStr.contains("Image header invalid"))) {
+                Log.w(TAG, "Fatal ART image incompatibility detected: " + stderrStr);
                 isRishBrokenOnThisDevice = true;
-                return "ERROR: rish not compatible with this Android version";
+                return "ERROR: rish not compatible with this device ART image";
             }
 
             if (exitCode == 0) {
@@ -188,16 +203,20 @@ public class RishManager {
     }
 
     public static boolean isAvailable(Context context) {
-        if (isRishBrokenOnThisDevice || RISH_MIGHT_BE_BROKEN) return false;
-        if (!isInitialized) {
+        if (isRishBrokenOnThisDevice) return false;
+        if (!isInitialized || rishBinFile == null || !rishBinFile.exists() || rishDexFile == null || !rishDexFile.exists()) {
             initialize(context);
         }
-        return rishBinFile != null && rishBinFile.exists();
+        return rishBinFile != null && rishBinFile.exists() && rishDexFile != null && rishDexFile.exists() && rishDexFile.length() > 0;
     }
 
     private static String generateRishScript(String pkgName, String dexPath) {
         return "#!/system/bin/sh\n" +
                 "DEX=\"" + dexPath + "\"\n" +
+                "if [ ! -f \"$DEX\" ]; then\n" +
+                "  echo \"Cannot find $DEX\"\n" +
+                "  exit 1\n" +
+                "fi\n" +
                 "if [ $(getprop ro.build.version.sdk 2>/dev/null || echo 0) -ge 34 ]; then\n" +
                 "  if [ -w \"$DEX\" ]; then\n" +
                 "    chmod 400 \"$DEX\" 2>/dev/null\n" +

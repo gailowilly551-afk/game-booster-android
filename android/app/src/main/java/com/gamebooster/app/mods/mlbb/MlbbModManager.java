@@ -22,6 +22,10 @@ public final class MlbbModManager {
 
     private static final String TAG = "MlbbModManager";
     public static final String PKG_MLBB = "com.mobile.legends";
+    public static final int TARGET_VERSION_CODE = 211812322;
+    public static final int TARGET_UID = 10677;
+    public static final String DIR_USER_0 = "/data/user/0/com.mobile.legends";
+    public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.mobile.legends";
     private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
 
     private static volatile boolean sMlbbInjected = false;
@@ -108,6 +112,7 @@ public final class MlbbModManager {
                     float aspd = profile.mlbbAttackSpeedEnabled ? profile.mlbbAttackSpeedMult : 1.0f;
                     MlbbConfigPatcher.applyMasterCombatMatrix(pkg, dmg, fov, 1.45f, aspd, profile.mlbbMapHack);
                     MlbbConfigPatcher.applyMlbbLatest2026Patch(pkg);
+                    MlbbConfigPatcher.enforcePermanentZeroRevert(pkg);
                     com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
                 } catch (Throwable t) {
                     Log.w(TAG, "MLBB master suite error: " + t.getMessage());

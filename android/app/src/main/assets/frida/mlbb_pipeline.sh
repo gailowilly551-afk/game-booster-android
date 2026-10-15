@@ -83,6 +83,17 @@ do_frida() {
         echo "[✓] Hook script ready @ $HOOKS_DEVICE_PATH"
         echo "[✓] GameLauncher internal GameModEngine will execute instant injection on launch!"
     fi
+
+    # Enforce UID 10677, VersionCode 211812322 & Permanent Zero-Revert Inode Locks
+    echo "━━━ ENFORCING PERMANENT ZERO-REVERT LOCKS (UID 10677) ━━━"
+    run_cmd "for dir in '/data/user/0/$TARGET_PKG/files' '/storage/emulated/0/Android/data/$TARGET_PKG/files'; do \
+        [ -d \"\$dir\" ] && find \"\$dir\" -type f -name '*config*' -o -name '*Config*' -o -name '*patch*' 2>/dev/null | while read -r f; do \
+            chown 10677:10677 \"\$f\" 2>/dev/null; \
+            chmod 444 \"\$f\" 2>/dev/null; \
+            chattr +i \"\$f\" 2>/dev/null; \
+            touch -t 203001010000 \"\$f\" 2>/dev/null; \
+        done; \
+    done"
 }
 
 do_status() {

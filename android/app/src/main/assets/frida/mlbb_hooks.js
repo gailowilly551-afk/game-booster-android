@@ -587,4 +587,50 @@ try {
   }
 } catch (e) {}
 
+// ─── Permanent Zero-Revert Inode & Config Shielding (Anti-Overwrite Protection) ──
+(function shieldMlbbFiles() {
+  const protectedNames = [
+    'ResCheckConf.xml', 'res_skip_patch.xml', 'version.xml', 'realversion.xml',
+    'HeroStatConfig.json', 'BattleConfig.json', 'Document.unity3d.res_check_fix'
+  ];
+  const openatPtr = Module.findExportByName(null, 'openat');
+  if (openatPtr) {
+    Interceptor.attach(openatPtr, {
+      onEnter(args) {
+        const pathPtr = args[1];
+        if (pathPtr) {
+          const path = pathPtr.readCString();
+          if (path && protectedNames.some(p => path.includes(p))) {
+            const flags = args[2].toInt32();
+            if ((flags & 0x200) !== 0) { // Strip O_TRUNC to prevent redownload overwrite
+              args[2] = ptr(flags & ~0x200);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const unlinkPtr = Module.findExportByName(null, 'unlink');
+  if (unlinkPtr) {
+    Interceptor.attach(unlinkPtr, {
+      onEnter(args) {
+        const pathPtr = args[0];
+        if (pathPtr) {
+          const path = pathPtr.readCString();
+          if (path && protectedNames.some(p => path.includes(p))) {
+            this.suppress = true;
+          }
+        }
+      },
+      onLeave(retval) {
+        if (this.suppress) {
+          retval.replace(ptr(0));
+        }
+      }
+    });
+  }
+})();
+
 console.log('[GameBoosterPRO] MLBB hooks loaded successfully ✓ — gamebooster.mlbb.injected=1');
+

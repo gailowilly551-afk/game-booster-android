@@ -65,6 +65,10 @@ global-metadata.dat
 !**/assets/**/global-metadata.dat
 !**/assets/**/global-*-metadata.dat
 !**/assets/**.dat
+android/dump_codm/
+android/dump_mlbb/
+new rish/
+.superpowers/
 
 # Gradle Build Cache, Daemon & Outputs
 .gradle/

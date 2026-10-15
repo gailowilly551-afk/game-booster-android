@@ -23,8 +23,10 @@ public class ShizukuExecutor {
     public static boolean isShizukuAvailable() {
         try {
             boolean ping = Shizuku.pingBinder();
-            Log.d(TAG, "isShizukuAvailable pingBinder=" + ping);
-            return ping;
+            if (ping) return true;
+            if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) return true;
+            if (RishManager.isRishAvailable()) return true;
+            return false;
         } catch (Throwable t) {
             Log.d(TAG, "isShizukuAvailable exception: " + t.getMessage());
             return false;
@@ -36,8 +38,17 @@ public class ShizukuExecutor {
             return false;
         }
         try {
-            int check = Shizuku.checkSelfPermission();
-            return (check == PackageManager.PERMISSION_GRANTED);
+            if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+                return true;
+            }
+            if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
+                return true;
+            }
+            Context ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            if (ctx != null && com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(ctx) && RishManager.isRishAvailable()) {
+                return true;
+            }
+            return false;
         } catch (Throwable t) {
             Log.d(TAG, "hasShizukuPermission exception: " + t.getMessage());
             return false;
@@ -111,25 +122,29 @@ public class ShizukuExecutor {
             // Fallback: AIDL UserService if already connected
             if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
                 String aidlRes = ShizukuUserServiceConnector.getInstance().executeCommandDirect(command);
-                if (aidlRes != null) {
+                if (aidlRes != null && !aidlRes.startsWith("ERROR")) {
                     return aidlRes;
                 }
             }
 
-            // Fallback: Rish
+            // Fallback: Stable Rish
             try {
-                String rishOut = RishManager.executeRishCommand(null, command);
-                if (rishOut != null && !rishOut.startsWith("ERROR: rish binary not available")) {
-                    return rishOut;
+                if (RishManager.isRishAvailable()) {
+                    String rishOut = RishManager.executeRishCommand(null, command);
+                    if (rishOut != null && !rishOut.startsWith("ERROR: rish binary not available")) {
+                        return rishOut;
+                    }
                 }
             } catch (Throwable ignored) {}
         }
 
-        // Tier 2: Try rish directly if binder is in background
+        // Tier 2: Try rish directly if binder is in background or was ever authorized
         try {
-            String rishOut = RishManager.executeRishCommand(null, command);
-            if (rishOut != null && !rishOut.startsWith("ERROR")) {
-                return rishOut;
+            if (RishManager.isRishAvailable()) {
+                String rishOut = RishManager.executeRishCommand(null, command);
+                if (rishOut != null && !rishOut.startsWith("ERROR")) {
+                    return rishOut;
+                }
             }
         } catch (Throwable ignored) {}
 

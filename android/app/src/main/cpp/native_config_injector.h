@@ -1797,6 +1797,23 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
   (JNIEnv *, jclass, jstring, jint, jint, jint);
 
 /*
+ * nativeSetImmutableLock
+ * Toggles immutable file attribute (FS_IOC_SETFLAGS / chattr +i) and read-only chmod 0444.
+ * Signature: (Ljava/lang/String;Z)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeSetImmutableLock
+  (JNIEnv *, jclass, jstring, jboolean);
+
+/*
+ * nativeEnforceGameOwnership
+ * Direct POSIX chown for target game UID & GID.
+ * Signature: (Ljava/lang/String;II)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeEnforceGameOwnership
+  (JNIEnv *, jclass, jstring, jint, jint);
+
+
+/*
  * nativeInjectMlbbAutoMapGlitch3s
  * Injects 2026 3-second auto map glitch, periodic FOW desync pulses, and minimap ghost icon retention.
  * Signature: (Ljava/lang/String;)Z

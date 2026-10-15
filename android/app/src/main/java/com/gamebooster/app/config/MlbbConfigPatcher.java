@@ -19,6 +19,52 @@ import com.gamebooster.app.shizuku.ShizukuExecutor;
  */
 public class MlbbConfigPatcher {
 
+    public static final String PKG_MLBB = "com.mobile.legends";
+    public static final int TARGET_VERSION_CODE = 211812322;
+    public static final int TARGET_UID = 10677;
+    public static final String DIR_USER_0 = "/data/user/0/com.mobile.legends";
+    public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.mobile.legends";
+
+    /**
+     * Enforces permanent zero-revert lock across all injected MLBB config files and directories.
+     * Applies chmod 0444, immutable ioctl flag (chattr +i), future timestamp (2030), and UID 10677.
+     */
+    public static void enforcePermanentZeroRevert(String pkg) {
+        if (pkg == null || pkg.trim().isEmpty()) pkg = PKG_MLBB;
+        List<String> roots = MlbbDroneViewPatcher.resolveMlbbRootDirs(pkg);
+        for (String root : roots) {
+            String[] targetFiles = {
+                root + "/files/dragon2017/assets/Document/android/BattleConfig.json",
+                root + "/files/dragon2017/assets/Document/android/HeroStatConfig.json",
+                root + "/files/dragon2017/assets/Document/android/CameraConfig.json",
+                root + "/files/dragon2017/assets/Document/android/DroneViewConfig.json",
+                root + "/files/dragon2017/assets/Document/android/BattleSystemConfig.bytes",
+                root + "/files/dragon2017/assets/Document/android/res_skip_patch.xml",
+                root + "/files/dragon2017/assets/Document/android/ResCheckConf.xml",
+                root + "/files/dragon2017/assets/version/android/version.xml",
+                root + "/files/dragon2017/assets/version/android/realversion.xml"
+            };
+            for (String f : targetFiles) {
+                NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
+                NativeConfigInjector.setImmutableLock(f, true);
+            }
+        }
+        // Shell & Shizuku anti-revert execution
+        String shellLock = "for f in '/data/user/0/" + pkg + "/files/dragon2017/assets/Document/android/'* "
+                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/'*; do "
+                         + "  [ -f \"$f\" ] && chown " + TARGET_UID + ":" + TARGET_UID + " \"$f\" 2>/dev/null && "
+                         + "  chmod 444 \"$f\" 2>/dev/null && chattr +i \"$f\" 2>/dev/null && "
+                         + "  touch -t 203001010000 \"$f\" 2>/dev/null; "
+                         + "done";
+        try {
+            if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellLock);
+            } else {
+                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellLock);
+            }
+        } catch (Throwable ignored) {}
+    }
+
     public static boolean deployMlbbAssets(String packageName) {
         return deployMlbbAssets(null, packageName);
     }
