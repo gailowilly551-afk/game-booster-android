@@ -17,9 +17,13 @@ import shutil
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-APKS_PATH = REPO_ROOT.parent / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57_sign.apks"
-if not APKS_PATH.exists():
-    APKS_PATH = REPO_ROOT / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57_sign.apks"
+APKS_CANDIDATES = [
+    REPO_ROOT.parent / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57.apks",
+    REPO_ROOT.parent / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57_sign.apks",
+    REPO_ROOT / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57.apks",
+    REPO_ROOT / "Call of Duty_1.6.57.version" / "Call of Duty_1.6.57_sign.apks",
+]
+APKS_PATH = next((p for p in APKS_CANDIDATES if p.exists()), APKS_CANDIDATES[0])
 
 DUMP_DIR = REPO_ROOT / "dump_codm"
 META_DIR = DUMP_DIR / "Metadata"
