@@ -366,6 +366,9 @@ public class ShizukuConnectionManager {
 
     public boolean isReady() {
         try {
+            if (state == State.READY) {
+                return true;
+            }
             if (Shizuku.pingBinder()
                     && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
                 return true;
@@ -373,7 +376,10 @@ public class ShizukuConnectionManager {
             if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
                 return true;
             }
-            if (RishManager.isRishAvailable() && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance())) {
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()
+                    && Shizuku.pingBinder()
+                    && RishManager.isRishAvailable()
+                    && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance())) {
                 return true;
             }
             return false;

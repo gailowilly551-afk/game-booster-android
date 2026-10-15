@@ -60,12 +60,10 @@ public class PrivilegeBridgeEngine {
             binderAlive = rikka.shizuku.Shizuku.pingBinder();
         } catch (Throwable ignored) {}
 
-        return (binderAlive && ShizukuExecutor.hasShizukuPermission())
+        return (binderAlive && (ShizukuExecutor.hasShizukuPermission() || RishManager.isRishAvailable()))
                 || ShizukuManager.isShizukuRunningAndGranted()
                 || ShizukuUserServiceConnector.getInstance().isServiceConnected()
-                || ShizukuConnectionManager.getInstance().isReady()
-                || RishManager.isRishAvailable()
-                || (everGranted && RishManager.isRishAvailable());
+                || (ShizukuConnectionManager.getInstance().getState() == ShizukuConnectionManager.State.READY);
     }
 
     /**

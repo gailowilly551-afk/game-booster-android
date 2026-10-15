@@ -356,11 +356,15 @@ adb shell dumpsys gfxinfo <package_name> framestats
 git clone https://github.com/willygailo/Game-Launcher.git
 cd Game-Launcher/android
 
-# Run unit tests and assemble Debug APK
-./gradlew testDebugUnitTest assembleDebug
+# Full Pre-Build Verification & Automated APK Build (Compile + Lint + Tests + Assemble)
+./tools/full_check_and_build.sh
+
+# Or run full check & build directly via Gradle:
+./gradlew check assembleDebug
 
 # Output APK path:
-# android/app/build/outputs/apk/debug/app-debug.apk
+# Game_Space_v20.1.0-PRO_debug.apk (project root)
+# android/app/build/outputs/apk/debug/Game_Space_Debug.apk
 ```
 
 To create signed production releases, define `keystore.properties` inside `android/` with your signing keys.

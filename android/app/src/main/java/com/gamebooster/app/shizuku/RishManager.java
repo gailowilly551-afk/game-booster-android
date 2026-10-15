@@ -35,15 +35,37 @@ public class RishManager {
                 (rishBinFile != null && rishBinFile.exists() && rishDexFile != null && rishDexFile.exists() && rishDexFile.length() > 0);
     }
 
+    private static volatile long sLastRishCheckTime = 0L;
+    private static volatile boolean sLastRishLiveness = false;
+    private static final long RISH_CHECK_TTL_MS = 5000L;
+
     /**
      * Tests if the rish shell channel is actively communicating with Shizuku daemon.
+     * Guaranteed safe: Never blocks Main UI Thread, and skips execution if Shizuku binder is dead.
      */
     public static boolean testRishLiveness(Context context) {
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            // NEVER execute shell processes on the Main UI thread (causes ANR)
+            return sLastRishLiveness;
+        }
         if (!isAvailable(context)) return false;
         try {
+            // Rish communicates via Shizuku binder. If binder is dead, rish cannot work.
+            if (!rikka.shizuku.Shizuku.pingBinder()) {
+                sLastRishLiveness = false;
+                return false;
+            }
+            long now = System.currentTimeMillis();
+            if (now - sLastRishCheckTime < RISH_CHECK_TTL_MS) {
+                return sLastRishLiveness;
+            }
+            sLastRishCheckTime = now;
             String out = executeRishCommand(context, "echo ping");
-            return out != null && "ping".equals(out.trim());
+            boolean alive = out != null && "ping".equals(out.trim());
+            sLastRishLiveness = alive;
+            return alive;
         } catch (Throwable t) {
+            sLastRishLiveness = false;
             return false;
         }
     }

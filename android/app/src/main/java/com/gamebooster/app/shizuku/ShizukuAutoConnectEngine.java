@@ -9,6 +9,7 @@ import com.gamebooster.app.booster.BackgroundLimitImmunityEngine;
 import com.gamebooster.app.core.AppExecutors;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import rikka.shizuku.Shizuku;
@@ -109,7 +110,7 @@ public final class ShizukuAutoConnectEngine {
             long delay = PULSE_DELAYS_MS[i];
             boolean isLast = (i == PULSE_DELAYS_MS.length - 1);
 
-            AppExecutors.getInstance().postDelayed(() -> {
+            AppExecutors.getInstance().schedule(() -> {
                 try {
                     boolean success = evaluateAndConnect(context);
                     if (success || isLast) {
@@ -121,7 +122,7 @@ public final class ShizukuAutoConnectEngine {
                 } catch (Throwable t) {
                     if (isLast) sPulseInProgress.set(false);
                 }
-            }, delay);
+            }, delay, TimeUnit.MILLISECONDS);
         }
     }
 

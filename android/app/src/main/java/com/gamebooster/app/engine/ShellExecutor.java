@@ -52,7 +52,7 @@ public class ShellExecutor {
             if (sRootAvailable != null) {
                 return sRootAvailable;
             }
-            // 1. Check known binary paths
+            // 1. Check known binary paths (instant filesystem check)
             boolean suFileExists = false;
             for (String path : SU_PATHS) {
                 File f = new File(path);
@@ -61,24 +61,39 @@ public class ShellExecutor {
                     break;
                 }
             }
+            if (suFileExists) {
+                sRootAvailable = true;
+                return true;
+            }
 
-            // 2. Also try executing 'su -c id' to verify grant from Magisk / KernelSU / APatch
+            // If called on main UI thread, NEVER run blocking process execution (su/sh) — return fast false
+            // and trigger deep check asynchronously in background
+            if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+                com.gamebooster.app.core.AppExecutors.getInstance().executeCommand(ShellExecutor::checkRootDeep);
+                return false;
+            }
+
+            return checkRootDeep();
+        }
+    }
+
+    private static boolean checkRootDeep() {
+        synchronized (ROOT_CHECK_LOCK) {
+            if (sRootAvailable != null) {
+                return sRootAvailable;
+            }
+            // 2. Also try executing 'su -c id' with 1-second timeout to verify grant from Magisk / KernelSU / APatch
             try {
-                CommandResult res = executeInternal("su", "id");
+                CommandResult res = executeInternal("su", "id", 1);
                 if (res.isSuccess() && res.stdout.contains("uid=0")) {
                     sRootAvailable = true;
                     return true;
                 }
             } catch (Throwable ignored) {}
 
-            if (suFileExists) {
-                sRootAvailable = true;
-                return true;
-            }
-
-            // 3. Check 'which su'
+            // 3. Check 'which su' with 1-second timeout
             try {
-                CommandResult whichRes = executeInternal("sh", "which su");
+                CommandResult whichRes = executeInternal("sh", "which su", 1);
                 if (whichRes.isSuccess() && whichRes.stdout.length() > 0 && !whichRes.stdout.contains("not found")) {
                     sRootAvailable = true;
                     return true;
@@ -141,6 +156,10 @@ public class ShellExecutor {
     }
 
     private static CommandResult executeInternal(String shellBinary, String command) {
+        return executeInternal(shellBinary, command, 5);
+    }
+
+    private static CommandResult executeInternal(String shellBinary, String command, int timeoutSeconds) {
         Process process = null;
         BufferedReader reader = null;
 
@@ -157,10 +176,10 @@ public class ShellExecutor {
                 output.append(line).append('\n');
             }
 
-            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
-                return new CommandResult(-1, "", "Command timed out after 5s");
+                return new CommandResult(-1, "", "Command timed out after " + timeoutSeconds + "s");
             }
             int exitCode = process.exitValue();
             return new CommandResult(exitCode, output.toString().trim(), "");

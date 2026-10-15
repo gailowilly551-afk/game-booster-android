@@ -61,14 +61,24 @@ public class AutoGameMonitorService extends Service {
 
     public static void start(Context context) {
         if (context == null || isRunning) return;
-        Intent intent = new Intent(context, AutoGameMonitorService.class);
-        context.startForegroundService(intent);
+        try {
+            Intent intent = new Intent(context, AutoGameMonitorService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent);
+            } else {
+                context.startService(intent);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot start AutoGameMonitorService: " + t.getMessage());
+        }
     }
 
     public static void stop(Context context) {
         if (context == null || !isRunning) return;
-        Intent intent = new Intent(context, AutoGameMonitorService.class);
-        context.stopService(intent);
+        try {
+            Intent intent = new Intent(context, AutoGameMonitorService.class);
+            context.stopService(intent);
+        } catch (Throwable ignored) {}
     }
 
     private boolean isScreenOn = true;
@@ -78,15 +88,24 @@ public class AutoGameMonitorService extends Service {
     public void onCreate() {
         super.onCreate();
         isRunning = true;
-        createNotificationChannel();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIF_ID, createNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-        } else {
-            startForeground(NOTIF_ID, createNotification());
+        try {
+            createNotificationChannel();
+            Notification notif = createNotification();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIF_ID, notif, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(NOTIF_ID, notif);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "startForeground error in AutoGameMonitorService: " + t.getMessage());
         }
 
-        registerScreenReceiver();
-        setupMonitorLoop();
+        try {
+            registerScreenReceiver();
+            setupMonitorLoop();
+        } catch (Throwable t) {
+            Log.w(TAG, "Monitor loop setup error: " + t.getMessage());
+        }
     }
 
     private void registerScreenReceiver() {

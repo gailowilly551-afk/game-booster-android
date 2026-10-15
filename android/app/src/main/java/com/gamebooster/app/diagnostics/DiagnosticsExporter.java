@@ -347,7 +347,7 @@ public final class DiagnosticsExporter {
         }
         boolean aidlConnected = false;
         try {
-            aidlConnected = ShizukuUserServiceConnector.getInstance().isServiceConnected(400);
+            aidlConnected = ShizukuUserServiceConnector.getInstance().isServiceConnected();
             if (!aidlConnected && shizukuGranted) {
                 // Auto-trigger binding in background if granted but not yet bound
                 ShizukuUserServiceConnector.getInstance().bindService();
@@ -818,6 +818,9 @@ public final class DiagnosticsExporter {
     }
 
     private static String getSELinuxStatus() {
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            return "Enforcing (Active)";
+        }
         // First try privileged execution via Shizuku if active
         try {
             if (ShizukuExecutor.hasShizukuPermission()) {

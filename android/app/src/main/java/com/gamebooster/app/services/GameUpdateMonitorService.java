@@ -72,10 +72,25 @@ public class GameUpdateMonitorService extends Service {
         super.onCreate();
         sRunning = true;
         mainHandler = new Handler(Looper.getMainLooper());
-        ConfigBackupManager.setAppContext(getApplicationContext());
-        createNotificationChannel();
-        startForeground(NOTIF_ID, buildPersistentNotification("Monitoring for game updates..."));
-        registerPackageReceiver();
+        try {
+            ConfigBackupManager.setAppContext(getApplicationContext());
+        } catch (Throwable ignored) {}
+        try {
+            createNotificationChannel();
+            Notification notif = buildPersistentNotification("Monitoring for game updates...");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIF_ID, notif, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(NOTIF_ID, notif);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "startForeground error in GameUpdateMonitorService: " + t.getMessage());
+        }
+        try {
+            registerPackageReceiver();
+        } catch (Throwable t) {
+            Log.w(TAG, "registerPackageReceiver error: " + t.getMessage());
+        }
         Log.i(TAG, "GameUpdateMonitorService started.");
     }
 

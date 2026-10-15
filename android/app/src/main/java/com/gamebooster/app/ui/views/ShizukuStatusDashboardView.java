@@ -78,9 +78,14 @@ public class ShizukuStatusDashboardView extends LinearLayout {
     public void bindLifecycle(LifecycleOwner lifecycleOwner) {
         if (lifecycleOwner == null) return;
         ShizukuLifecycleManager manager = ShizukuLifecycleManager.getInstance(getContext());
-        // Apply immediate status synchronously to eliminate any stale or flash of disconnected state
-        updateStatus(manager.refreshStatus());
+        // Use cached status if available, avoid synchronous blocking refresh on UI thread
+        ShizukuStatus cached = manager.getCurrentStatus();
+        if (cached != null) {
+            updateStatus(cached);
+        }
         manager.getStatusLiveData().observe(lifecycleOwner, this::updateStatus);
+        // Refresh status asynchronously in background
+        com.gamebooster.app.core.AppExecutors.getInstance().executeCommand(manager::refreshStatus);
     }
 
     /**

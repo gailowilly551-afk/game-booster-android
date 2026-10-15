@@ -198,16 +198,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private boolean isProgrammaticToggle = false;
 
     private boolean isPrivilegedExecutionAvailable() {
-        boolean active = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive();
-        if (!active && getContext() != null) {
-            final Context appCtx = getContext().getApplicationContext();
-            AppExecutors.getInstance().executeCommand(() -> {
-                try {
-                    com.gamebooster.app.shizuku.ShizukuConnectionManager.getInstance().forceReconnectCheck();
-                } catch (Throwable ignored) {}
-            });
-        }
-        return active;
+        return com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive();
     }
 
     private boolean checkShizukuOrRevert(android.widget.CompoundButton button, String featureName) {
@@ -319,7 +310,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        // Auto-Open: Immediately populate live status & start continuous ticker (Zero Wait, Walang Scanning)
+        // Auto-Open: Immediately populate live status (Fast / Cached Snapshot)
         if (getContext() != null) {
             String initialFastSnapshot = com.gamebooster.app.diagnostics.DiagnosticsExporter.getCachedOrFastSnapshot(getContext());
             if (tvDiagStatus != null) {
@@ -327,8 +318,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             }
         }
         updateLiveQuickMetrics();
-        renderDiagnostics(true);
-        startLiveDiagnosticsTicker();
 
         // Hidden Settings: Silently enforce hardware performance flags & next-gen WebView optimization
         if (getContext() != null) {
@@ -1596,7 +1585,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (getContext() == null || profile == null) return;
 
                 if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    new androidx.appcompat.app.AlertDialog.Builder(getContext())
                             .setTitle("🛡️ SHIZUKU API REQUIRED")
                             .setMessage("Device Spoofing requires active Shizuku API (UID 2000 Privileged Shell).\n\nPlease authorize Shizuku to activate.")
                             .setPositiveButton("GRANT SHIZUKU", (d, w) -> {
@@ -1883,7 +1872,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             btnFacebookProfile.setOnClickListener(v -> openUrl("https://www.facebook.com/https.willy.jr.carnasa.gailo2026.2027"));
         }
 
-        refreshAllStatuses();
         return view;
     }
 
@@ -1928,13 +1916,13 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (!hasPrivilege && mode != NetworkOptimizer.DnsMode.SYSTEM_DEFAULT) {
             // Non-Shizuku fallback: copy DoT hostname to clipboard and offer to open Network Settings
             try {
-                android.content.ClipboardManager cm = (android.content.ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                android.content.ClipboardManager cm = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 if (cm != null) {
                     cm.setPrimaryClip(android.content.ClipData.newPlainText("DoT Hostname", mode.privateDnsHost));
                 }
             } catch (Throwable ignored) {}
 
-            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            new androidx.appcompat.app.AlertDialog.Builder(getContext())
                     .setTitle("🌐 GAMING DNS OVER TLS (DoT)")
                     .setMessage("Copied '" + mode.privateDnsHost + "' to clipboard!\n\nTo lock this low-latency DNS on your device without Shizuku, tap OPEN SETTINGS and paste it under 'Private DNS provider hostname'.")
                     .setPositiveButton("OPEN NETWORK SETTINGS", (d, w) -> {
@@ -2340,17 +2328,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private final Runnable mDiagLiveRunnable = new Runnable() {
         @Override
         public void run() {
-            if (!isAdded() || isHidden() || getActivity() == null) {
+            if (!isAdded() || isHidden() || getActivity() == null || getView() == null) {
                 mDiagTickerActive = false;
                 return;
             }
             updateLiveQuickMetrics();
-            long now = System.currentTimeMillis();
-            if (now - mLastFullDiagRefresh >= 3000) {
-                mLastFullDiagRefresh = now;
-                renderDiagnostics(true /* isSilent */);
-            }
-            mDiagLiveHandler.postDelayed(this, 1500);
+            mDiagLiveHandler.postDelayed(this, 8000);
         }
     };
 
@@ -2427,7 +2410,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             String timeStr = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
             tvDiagLiveIndicator.setText("🟢 LIVE AUTO-SYNC: " + timeStr);
         }
-        refreshSafStatus();
     }
 
     private void renderDiagnostics() {
@@ -2458,11 +2440,14 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 final String text = com.gamebooster.app.diagnostics.DiagnosticsExporter.join(lines);
 
                 AppExecutors.getInstance().postToMainThread(() -> {
-                    if (!isAdded()) return;
+                    if (!isAdded() || getContext() == null || getView() == null) return;
                     if (tvDiagStatus != null) {
                         tvDiagStatus.setText(text);
                     }
-                    updateLiveQuickMetrics();
+                    if (tvDiagLiveIndicator != null) {
+                        String timeStr = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+                        tvDiagLiveIndicator.setText("🟢 LIVE AUTO-SYNC: " + timeStr);
+                    }
                 });
             } catch (Throwable t) {
                 android.util.Log.w("SettingsFragment", "Background diagnostics refresh error: " + t.getMessage());
@@ -2967,62 +2952,83 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     }
 
     public void refreshSafStatus() {
-        if (getActivity() == null || tvSafStatusBadge == null) return;
-        getActivity().runOnUiThread(() -> {
-            Context ctx = getContext();
-            if (ctx == null) return;
-            List<com.gamebooster.app.saf.SafStorageManager.TargetAppInfo> apps =
-                    com.gamebooster.app.saf.SafStorageManager.getTargetApps(ctx);
+        if (!isAdded() || tvSafStatusBadge == null) return;
+        final Context ctx = getContext();
+        if (ctx == null) return;
+        final Context appCtx = ctx.getApplicationContext();
 
-            int grantedCount = 0;
-            StringBuilder sb = new StringBuilder("🎮 ");
-            for (int i = 0; i < apps.size(); i++) {
-                com.gamebooster.app.saf.SafStorageManager.TargetAppInfo app = apps.get(i);
-                if (app.hasSaf) grantedCount++;
-                String icon = app.hasSaf ? "✅" : "❌";
-                String shortName = app.id.toUpperCase();
-                sb.append(shortName).append(": ").append(icon);
-                if (i < apps.size() - 1) {
-                    sb.append(" | ");
-                }
-            }
+        AppExecutors.getInstance().executeCommand(() -> {
+            try {
+                List<com.gamebooster.app.saf.SafStorageManager.TargetAppInfo> apps =
+                        com.gamebooster.app.saf.SafStorageManager.getTargetApps(appCtx);
 
-            if (tvSafGamesSummary != null) {
-                tvSafGamesSummary.setText(sb.toString());
-            }
+                int grantedCount = 0;
+                StringBuilder sb = new StringBuilder("🎮 ");
+                for (int i = 0; i < apps.size(); i++) {
+                    com.gamebooster.app.saf.SafStorageManager.TargetAppInfo app = apps.get(i);
+                    if (app.hasSaf) grantedCount++;
+                    String icon = app.hasSaf ? "✅" : "❌";
+                    String shortName = app.id.toUpperCase();
+                    sb.append(shortName).append(": ").append(icon);
+                    if (i < apps.size() - 1) {
+                        sb.append(" | ");
+                    }
+                }
 
-            if (grantedCount == apps.size()) {
-                tvSafStatusBadge.setText("SAF: ALL 3 TARGET APPS ACTIVE");
-                tvSafStatusBadge.setTextColor(0xFF00FF66);
-                tvSafStatusBadge.setBackgroundColor(0x2000FF66);
-                if (btnGrantSafStorage != null) {
-                    btnGrantSafStorage.setText("✅ TARGET APPS GRANTED (MANAGE)");
-                    btnGrantSafStorage.setEnabled(true);
-                }
-            } else if (grantedCount > 0) {
-                tvSafStatusBadge.setText("SAF: " + grantedCount + "/3 TARGET APPS ACTIVE");
-                tvSafStatusBadge.setTextColor(0xFFFFCC00);
-                tvSafStatusBadge.setBackgroundColor(0x20FFCC00);
-                if (btnGrantSafStorage != null) {
-                    btnGrantSafStorage.setText("📂 MANAGE / GRANT TARGET APPS (" + grantedCount + "/3)");
-                    btnGrantSafStorage.setEnabled(true);
-                }
-            } else {
-                tvSafStatusBadge.setText("SAF: NOT GRANTED");
-                tvSafStatusBadge.setTextColor(0xFFFF4444);
-                tvSafStatusBadge.setBackgroundColor(0x20FF4444);
-                if (btnGrantSafStorage != null) {
-                    btnGrantSafStorage.setText("📂 GRANT TARGET GAME ACCESS (SAF)");
-                    btnGrantSafStorage.setEnabled(true);
-                }
+                final int finalGrantedCount = grantedCount;
+                final int totalApps = apps.size();
+                final String summaryText = sb.toString();
+
+                AppExecutors.getInstance().postToMainThread(() -> {
+                    if (!isAdded() || getContext() == null || getView() == null) return;
+
+                    if (tvSafGamesSummary != null) {
+                        tvSafGamesSummary.setText(summaryText);
+                    }
+
+                    if (finalGrantedCount == totalApps && totalApps > 0) {
+                        if (tvSafStatusBadge != null) {
+                            tvSafStatusBadge.setText("SAF: ALL " + totalApps + " TARGET APPS ACTIVE");
+                            tvSafStatusBadge.setTextColor(0xFF00FF66);
+                            tvSafStatusBadge.setBackgroundColor(0x2000FF66);
+                        }
+                        if (btnGrantSafStorage != null) {
+                            btnGrantSafStorage.setText("✅ TARGET APPS GRANTED (MANAGE)");
+                            btnGrantSafStorage.setEnabled(true);
+                        }
+                    } else if (finalGrantedCount > 0) {
+                        if (tvSafStatusBadge != null) {
+                            tvSafStatusBadge.setText("SAF: " + finalGrantedCount + "/" + totalApps + " TARGET APPS ACTIVE");
+                            tvSafStatusBadge.setTextColor(0xFFFFCC00);
+                            tvSafStatusBadge.setBackgroundColor(0x20FFCC00);
+                        }
+                        if (btnGrantSafStorage != null) {
+                            btnGrantSafStorage.setText("📂 MANAGE / GRANT TARGET APPS (" + finalGrantedCount + "/" + totalApps + ")");
+                            btnGrantSafStorage.setEnabled(true);
+                        }
+                    } else {
+                        if (tvSafStatusBadge != null) {
+                            tvSafStatusBadge.setText("SAF: NOT GRANTED");
+                            tvSafStatusBadge.setTextColor(0xFFFF4444);
+                            tvSafStatusBadge.setBackgroundColor(0x20FF4444);
+                        }
+                        if (btnGrantSafStorage != null) {
+                            btnGrantSafStorage.setText("📂 GRANT TARGET GAME ACCESS (SAF)");
+                            btnGrantSafStorage.setEnabled(true);
+                        }
+                    }
+                });
+            } catch (Throwable t) {
+                android.util.Log.w("SettingsFragment", "refreshSafStatus error: " + t.getMessage());
             }
         });
     }
 
     private void showSafGameTargetSelector() {
-        if (getContext() == null || getActivity() == null) return;
+        Context ctx = getContext();
+        if (ctx == null || getActivity() == null) return;
         List<com.gamebooster.app.saf.SafStorageManager.TargetAppInfo> apps =
-                com.gamebooster.app.saf.SafStorageManager.getTargetApps(getContext());
+                com.gamebooster.app.saf.SafStorageManager.getTargetApps(ctx);
 
         String[] items = new String[apps.size()];
         for (int i = 0; i < apps.size(); i++) {
@@ -3032,20 +3038,20 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             items[i] = app.displayName + status + installed;
         }
 
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        new androidx.appcompat.app.AlertDialog.Builder(ctx)
             .setTitle("📂 SELECT TARGET GAME FOR SAF")
             .setItems(items, (dialog, which) -> {
                 if (which >= 0 && which < apps.size()) {
                     com.gamebooster.app.saf.SafStorageManager.TargetAppInfo selected = apps.get(which);
                     Intent intent = com.gamebooster.app.saf.SafStorageManager
-                            .createOpenDocumentTreeIntent(getContext(), selected.getEffectivePackage());
+                            .createOpenDocumentTreeIntent(ctx, selected.getEffectivePackage());
                     try {
                         safTreeLauncher.launch(intent);
-                        Toast.makeText(getContext(),
+                        Toast.makeText(ctx,
                                 "Piliin ang 'Use this folder' sa mismong folder ng " + selected.displayName,
                                 Toast.LENGTH_LONG).show();
                     } catch (Throwable t) {
-                        Toast.makeText(getContext(),
+                        Toast.makeText(ctx,
                                 "Hindi mabuksan ang system folder picker: " + t.getMessage(),
                                 Toast.LENGTH_SHORT).show();
                     }

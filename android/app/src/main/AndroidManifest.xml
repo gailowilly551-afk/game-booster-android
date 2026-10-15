@@ -280,6 +280,16 @@
         </service>
 
         <service
+            android:name="com.gamebooster.app.services.GameUpdateMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Game space game update auto-patch monitor" />
+        </service>
+
+        <service
             android:name="com.gamebooster.app.overlay.VisualFilterOverlayService"
             android:enabled="true"
             android:exported="false"

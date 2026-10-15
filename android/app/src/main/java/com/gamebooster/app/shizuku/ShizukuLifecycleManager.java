@@ -82,24 +82,26 @@ public class ShizukuLifecycleManager implements NetworkStateObserver.Listener, S
      * enforces background limit immunity, and performs a multi-pulse recovery post-gaming.
      */
     public void onResumeCheck() {
-        // 1. Proactively force a connection check and reset backoff counters
-        ShizukuConnectionManager.getInstance().forceReconnectCheck();
+        AppExecutors.getInstance().executeCommand(() -> {
+            // 1. Proactively force a connection check and reset backoff counters
+            ShizukuConnectionManager.getInstance().forceReconnectCheck();
 
-        // 2. Re-enforce background immunity so OS never suspends Shizuku or Game Booster
-        BackgroundLimitImmunityEngine.enforceImmunity(appContext);
+            // 2. Re-enforce background immunity so OS never suspends Shizuku or Game Booster
+            BackgroundLimitImmunityEngine.enforceImmunity(appContext);
 
-        // 3. Re-bind AIDL UserService if binder is alive
-        try {
-            if (Shizuku.pingBinder() && !ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-                ShizukuUserServiceConnector.getInstance().bindService();
-            }
-        } catch (Throwable ignored) {}
+            // 3. Re-bind AIDL UserService if binder is alive
+            try {
+                if (Shizuku.pingBinder() && !ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
+                    ShizukuUserServiceConnector.getInstance().bindService();
+                }
+            } catch (Throwable ignored) {}
 
-        // Pass 1: Instant evaluation (0ms)
-        refreshStatus();
+            // Pass 1: Instant evaluation
+            refreshStatus();
+        });
 
         // Pass 2: Quick recovery pass (250ms) as IPC stabilizes
-        AppExecutors.getInstance().postDelayed(() -> {
+        AppExecutors.getInstance().schedule(() -> {
             try {
                 if (Shizuku.pingBinder()) {
                     if (!ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
@@ -112,10 +114,10 @@ public class ShizukuLifecycleManager implements NetworkStateObserver.Listener, S
                 }
             } catch (Throwable ignored) {}
             refreshStatus();
-        }, 250);
+        }, 250, java.util.concurrent.TimeUnit.MILLISECONDS);
 
         // Pass 3: Deep recovery pass (750ms) for high-load games that heavily froze background daemons
-        AppExecutors.getInstance().postDelayed(() -> {
+        AppExecutors.getInstance().schedule(() -> {
             try {
                 if (Shizuku.pingBinder()) {
                     if (!ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
@@ -124,15 +126,15 @@ public class ShizukuLifecycleManager implements NetworkStateObserver.Listener, S
                 }
             } catch (Throwable ignored) {}
             refreshStatus();
-        }, 750);
+        }, 750, java.util.concurrent.TimeUnit.MILLISECONDS);
 
         // Pass 4: Final stabilization pass (1500ms) ensuring UI reflects active state
-        AppExecutors.getInstance().postDelayed(this::refreshStatus, 1500);
+        AppExecutors.getInstance().schedule(this::refreshStatus, 1500, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     /**
      * Reads real-time status from the system and updates LiveData.
-     * Integrates raw binder ping, AIDL UserService connector, ConnectionManager, and Virtual Root.
+     * Integrates raw binder ping, AIDL UserService connector, and ConnectionManager.
      */
     public ShizukuStatus refreshStatus() {
         boolean installed = ShizukuManager.isShizukuInstalled(appContext);
@@ -150,12 +152,11 @@ public class ShizukuLifecycleManager implements NetworkStateObserver.Listener, S
 
         boolean userServiceConnected = ShizukuUserServiceConnector.getInstance().isServiceConnected();
         boolean connMgrReady = ShizukuConnectionManager.getInstance().isReady();
-        boolean virtualRootReady = com.gamebooster.app.engine.PrivilegeBridgeEngine.isShizukuVirtualRootReady();
         boolean everGranted = com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(appContext);
-        boolean rishReady = RishManager.isRishAvailable();
 
-        boolean binderAlive = pingAlive || userServiceConnected || connMgrReady || virtualRootReady || rishReady;
-        boolean permissionGranted = pingGranted || userServiceConnected || connMgrReady || (everGranted && (rishReady || virtualRootReady));
+        // True binder liveness: requires active binder IPC or connected user service
+        boolean binderAlive = pingAlive || userServiceConnected || connMgrReady;
+        boolean permissionGranted = pingGranted || userServiceConnected || (binderAlive && (connMgrReady || everGranted));
 
         if (binderAlive && permissionGranted) {
             try {
