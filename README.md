@@ -5,7 +5,7 @@
 ### **Next-Generation Android Performance Engine & Competitive MOBA / Battle Royale Hardware Accelerator**
 
 [![Android](https://img.shields.io/badge/Android-14%20|%2015%20|%2016%20(API%2034--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/Version-20.1.0-blueviolet?style=for-the-badge)](https://github.com/willygailo/Game-Launcher)
+[![Version](https://img.shields.io/badge/Version-20.2.0-blueviolet?style=for-the-badge)](https://github.com/willygailo/Game-Launcher)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Arch-arm64--v8a%20|%20armeabi--v7a%20|%20x86__64-red?style=for-the-badge)](https://developer.android.com/ndk)
 [![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/willygailo/Game-Launcher)
@@ -363,7 +363,7 @@ cd Game-Launcher/android
 ./gradlew check assembleDebug
 
 # Output APK path:
-# Game_Space_v20.1.0-PRO_debug.apk (project root)
+# Game_Space_v20.2.0-PRO_debug.apk (project root)
 # android/app/build/outputs/apk/debug/Game_Space_Debug.apk
 ```
 
