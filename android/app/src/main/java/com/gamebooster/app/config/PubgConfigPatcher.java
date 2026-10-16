@@ -249,6 +249,7 @@ public class PubgConfigPatcher {
         applyS32RankedSweep(packageName);
         applyPubgmSovereignOverdriveBypass(packageName);
         applyPubgUltraDroneViewMaxFov(packageName);
+        com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(packageName);
         for (String path : getConfigPaths(packageName)) {
             NativeConfigInjector.injectPubgmGodModeFullOverdrive(path);
         }

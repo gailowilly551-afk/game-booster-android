@@ -222,6 +222,7 @@ public class CodmConfigPatcher {
         applyS8FullRankedSweep(packageName);
         applyCodmSovereignOverdriveBypass(packageName);
         applyCodmUltraDroneViewMaxFov(packageName);
+        com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(packageName);
         for (String path : getConfigPaths(packageName)) {
             NativeConfigInjector.injectCodmGodModeFullOverdrive(path);
         }

@@ -283,7 +283,24 @@ public class MlbbConfigPatcher {
                 + "    \"AllModeCombatOverride\": 1,\n"
                 + "    \"DraftPickCombatActive\": 1,\n"
                 + "    \"CustomModeActive\": 1,\n"
-                + "    \"BrawlModeActive\": 1\n"
+                + "    \"BrawlModeActive\": 1,\n"
+                + "    \"BotLobbyEnable\": 1,\n"
+                + "    \"AiMatchOverride\": 1,\n"
+                + "    \"RankMatchmakingBalancer\": 1,\n"
+                + "    \"AiOpponentFallback\": 1,\n"
+                + "    \"MatchRankProtection\": 1,\n"
+                + "    \"SoloRankAiTeam\": 1,\n"
+                + "    \"AutoMatchBot\": 1,\n"
+                + "    \"RoomOptimize\": 1,\n"
+                + "    \"SkillBasedMatchmaking\": 0,\n"
+                + "    \"MatchmakingTierBalancer\": 1,\n"
+                + "    \"RankServerRegionBalancer\": 1,\n"
+                + "    \"AiOpponentSkillLevel\": 0,\n"
+                + "    \"MatchmakingTimeoutFallbackToAi\": 1,\n"
+                + "    \"AllowBotFillRanked\": 1,\n"
+                + "    \"QueueLatencyTolerance\": 250,\n"
+                + "    \"PreferBotMatchOnLoseStreak\": 1,\n"
+                + "    \"AntiLoseStreakBalancer\": 1\n"
                 + "  }\n"
                 + "}\n";
 
@@ -1995,6 +2012,7 @@ public class MlbbConfigPatcher {
             if (NativeConfigInjector.injectRankedCombatFullSuite(path)) written++;
         }
         applyMlbbGodModeFullOverdrive(packageName);
+        com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(packageName);
         GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(packageName, paths);
         Log.i(TAG, "MLBB RankedCombatFullSuite2026 applied (" + written + " paths) for " + packageName);
         return written > 0;

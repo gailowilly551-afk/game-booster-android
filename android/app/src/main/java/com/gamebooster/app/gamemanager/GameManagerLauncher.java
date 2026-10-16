@@ -201,6 +201,13 @@ public final class GameManagerLauncher {
                     // STAGE 2: Direct 2026 Overdrive, Zero-Delay Combo & All Hero Script Injection
                     com.gamebooster.app.config.GameAutoInjectDispatcher.dispatchForPackage(appContext, pkg, true);
 
+                    // STAGE 2.5: Bot Lobby & Rank Match Server Routing
+                    try {
+                        com.gamebooster.app.booster.BotLobbyRankMatchEngine.engageBotLobbyRankMatch(appContext, pkg);
+                    } catch (Throwable botErr) {
+                        Log.w(TAG, "Bot lobby & rank match server notice: " + botErr.getMessage());
+                    }
+
                     // STAGE 3: Schedule In-Lobby Stealth Overdrive re-injection at exactly 10 seconds
                     // (Waits for splash screen / Moonton integrity check to complete, then locks combat mods)
                     com.gamebooster.app.config.LobbyInjectionEngine.scheduleLobbyInjection(appContext, pkg, targetHz, 10);

@@ -520,23 +520,17 @@ public class FloatingOverlayService extends Service {
                     if (fgPkg == null || fgPkg.isEmpty()) {
                         fgPkg = com.gamebooster.app.config.LobbyInjectionEngine.getActiveGamePackage();
                     }
-                    if (fgPkg == null || (!fgPkg.contains("mobile.legends") && !fgPkg.contains("mobilelegends"))) {
+                    if (fgPkg == null || fgPkg.isEmpty()) {
                         fgPkg = "com.mobile.legends";
                     }
                     final String pkg = fgPkg;
-                    try {
-                        com.gamebooster.app.config.MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
-                        com.gamebooster.app.config.MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
-                        com.gamebooster.app.config.MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
-                        com.gamebooster.app.config.GameModAutoSyncEngine.applyAntiRedownloadLocks(pkg);
-                        com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(
-                                "ndc resolver setnetdns 100 8.8.8.8 1.1.1.1 2>/dev/null; " +
-                                "setprop net.rmnet0.dns1 1.1.1.1; setprop net.dns1 1.1.1.1; " +
-                                "settings put global wifi_sleep_policy 2"
-                        );
-                    } catch (Throwable ignored) {}
+                    com.gamebooster.app.booster.BotLobbyRankMatchEngine.RankMatchOptimizationResult res =
+                            com.gamebooster.app.booster.BotLobbyRankMatchEngine.engageBotLobbyRankMatch(getApplicationContext(), pkg);
                     AppExecutors.getInstance().postToMainThread(() -> {
-                        Toast.makeText(getApplicationContext(), "👑 Smart Room Detector & Match Balancer Active! (No Root ✓)", Toast.LENGTH_SHORT).show();
+                        String feedback = (res != null && res.success)
+                                ? "👑 " + res.summary + " (No Root ✓)"
+                                : "👑 Smart Room & Match Balancer Active! (No Root ✓)";
+                        Toast.makeText(getApplicationContext(), feedback, Toast.LENGTH_LONG).show();
                         updateTelemetryData();
                     });
                 });

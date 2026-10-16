@@ -146,6 +146,7 @@ public class FreeFireConfigPatcher {
         for (String path : getConfigPaths(packageName)) {
             NativeConfigInjector.batchInjectKeys(path, keys, "[FreeFireMasterSuite]");
         }
+        com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(packageName);
     }
 
     private static final String TAG = "FreeFireConfigPatcher";

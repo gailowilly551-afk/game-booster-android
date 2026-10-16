@@ -127,6 +127,13 @@ public final class GameAutoInjectDispatcher {
                 Log.w(TAG, "Device spoof injection note for " + pkg + ": " + t.getMessage());
             }
 
+            // ── 2026: Bot Lobby & Rank Match Server Routing Override ──
+            try {
+                com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "Bot lobby injection note for " + pkg + ": " + t.getMessage());
+            }
+
             if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
                 // ────────────────────────────────────────────────────────────────────────────
                 // MLBB SPLASH-SAFE DEFERRED INJECTION
@@ -220,6 +227,7 @@ public final class GameAutoInjectDispatcher {
                         NativeConfigInjector.injectAllConfigsForPackage(fPkg, 185);
                         MlbbConfigPatcher.applyMlbbLatest2026Patch(fPkg);
                         MlbbConfigPatcher.cleanLegacyLoadingLocks(fPkg);
+                        com.gamebooster.app.booster.BotLobbyRankMatchEngine.applyBotLobbyAndRankMatchmaker(fPkg);
                         try {
                             boolean injected = com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(fCtx, fPkg, com.gamebooster.app.mods.GameModProfile.load(fCtx));
                             Log.i(TAG, "MLBB Mod Profile injection result: " + injected + " (isMlbbInjected=" + com.gamebooster.app.mods.mlbb.MlbbModManager.isMlbbInjected() + ")");
