@@ -34,7 +34,9 @@ public class MlbbConfigPatcher {
         List<String> roots = MlbbDroneViewPatcher.resolveMlbbRootDirs(pkg);
         for (String root : roots) {
             String[] targetFiles = {
+                root + "/files/dragon2017/assets/Document/BattleConfig.json",
                 root + "/files/dragon2017/assets/Document/android/BattleConfig.json",
+                root + "/files/dragon2017/assets/Document/HeroStatConfig.json",
                 root + "/files/dragon2017/assets/Document/android/HeroStatConfig.json",
                 root + "/files/dragon2017/assets/Document/android/CameraConfig.json",
                 root + "/files/dragon2017/assets/Document/android/DroneViewConfig.json",
@@ -50,7 +52,9 @@ public class MlbbConfigPatcher {
             }
         }
         // Shell & Shizuku anti-revert execution
-        String shellLock = "for f in '/data/user/0/" + pkg + "/files/dragon2017/assets/Document/android/'* "
+        String shellLock = "for f in '/data/user/0/" + pkg + "/files/dragon2017/assets/Document/'* "
+                         + "'/data/user/0/" + pkg + "/files/dragon2017/assets/Document/android/'* "
+                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/'* "
                          + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/'*; do "
                          + "  [ -f \"$f\" ] && chown " + TARGET_UID + ":" + TARGET_UID + " \"$f\" 2>/dev/null && "
                          + "  chmod 444 \"$f\" 2>/dev/null && chattr +i \"$f\" 2>/dev/null && "
@@ -240,23 +244,21 @@ public class MlbbConfigPatcher {
                 + "  }\n"
                 + "}\n";
 
-        String[] targetJsonPaths = {
-            "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/BattleConfig.json",
-            "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/BattleConfig.json",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/BattleConfig.json",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/BattleConfig.json",
-            "/data/data/" + pkg + "/files/BattleConfig.json",
-            "/sdcard/Android/data/" + pkg + "/files/battle_config/BattleConfig.json"
-        };
-
-        for (String p : targetJsonPaths) {
-            try {
-                ConfigFileHelper.writeContentAtomic(p, battleJson);
-                if (ShizukuExecutor.hasShizukuPermission()) {
-                    ShizukuExecutor.executeShizukuCommand("chmod 666 \"" + p + "\" 2>/dev/null");
+        List<String> roots = MlbbDroneViewPatcher.resolveMlbbRootDirs(pkg);
+        for (String root : roots) {
+            String[] targetJsonPaths = {
+                root + "/files/dragon2017/assets/Document/BattleConfig.json",
+                root + "/files/dragon2017/assets/Document/android/BattleConfig.json"
+            };
+            for (String p : targetJsonPaths) {
+                try {
+                    ConfigFileHelper.writeContentAtomic(p, battleJson);
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand("chmod 666 \"" + p + "\" 2>/dev/null");
+                    }
+                } catch (Throwable t) {
+                    Log.d("MlbbConfigPatcher", "BattleConfig write note: " + t.getMessage());
                 }
-            } catch (Throwable t) {
-                Log.d("MlbbConfigPatcher", "BattleConfig write note: " + t.getMessage());
             }
         }
 
@@ -268,21 +270,20 @@ public class MlbbConfigPatcher {
                 + "  \"Tank\": {\"max_hp\": 100000, \"physical_defense\": 15000, \"magic_defense\": 15000, \"damage_reduction\": 0.99, \"hp_regen_rate\": 1000, \"cooldown_ratio\": 0.01, \"cast_delay_ms\": 0, \"cc_resilience\": 1.0, \"movement_speed\": 480}\n"
                 + "}\n";
 
-        String[] targetHeroStatPaths = {
-            "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/HeroStatConfig.json",
-            "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/HeroStatConfig.json",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/HeroStatConfig.json",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/HeroStatConfig.json"
-        };
-
-        for (String p : targetHeroStatPaths) {
-            try {
-                ConfigFileHelper.writeContentAtomic(p, heroStatJson);
-                if (ShizukuExecutor.hasShizukuPermission()) {
-                    ShizukuExecutor.executeShizukuCommand("chmod 666 \"" + p + "\" 2>/dev/null");
+        for (String root : roots) {
+            String[] targetHeroStatPaths = {
+                root + "/files/dragon2017/assets/Document/HeroStatConfig.json",
+                root + "/files/dragon2017/assets/Document/android/HeroStatConfig.json"
+            };
+            for (String p : targetHeroStatPaths) {
+                try {
+                    ConfigFileHelper.writeContentAtomic(p, heroStatJson);
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand("chmod 666 \"" + p + "\" 2>/dev/null");
+                    }
+                } catch (Throwable t) {
+                    Log.d("MlbbConfigPatcher", "HeroStatConfig write note: " + t.getMessage());
                 }
-            } catch (Throwable t) {
-                Log.d("MlbbConfigPatcher", "HeroStatConfig write note: " + t.getMessage());
             }
         }
 
