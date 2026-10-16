@@ -1069,6 +1069,12 @@
       "file_offset": "0x418da7",
       "buffer_offset": "0x18da7",
       "identifier": "CameraManager_SetHeight"
+    },
+    "VisionSpriteFindEnemyHero": {
+      "identifier": "VisionSpriteFindEnemyHero",
+      "category": "FogOfWar",
+      "file_offset": "0x60f971",
+      "buffer_offset": "0x60f971"
     }
   }
 }

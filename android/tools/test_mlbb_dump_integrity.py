@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test_mlbb_dump_integrity.py — Integrity & Contract Test for MLBB APKS Extraction
+test_mlbb_dump_integrity.py — Integrity & Contract Test for MLBB APKS Extraction & C# Dump
 """
 
 import os
@@ -11,6 +11,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DUMP_DIR = REPO_ROOT / "dump_mlbb"
 STRINGS_JSON = DUMP_DIR / "mlbb_extracted_strings.json"
+DUMP_CS = DUMP_DIR / "dump.cs"
+COMBAT_CS = DUMP_DIR / "mlbb_combat_dump.cs"
+LITERALS_JSON = DUMP_DIR / "stringliteral.json"
 
 REQUIRED_TOKENS = [
     "CountHurtValue",
@@ -29,6 +32,9 @@ REQUIRED_TOKENS = [
 def test_mlbb_dump():
     assert DUMP_DIR.exists(), f"Dump directory not found: {DUMP_DIR}"
     assert STRINGS_JSON.exists(), f"Extracted strings json not found: {STRINGS_JSON}"
+    assert DUMP_CS.exists(), f"C# dump file not found: {DUMP_CS}"
+    assert COMBAT_CS.exists(), f"C# combat dump file not found: {COMBAT_CS}"
+    assert LITERALS_JSON.exists(), f"String literals json not found: {LITERALS_JSON}"
 
     with open(STRINGS_JSON, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -46,6 +52,11 @@ def test_mlbb_dump():
         entry = by_id[token]
         assert entry.get("exact_name") == token, f"Token mismatch: {entry}"
         assert entry.get("file_offset") is not None, f"Token offset is None: {token}"
+        assert entry.get("source") != "derived_symbol", f"Token {token} is a fallback derived_symbol!"
+
+    # Verify zero fallbacks across entire dictionary
+    derived = [k for k, v in by_id.items() if v.get("source") == "derived_symbol"]
+    assert len(derived) == 0, f"Found {len(derived)} fallback derived symbols: {derived}"
 
     by_cat = data.get("by_category", {})
     assert len(by_cat) >= 8, f"Too few categories: {len(by_cat)}"
@@ -53,7 +64,15 @@ def test_mlbb_dump():
     assert "AntiCheat" in by_cat
     assert "ResCheck" in by_cat
 
-    print("✅ test_mlbb_dump_integrity PASSED!")
+    combat_text = COMBAT_CS.read_text(encoding="utf-8")
+    assert "CountHurtValue" in combat_text, "CountHurtValue missing from MLBB C# dump"
+    assert "CalcVal" in combat_text, "CalcVal missing from MLBB C# dump"
+
+    with open(LITERALS_JSON, "r", encoding="utf-8") as f:
+        literals = json.load(f)
+    assert len(literals) >= 50000, f"Expected >= 50000 string literals, got {len(literals)}"
+
+    print("✅ test_mlbb_dump_integrity PASSED (0 Fallbacks, 100% Genuine Dump)!")
 
 if __name__ == "__main__":
     try:

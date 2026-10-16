@@ -67,6 +67,10 @@ global-metadata.dat
 !**/assets/**.dat
 android/dump_codm/
 android/dump_mlbb/
+*.version/
+*version/
+"Mobile Legends*"
+"NEW PATCH *"
 new rish/
 .superpowers/
 

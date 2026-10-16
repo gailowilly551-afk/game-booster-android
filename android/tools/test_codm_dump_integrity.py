@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test_codm_dump_integrity.py — Integrity & Contract Test for CODM APKS Extraction
+test_codm_dump_integrity.py — Integrity & Contract Test for CODM APKS Extraction & C# Dump
 """
 
 import os
@@ -11,6 +11,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DUMP_DIR = REPO_ROOT / "dump_codm"
 STRINGS_JSON = DUMP_DIR / "codm_extracted_strings.json"
+DUMP_CS = DUMP_DIR / "dump.cs"
+COMBAT_CS = DUMP_DIR / "codm_combat_dump.cs"
+LITERALS_JSON = DUMP_DIR / "stringliteral.json"
 
 REQUIRED_TOKENS = [
     "RecoilScaleWeaponShake",
@@ -28,6 +31,9 @@ REQUIRED_TOKENS = [
 def test_codm_dump():
     assert DUMP_DIR.exists(), f"Dump directory not found: {DUMP_DIR}"
     assert STRINGS_JSON.exists(), f"Extracted strings json not found: {STRINGS_JSON}"
+    assert DUMP_CS.exists(), f"C# dump file not found: {DUMP_CS}"
+    assert COMBAT_CS.exists(), f"C# combat dump file not found: {COMBAT_CS}"
+    assert LITERALS_JSON.exists(), f"String literals json not found: {LITERALS_JSON}"
 
     with open(STRINGS_JSON, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -51,6 +57,17 @@ def test_codm_dump():
     assert "Recoil" in by_cat
     assert "Spread" in by_cat
     assert "AimAssist" in by_cat
+
+    combat_text = COMBAT_CS.read_text(encoding="utf-8")
+    assert "class PlayerController" in combat_text, "PlayerController class missing from C# dump"
+    assert "class WeaponFireComponent_Instant" in combat_text, "WeaponFireComponent_Instant class missing from C# dump"
+    assert "get_ShotSpread" in combat_text, "get_ShotSpread method missing from C# dump"
+    assert "RecoilUpBase" in combat_text, "RecoilUpBase missing from C# dump"
+    assert "0x6014791" in combat_text, "Expected method token 0x6014791 missing from C# dump"
+
+    with open(LITERALS_JSON, "r", encoding="utf-8") as f:
+        literals = json.load(f)
+    assert len(literals) >= 60000, f"Expected >= 60000 string literals, got {len(literals)}"
 
     print("✅ test_codm_dump_integrity PASSED!")
 
