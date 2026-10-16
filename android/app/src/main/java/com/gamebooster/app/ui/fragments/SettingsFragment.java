@@ -2005,7 +2005,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     } else if (pkg.contains("mobile.legends")) {
                         MlbbConfigPatcher.patchUltraExtreme185(pkg);
                     } else if (pkg.contains("callofduty") || pkg.contains("cod")) {
-                        CodmConfigPatcher.patchUltraExtreme165(pkg);
+                        CodmConfigPatcher.patchUltraExtreme185(pkg);
                         CommandExecutor.executeSystemCommand("cmd game set --fps 185 " + pkg + " 2>/dev/null");
                     }
                 } else if (targetHz >= 165) {

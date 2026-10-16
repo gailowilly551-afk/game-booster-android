@@ -212,6 +212,49 @@ public class MlbbConfigPatcher {
                 + "    \"ScreenShake\": 0,\n"
                 + "    \"Vibrate\": 0,\n"
                 + "    \"PreloadShaders\": 1,\n"
+                + "    \"TargetFPS\": 185,\n"
+                + "    \"MaxFPS\": 185,\n"
+                + "    \"FPS\": 185,\n"
+                + "    \"HighFPSMode\": 6,\n"
+                + "    \"FrameRateLevel\": 6,\n"
+                + "    \"HighFrameRate\": 1,\n"
+                + "    \"UnlockFPS\": 1,\n"
+                + "    \"SuperHighFPS\": 1,\n"
+                + "    \"Unlock90Hz\": 1,\n"
+                + "    \"Unlock120Hz\": 1,\n"
+                + "    \"Unlock144Hz\": 1,\n"
+                + "    \"Unlock165Hz\": 1,\n"
+                + "    \"Unlock185Hz\": 1,\n"
+                + "    \"Unlock240Hz\": 1,\n"
+                + "    \"HFR\": 1,\n"
+                + "    \"ShowFPS\": 1,\n"
+                + "    \"GraphicsPreset\": 5,\n"
+                + "    \"UltraExtreme\": 1,\n"
+                + "    \"UltraExtreme2026\": 1,\n"
+                + "    \"bUseUltraExtreme\": true,\n"
+                + "    \"QualitySetting\": 5,\n"
+                + "    \"QualityLevel\": 5,\n"
+                + "    \"GraphicLevel\": 5,\n"
+                + "    \"GraphicQuality\": 5,\n"
+                + "    \"GraphicsQuality\": 5,\n"
+                + "    \"TextureQuality\": 3,\n"
+                + "    \"HDMode\": 1,\n"
+                + "    \"HDR10Plus\": 1,\n"
+                + "    \"Shadow\": 1,\n"
+                + "    \"Outline\": 1,\n"
+                + "    \"LightingQuality\": 3,\n"
+                + "    \"ParticleQuality\": 3,\n"
+                + "    \"PostProcessing\": 1,\n"
+                + "    \"WaterReflection\": 1,\n"
+                + "    \"VegetationDensity\": 2,\n"
+                + "    \"RenderScale\": 120,\n"
+                + "    \"DynamicResolution\": 0,\n"
+                + "    \"VulkanPipelineCache\": 1,\n"
+                + "    \"AsyncCompute\": 1,\n"
+                + "    \"VRS\": 1,\n"
+                + "    \"bFramePacingEnabled\": true,\n"
+                + "    \"r.OneFrameThreadLag\": 0,\n"
+                + "    \"r.FinishCurrentFrame\": 0,\n"
                 + "    \"AllowOcclusionQueries\": 1,\n"
                 + "    \"CounterBuildArmorPen\": 1,\n"
                 + "    \"CounterBuildMagicPen\": 1,\n"
@@ -861,30 +904,42 @@ public class MlbbConfigPatcher {
         int highFpsMode = 6; // Ultra Max 2026 (was 3)
         int frameRateLevel = fps >= 165 ? 6 : (fps >= 144 ? 5 : (fps >= 120 ? 4 : (fps >= 90 ? 3 : 2)));
 
-        // 1. Target prefs_int files
-        String[] prefsIntPaths = {
-            "/storage/emulated/0/Android/data/" + packageName + "/files/dragon2017/assets/prefs_int",
-            "/sdcard/Android/data/" + packageName + "/files/dragon2017/assets/prefs_int",
-            "/storage/emulated/0/Android/data/" + packageName + "/files/Dragon2017/assets/prefs_int",
-            "/sdcard/Android/data/" + packageName + "/files/Dragon2017/assets/prefs_int"
-        };
+        // 1. Target prefs_int files across all resolved roots (dual-directory)
+        List<String> roots = MlbbDroneViewPatcher.resolveMlbbRootDirs(packageName);
+        List<String> prefsIntPaths = new ArrayList<>();
+        for (String root : roots) {
+            prefsIntPaths.add(root + "/files/dragon2017/assets/prefs_int");
+            prefsIntPaths.add(root + "/files/Dragon2017/assets/prefs_int");
+        }
 
         Map<String, String> prefsMap = new LinkedHashMap<>();
         prefsMap.put("HighFPSMode", String.valueOf(highFpsMode));
         prefsMap.put("HighFPSEnable", "1");
         prefsMap.put("FrameRateLevel", String.valueOf(frameRateLevel));
-        prefsMap.put("QualitySetting", "3");
-        prefsMap.put("GraphicLevel", "3");
-        prefsMap.put("GraphicQuality", "3");
-        prefsMap.put("QualityLevel", "3");
-        prefsMap.put("GraphicsQuality", "3");
-        prefsMap.put("GraphicsPreset", "3");
-        prefsMap.put("ShadowQuality", "0");
+        prefsMap.put("QualitySetting", "5");
+        prefsMap.put("GraphicLevel", "5");
+        prefsMap.put("GraphicQuality", "5");
+        prefsMap.put("QualityLevel", "5");
+        prefsMap.put("GraphicsQuality", "5");
+        prefsMap.put("GraphicsPreset", "5");
         prefsMap.put("UltraExtreme", "1");
         prefsMap.put("UltraExtreme2026", "1");
+        prefsMap.put("bUseUltraExtreme", "1");
         prefsMap.put("HDMode", "1");
-        prefsMap.put("Shadow", "0");
+        prefsMap.put("HDR10Plus", "1");
+        prefsMap.put("Shadow", "1");
+        prefsMap.put("ShadowQuality", "3");
         prefsMap.put("Outline", "1");
+        prefsMap.put("LightingQuality", "3");
+        prefsMap.put("ParticleQuality", "3");
+        prefsMap.put("PostProcessing", "1");
+        prefsMap.put("WaterReflection", "1");
+        prefsMap.put("VegetationDensity", "2");
+        prefsMap.put("RenderScale", "120");
+        prefsMap.put("DynamicResolution", "0");
+        prefsMap.put("VulkanPipelineCache", "1");
+        prefsMap.put("AsyncCompute", "1");
+        prefsMap.put("VRS", "1");
         prefsMap.put("FPS", String.valueOf(fps));
         prefsMap.put("MaxFPS", String.valueOf(fps));
         prefsMap.put("TargetFPS", String.valueOf(fps));
@@ -900,7 +955,7 @@ public class MlbbConfigPatcher {
         prefsMap.put("Unlock240Hz", "1");
         prefsMap.put("HFR", "1");
         prefsMap.put("ShowFPS", "1");
-        prefsMap.put("PerformanceLevel", "3");
+        prefsMap.put("PerformanceLevel", "5");
         prefsMap.put("HeroLock", "1");
         prefsMap.put("AimMethod", "1");
         prefsMap.put("TargetPriority", "0");
