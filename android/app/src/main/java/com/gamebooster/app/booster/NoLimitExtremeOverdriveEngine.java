@@ -46,6 +46,15 @@ public final class NoLimitExtremeOverdriveEngine {
             try {
                 Log.i(TAG, "═══ ENGAGING NO-LIMIT EXTREME OVERDRIVE (" + finalFps + " FPS) ═══");
 
+                // 0. Arm Safety Watchdog and Snapshot System State
+                if (context != null) {
+                    try {
+                        SafetyGuard.ensureArmed(context.getApplicationContext());
+                    } catch (Throwable t) {
+                        Log.w(TAG, "SafetyGuard arming note: " + t.getMessage());
+                    }
+                }
+
                 // 1. Force Display Pipeline to 185Hz & SurfaceFlinger Uncapped
                 forceSurfaceFlinger185(finalFps);
 
@@ -244,6 +253,16 @@ public final class NoLimitExtremeOverdriveEngine {
         sIsNoLimitActive = false;
         try {
             ThermalChannel.setThermalOverride(false);
+
+            // Stop SafetyGuard watchdog and restore pre-boost snapshot
+            if (context != null) {
+                try {
+                    SafetyGuard.stop(true);
+                } catch (Throwable t) {
+                    Log.w(TAG, "SafetyGuard stop note: " + t.getMessage());
+                }
+            }
+
             List<String> revertCmds = new ArrayList<>();
             // Re-enable thermal zones
             revertCmds.add("for z in /sys/class/thermal/thermal_zone*; do echo enabled > \"$z/mode\" 2>/dev/null; done");

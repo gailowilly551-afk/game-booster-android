@@ -546,20 +546,41 @@ public class NetworkOptimizer {
             // 4. Linux Kernel TCP BBR & 8MB Window
             optimizeTcpBuffers();
 
-            // 5. Cloudflare 1.1.1.1 Gaming DNS-over-TLS
+            // 5. Advanced Kernel Socket QoS (DSCP CS6, BBR2, IRQ Core Affinity, MPTCP)
+            if (context != null) {
+                try {
+                    AdvancedNetworkQosEngine.applyAll(context);
+                } catch (Throwable qosErr) {
+                    Log.w(TAG, "AdvancedNetworkQosEngine note: " + qosErr.getMessage());
+                }
+            }
+
+            // 6. Cloudflare 1.1.1.1 Gaming DNS-over-TLS
             applyGamingDns(context, DnsMode.CLOUDFLARE_1_1_1_1);
 
-            // 6. Hardware Offload & Raw GNSS
+            // 7. Hardware Offload & Raw GNSS
             setTetheringHwAcceleration(true);
             setForceFullGnss(true);
 
-            // 7. Resolver & Routing Table Cache Flush
+            // 8. Resolver & Routing Table Cache Flush
             flushDnsCache();
             return true;
         } catch (Throwable t) {
             Log.w(TAG, "Failed to optimize data and wifi", t);
             return false;
         }
+    }
+
+    /**
+     * Complete Unified Gaming Network Optimization with Carrier & QoS Tuning.
+     */
+    public static boolean optimizeAllForGaming(Context context, PhCarrier carrier) {
+        boolean ok = optimizeAllDataAndWifi(context);
+        PhCarrier targetCarrier = carrier != null ? carrier : detectActiveSimCarrierEnum(context);
+        if (targetCarrier != null) {
+            ok &= applyPhCarrierOptimization(context, targetCarrier);
+        }
+        return ok;
     }
 
     public static boolean setTetheringHwAcceleration(boolean enabled) {
@@ -695,6 +716,21 @@ public class NetworkOptimizer {
             }
         } catch (Throwable ignored) {}
         return "PH Telco Auto-Detect";
+    }
+
+    /**
+     * Resolves the detected active SIM to a PhCarrier enum.
+     */
+    public static PhCarrier detectActiveSimCarrierEnum(Context context) {
+        String detected = detectActiveSimCarriers(context);
+        if (detected == null) return PhCarrier.TNT_SMART;
+        String lower = detected.toLowerCase(Locale.US);
+        if (lower.contains("globe") || lower.contains("tm") || lower.contains("touch")) {
+            return PhCarrier.TM_GLOBE;
+        } else if (lower.contains("dito")) {
+            return PhCarrier.DITO;
+        }
+        return PhCarrier.TNT_SMART;
     }
 
     /**

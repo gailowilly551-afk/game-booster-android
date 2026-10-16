@@ -115,4 +115,34 @@ public class RamZramChannel {
         CommandExecutor.executeSystemCommand(sb.toString());
         Log.i(TAG, "I/O scheduler + memory flags applied for gaming.");
     }
+
+    /**
+     * Compacts memory pages via Linux kernel procfs.
+     */
+    public static boolean compactMemory() {
+        try {
+            CommandExecutor.executeSystemCommand("echo 1 > /proc/sys/vm/compact_memory 2>/dev/null; "
+                    + "cmd activity compact full 2>/dev/null");
+            Log.i(TAG, "Linux kernel memory compaction executed.");
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "compactMemory note: " + t.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Restores stock memory swappiness and cache pressure settings.
+     */
+    public static boolean restoreStockMemorySettings() {
+        try {
+            CommandExecutor.executeSystemCommand("echo 60 > /proc/sys/vm/swappiness 2>/dev/null; "
+                    + "echo 100 > /proc/sys/vm/vfs_cache_pressure 2>/dev/null");
+            Log.i(TAG, "Stock memory swappiness restored.");
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "restoreStockMemorySettings note: " + t.getMessage());
+            return false;
+        }
+    }
 }

@@ -25,7 +25,7 @@ public class CpuGovernorChannel {
     public static int[][] detectCpuClusterTopology() {
         int coreCount = detectCpuCoreCount();
         List<int[]> clusters = new ArrayList<>();
-        int[][] topology = new int[0][3];
+        int[][] topology = null;
 
         try {
             // Read related_cpus for each policy to identify clusters
@@ -53,13 +53,17 @@ public class CpuGovernorChannel {
                         }
                     }
                 }
-                // Sort by start core
-                clusters.sort((a, b) -> Integer.compare(a[0], b[0]));
-                topology = clusters.toArray(new int[0][3]);
+                if (!clusters.isEmpty()) {
+                    clusters.sort((a, b) -> Integer.compare(a[0], b[0]));
+                    topology = clusters.toArray(new int[0][3]);
+                }
             }
         } catch (Throwable ignored) {
+        }
+
+        if (topology == null || topology.length == 0) {
             // Fallback: simple split
-            int mid = coreCount / 2;
+            int mid = Math.max(1, coreCount / 2);
             topology = new int[][]{
                 {0, mid - 1, 0},           // efficiency
                 {mid, coreCount - 1, 1}    // big
@@ -397,6 +401,10 @@ public class CpuGovernorChannel {
 
     public static boolean setPerformanceLock() {
         return setGovernor("extreme");
+    }
+
+    public static boolean restoreStockGovernors() {
+        return setGovernor("balanced");
     }
 
     /**

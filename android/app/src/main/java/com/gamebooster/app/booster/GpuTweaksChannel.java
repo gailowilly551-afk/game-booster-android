@@ -1,13 +1,18 @@
 package com.gamebooster.app.booster;
 
+import android.util.Log;
 import com.gamebooster.app.engine.CommandExecutor;
 import com.gamebooster.app.games.GamePackageRegistry;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class GpuTweaksChannel {
+
+    private static final String TAG = "GpuTweaksChannel";
 
     /**
      * §9.1 read-back verification: for every GPU devfreq node read
@@ -541,6 +546,28 @@ public class GpuTweaksChannel {
             CommandExecutor.executeSystemCommand("settings put global game_driver_prerelease_opt_in_apps \"\"");
             String res = CommandExecutor.executeSystemCommand("settings put global updatable_driver_production_opt_in_apps \"\"");
             return CommandExecutor.isSuccessOutput(res);
+        }
+    }
+
+    /**
+     * Restores stock GPU power and renderer settings.
+     */
+    public static boolean restoreStockGpuSettings() {
+        try {
+            List<String> cmds = new ArrayList<>();
+            cmds.add("setprop debug.adreno.turbo 0");
+            cmds.add("setprop debug.adreno.perf_level 1");
+            cmds.add("setprop debug.mali.force_gpu_boost 0");
+            cmds.add("setprop vendor.gpu.power_mode 0");
+            cmds.add("setprop debug.gpu.performance 0");
+            cmds.add("setprop debug.egl.force_msaa 0");
+            cmds.add("for g in /sys/class/devfreq/*gpu*/governor /sys/class/devfreq/*mali*/governor /sys/class/devfreq/*kgsl*/governor; do echo simple_ondemand > \"$g\" 2>/dev/null || echo mtk_gpufreq > \"$g\" 2>/dev/null; done");
+            CommandExecutor.executeBatchCommands(cmds);
+            Log.i(TAG, "Stock GPU settings and devfreq governors restored.");
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "restoreStockGpuSettings note: " + t.getMessage());
+            return false;
         }
     }
 }
