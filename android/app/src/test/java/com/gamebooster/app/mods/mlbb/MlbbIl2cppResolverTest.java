@@ -79,6 +79,20 @@ public class MlbbIl2cppResolverTest {
 
         String catRc = MlbbIl2cppResolver.getStringCategory("ResCheckStartHandler");
         assertEquals("ResCheck", catRc);
+
+        long hurtVal = MlbbIl2cppResolver.getStringOffset("CountHurtValue");
+        assertEquals("CountHurtValue string offset should match verified dump", 0x6569b3L, hurtVal);
+        assertEquals("PhysicalDamage", MlbbIl2cppResolver.getStringCategory("CountHurtValue"));
+
+        long calcVal = MlbbIl2cppResolver.getStringOffset("CalcVal");
+        assertEquals("CalcVal string offset should match verified dump", 0x09e4a5L, calcVal);
+        assertEquals("PhysicalDamage", MlbbIl2cppResolver.getStringCategory("CalcVal"));
+
+        long basePhy = MlbbIl2cppResolver.getStringOffset("m_BasePhyAtt");
+        assertEquals("m_BasePhyAtt string offset should match verified dump", 0x0c6a8dL, basePhy);
+
+        long baseMag = MlbbIl2cppResolver.getStringOffset("m_BaseMagAtt");
+        assertEquals("m_BaseMagAtt string offset should match verified dump", 0x0c6a99L, baseMag);
     }
 
     @Test

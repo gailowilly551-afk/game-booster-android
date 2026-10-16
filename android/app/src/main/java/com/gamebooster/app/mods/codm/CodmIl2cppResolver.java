@@ -236,6 +236,27 @@ public final class CodmIl2cppResolver {
         STRING_CATEGORY_CACHE.put("Camera", "Camera");
         STRING_OFFSET_CACHE.put("FieldOfView", 0x52e9ccL);
         STRING_CATEGORY_CACHE.put("FieldOfView", "Camera");
+
+        STRING_OFFSET_CACHE.put("GetRecoilFactorInGame", 0x3bd30bL);
+        STRING_CATEGORY_CACHE.put("GetRecoilFactorInGame", "Recoil");
+        STRING_OFFSET_CACHE.put("GetRecoilUpBase", 0x4660e8L);
+        STRING_CATEGORY_CACHE.put("GetRecoilUpBase", "Recoil");
+        STRING_OFFSET_CACHE.put("MinShotSpreadSize", 0x253c1cL);
+        STRING_CATEGORY_CACHE.put("MinShotSpreadSize", "Spread");
+        STRING_OFFSET_CACHE.put("MaxShotSpreadSize", 0x253c2eL);
+        STRING_CATEGORY_CACHE.put("MaxShotSpreadSize", "Spread");
+        STRING_OFFSET_CACHE.put("BlurMinSpread", 0x893f30L);
+        STRING_CATEGORY_CACHE.put("BlurMinSpread", "Spread");
+        STRING_OFFSET_CACHE.put("BlurSpread", 0x893f54L);
+        STRING_CATEGORY_CACHE.put("BlurSpread", "Spread");
+        STRING_OFFSET_CACHE.put("MpIsOpenAimAssistSet", 0x80a638L);
+        STRING_CATEGORY_CACHE.put("MpIsOpenAimAssistSet", "AimAssist");
+        STRING_OFFSET_CACHE.put("BrIsOpenAimAssistSet", 0x80aa9aL);
+        STRING_CATEGORY_CACHE.put("BrIsOpenAimAssistSet", "AimAssist");
+        STRING_OFFSET_CACHE.put("m_DamageAmount", 0x884889L);
+        STRING_CATEGORY_CACHE.put("m_DamageAmount", "CombatDamage");
+        STRING_OFFSET_CACHE.put("BRCatGamePlayerController", 0x1787c1L);
+        STRING_CATEGORY_CACHE.put("BRCatGamePlayerController", "PlayerController");
     }
 
     public static long getOffset(String key) {

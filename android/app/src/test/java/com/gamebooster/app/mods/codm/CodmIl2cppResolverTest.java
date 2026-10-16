@@ -42,6 +42,18 @@ public class CodmIl2cppResolverTest {
 
         String recoilCategory = CodmIl2cppResolver.getStringCategory("RecoilScaleWeaponShake");
         assertEquals("Recoil", recoilCategory);
+
+        long aimRotBuf = CodmIl2cppResolver.getStringOffset("AimAssistRot");
+        assertEquals("AimAssistRot buffer offset should match verified dump", 0x2b91d6L, aimRotBuf);
+
+        long sniperBuf = CodmIl2cppResolver.getStringOffset("EnableAimAssistanceForSniper");
+        assertEquals("EnableAimAssistanceForSniper buffer offset should match verified dump", 0x383824L, sniperBuf);
+
+        long headshotBuf = CodmIl2cppResolver.getStringOffset("Headshot");
+        assertEquals("Headshot buffer offset should match verified dump", 0x2f5677L, headshotBuf);
+
+        long isEnemyBuf = CodmIl2cppResolver.getStringOffset("IsEnemy");
+        assertEquals("IsEnemy buffer offset should match verified dump", 0x3863ebL, isEnemyBuf);
     }
 
     @Test
