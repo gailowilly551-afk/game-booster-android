@@ -33,7 +33,9 @@ public class CodmConfigPatcher {
                 root + "/files/Config/ControlsSettings.ini",
                 root + "/files/Config/GraphicsSettings.ini",
                 root + "/files/res_skip_patch",
-                root + "/files/MSDKConfig.ini"
+                root + "/files/MSDKConfig.ini",
+                root + "/files/Config/config.json",
+                root + "/files/config.json"
             };
             for (String f : targetFiles) {
                 NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
@@ -256,8 +258,11 @@ public class CodmConfigPatcher {
             "GraphicsSetting.xml",
             "UserProfile.xml",
             // Safe patch assets — MSDK config, encryption bypass
+            "config.json",
             "MSDKConfig.ini",
             "MSDKBuglyConfig.json",
+            "MSDKPopupLocal.config",
+            "MSDKRetMsg.json",
             "encrypt.json",
             "captcha_encrpted",
             "blit.txt",
@@ -365,7 +370,7 @@ public class CodmConfigPatcher {
         List<String> roots = resolveRootDirs(packageName);
         boolean anyDeployed = false;
 
-        String[] combatFiles = {"boot.config", "MSDKConfig.ini", "settings.xml", "ControlsSettings.ini", "UserSetting.json"};
+        String[] combatFiles = {"boot.config", "MSDKConfig.ini", "config.json", "settings.xml", "ControlsSettings.ini", "UserSetting.json"};
 
         for (String root : roots) {
             String filesDir = root + "/files";
@@ -1780,6 +1785,7 @@ public class CodmConfigPatcher {
             }
         }
         GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(packageName, paths);
+        enforcePermanentZeroRevert(packageName);
         Log.i(TAG, "⚡ [CodmLatest2026Patch] Full Spec Injected & Auto-Apply Active across " + written + " paths for " + packageName);
         return written > 0;
     }

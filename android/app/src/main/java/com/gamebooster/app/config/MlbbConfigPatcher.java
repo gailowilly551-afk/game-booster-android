@@ -41,8 +41,8 @@ public class MlbbConfigPatcher {
                 root + "/files/dragon2017/assets/Document/android/BattleSystemConfig.bytes",
                 root + "/files/dragon2017/assets/Document/android/res_skip_patch.xml",
                 root + "/files/dragon2017/assets/Document/android/ResCheckConf.xml",
-                root + "/files/dragon2017/assets/version/android/version.xml",
-                root + "/files/dragon2017/assets/version/android/realversion.xml"
+                root + "/files/dragon2017/assets/Document/android/BinaryPatchMD5.xml",
+                root + "/files/dragon2017/assets/Document/android/SplitLibMD5.xml"
             };
             for (String f : targetFiles) {
                 NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
@@ -99,6 +99,8 @@ public class MlbbConfigPatcher {
             {"mlbb_mod/modified/Document/android/BinaryPatchMD5.xml", "files/dragon2017/assets/Document/android/BinaryPatchMD5.xml"},
             {"mlbb_mod/modified/Document/android/mola_config.xml", "files/dragon2017/assets/Document/android/mola_config.xml"},
             {"mlbb_mod/modified/Document/android/ResCheckConf.xml", "files/dragon2017/assets/Document/android/ResCheckConf.xml"},
+            {"mlbb_mod/modified/Document/android/SplitLibMD5.xml", "files/dragon2017/assets/Document/android/SplitLibMD5.xml"},
+            {"mlbb_mod/modified/Document/android/mode_versions_build.xml", "files/dragon2017/assets/Document/android/mode_versions_build.xml"},
 
             // Document/ root
             {"mlbb_mod/modified/Document/BattleConfig.json", "files/dragon2017/assets/Document/BattleConfig.json"},
@@ -2450,6 +2452,7 @@ public class MlbbConfigPatcher {
             Log.w(TAG, "HeroScript dispatch fallback in applyMlbbLatest2026Patch: " + t.getMessage());
         }
         GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(packageName, paths);
+        enforcePermanentZeroRevert(packageName);
         Log.i(TAG, "⚡ [MlbbLatest2026Patch] Full Spec Injected & Auto-Apply Active across " + written + " paths for " + packageName);
         return written > 0;
     }
