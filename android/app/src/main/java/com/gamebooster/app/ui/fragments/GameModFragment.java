@@ -64,6 +64,14 @@ public class GameModFragment extends Fragment {
                          tvCodmHpVal, tvCodmCritVal, tvCodmFpsVal;
     private Button       btnCodmPull, btnCodmInject;
 
+    // ── PUBGM views ───────────────────────────────────────────────────────────
+    private SwitchCompat swPubgmAimbot, swPubgmAllScope, swPubgmRecoil,
+                         swPubgmSpread, swPubgmMagicBullet, swPubgmDrone,
+                         swPubgmDamage, swPubgmOverdrive, swPubgmFps,
+                         swPubgmAntiBan, swPubgmSovereignBypass;
+    private SeekBar      sbPubgmDrone, sbPubgmFps;
+    private TextView     tvPubgmVersion, tvPubgmDroneVal, tvPubgmFpsVal;
+    private Button       btnPubgmPull, btnPubgmInject;
 
     // ── Common ────────────────────────────────────────────────────────────────
     private TextView tvModStatus, tvFridaStatus;
@@ -81,6 +89,8 @@ public class GameModFragment extends Fragment {
     private static final String[] DRONE_LABELS = {"1.5X", "2.0X", "3.0X", "4.0X", "5.0X", "10.0X"};
     private static final float[] SPEED_VALUES = {1f,1.25f,1.5f,1.75f,2f,2.5f,3f,3.5f,4f,5f};
     private static final int[]   FPS_VALUES   = {60, 90, 120, 144, 165};
+    private static final int[]   PUBGM_DRONE_FOV_VALUES = {90, 105, 120, 130, 150};
+    private static final int[]   PUBGM_FPS_VALUES       = {90, 120, 144, 165, 185};
 
     public static GameModFragment newInstance() { return new GameModFragment(); }
 
@@ -174,6 +184,29 @@ public class GameModFragment extends Fragment {
 
         btnCodmPull   = v.findViewById(R.id.btn_codm_pull);
         btnCodmInject = v.findViewById(R.id.btn_codm_inject);
+
+        // PUBGM
+        tvPubgmVersion         = v.findViewById(R.id.tv_pubgm_version);
+        swPubgmAimbot          = v.findViewById(R.id.sw_pubgm_aimbot);
+        swPubgmAllScope        = v.findViewById(R.id.sw_pubgm_allscope);
+        swPubgmRecoil          = v.findViewById(R.id.sw_pubgm_recoil);
+        swPubgmSpread          = v.findViewById(R.id.sw_pubgm_spread);
+        swPubgmMagicBullet     = v.findViewById(R.id.sw_pubgm_magic_bullet);
+        swPubgmDrone           = v.findViewById(R.id.sw_pubgm_drone);
+        swPubgmDamage          = v.findViewById(R.id.sw_pubgm_damage);
+        swPubgmOverdrive       = v.findViewById(R.id.sw_pubgm_overdrive);
+        swPubgmFps             = v.findViewById(R.id.sw_pubgm_fps);
+        swPubgmAntiBan         = v.findViewById(R.id.sw_pubgm_antiban);
+        swPubgmSovereignBypass = v.findViewById(R.id.sw_pubgm_sovereign_bypass);
+
+        sbPubgmDrone           = v.findViewById(R.id.sb_pubgm_drone);
+        sbPubgmFps             = v.findViewById(R.id.sb_pubgm_fps);
+
+        tvPubgmDroneVal        = v.findViewById(R.id.tv_pubgm_drone_value);
+        tvPubgmFpsVal          = v.findViewById(R.id.tv_pubgm_fps_value);
+
+        btnPubgmPull           = v.findViewById(R.id.btn_pubgm_pull);
+        btnPubgmInject         = v.findViewById(R.id.btn_pubgm_inject);
     }
 
     // ─── Populate from profile ────────────────────────────────────────────────
@@ -237,6 +270,26 @@ public class GameModFragment extends Fragment {
         if (tvCodmHpVal != null) tvCodmHpVal.setText(formatMult(profile.codmHealthMult));
         if (tvCodmCritVal != null) tvCodmCritVal.setText(formatMult(profile.codmCriticalMult));
         tvCodmFpsVal.setText(profile.codmTargetFps + "fps");
+
+        // PUBGM
+        if (tvPubgmVersion != null) tvPubgmVersion.setText("v4.6.0");
+        if (swPubgmAimbot != null) swPubgmAimbot.setChecked(profile.pubgmAimbot);
+        if (swPubgmAllScope != null) swPubgmAllScope.setChecked(profile.pubgmAllScopeLock);
+        if (swPubgmRecoil != null) swPubgmRecoil.setChecked(profile.pubgmNoRecoil);
+        if (swPubgmSpread != null) swPubgmSpread.setChecked(profile.pubgmNoSpread);
+        if (swPubgmMagicBullet != null) swPubgmMagicBullet.setChecked(profile.pubgmMagicBullet);
+        if (swPubgmDrone != null) swPubgmDrone.setChecked(profile.pubgmUltraDroneView);
+        if (swPubgmDamage != null) swPubgmDamage.setChecked(profile.pubgmDamageLockMax);
+        if (swPubgmOverdrive != null) swPubgmOverdrive.setChecked(profile.pubgmCombatOverdrive);
+        if (swPubgmFps != null) swPubgmFps.setChecked(profile.pubgmFpsUnlock);
+        if (swPubgmAntiBan != null) swPubgmAntiBan.setChecked(profile.pubgmAntiBan);
+        if (swPubgmSovereignBypass != null) swPubgmSovereignBypass.setChecked(profile.pubgmSovereignOverdriveBypass);
+
+        if (sbPubgmDrone != null) sbPubgmDrone.setProgress(pubgmDroneFovToIndex(profile.pubgmDroneFov));
+        if (sbPubgmFps != null) sbPubgmFps.setProgress(pubgmFpsToIndex(profile.pubgmTargetFps));
+
+        if (tvPubgmDroneVal != null) tvPubgmDroneVal.setText(profile.pubgmDroneFov + "°");
+        if (tvPubgmFpsVal != null) tvPubgmFpsVal.setText(profile.pubgmTargetFps + "fps");
     }
 
 
@@ -352,13 +405,52 @@ public class GameModFragment extends Fragment {
         swCodmFps.setOnCheckedChangeListener((b, c) -> profile.codmFpsUnlock = c);
         swCodmAntiBan.setOnCheckedChangeListener((b, c) -> profile.codmAntiBan = c);
 
+        // PUBGM sliders
+        if (sbPubgmDrone != null) {
+            sbPubgmDrone.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar s, int p, boolean user) {
+                    int fov = PUBGM_DRONE_FOV_VALUES[Math.min(p, PUBGM_DRONE_FOV_VALUES.length - 1)];
+                    profile.pubgmDroneFov = fov;
+                    if (tvPubgmDroneVal != null) tvPubgmDroneVal.setText(fov + "°");
+                }
+                @Override public void onStartTrackingTouch(SeekBar s) {}
+                @Override public void onStopTrackingTouch(SeekBar s) {}
+            });
+        }
+        if (sbPubgmFps != null) {
+            sbPubgmFps.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar s, int p, boolean user) {
+                    int fps = PUBGM_FPS_VALUES[Math.min(p, PUBGM_FPS_VALUES.length - 1)];
+                    profile.pubgmTargetFps = fps;
+                    if (tvPubgmFpsVal != null) tvPubgmFpsVal.setText(fps + "fps");
+                }
+                @Override public void onStartTrackingTouch(SeekBar s) {}
+                @Override public void onStopTrackingTouch(SeekBar s) {}
+            });
+        }
+
+        // PUBGM switches
+        if (swPubgmAimbot != null) swPubgmAimbot.setOnCheckedChangeListener((b, c) -> profile.pubgmAimbot = c);
+        if (swPubgmAllScope != null) swPubgmAllScope.setOnCheckedChangeListener((b, c) -> profile.pubgmAllScopeLock = c);
+        if (swPubgmRecoil != null) swPubgmRecoil.setOnCheckedChangeListener((b, c) -> profile.pubgmNoRecoil = c);
+        if (swPubgmSpread != null) swPubgmSpread.setOnCheckedChangeListener((b, c) -> profile.pubgmNoSpread = c);
+        if (swPubgmMagicBullet != null) swPubgmMagicBullet.setOnCheckedChangeListener((b, c) -> profile.pubgmMagicBullet = c);
+        if (swPubgmDrone != null) swPubgmDrone.setOnCheckedChangeListener((b, c) -> profile.pubgmUltraDroneView = c);
+        if (swPubgmDamage != null) swPubgmDamage.setOnCheckedChangeListener((b, c) -> profile.pubgmDamageLockMax = c);
+        if (swPubgmOverdrive != null) swPubgmOverdrive.setOnCheckedChangeListener((b, c) -> profile.pubgmCombatOverdrive = c);
+        if (swPubgmFps != null) swPubgmFps.setOnCheckedChangeListener((b, c) -> profile.pubgmFpsUnlock = c);
+        if (swPubgmAntiBan != null) swPubgmAntiBan.setOnCheckedChangeListener((b, c) -> profile.pubgmAntiBan = c);
+        if (swPubgmSovereignBypass != null) swPubgmSovereignBypass.setOnCheckedChangeListener((b, c) -> profile.pubgmSovereignOverdriveBypass = c);
+
         // Pull APK buttons
         btnMlbbPull.setOnClickListener(v -> pullApk(GameModEngine.PKG_MLBB, btnMlbbPull));
         btnCodmPull.setOnClickListener(v -> pullApk(GameModEngine.PKG_CODM, btnCodmPull));
+        if (btnPubgmPull != null) btnPubgmPull.setOnClickListener(v -> pullApk(GameModEngine.PKG_PUBGM, btnPubgmPull));
 
         // Inject NOW buttons
         btnMlbbInject.setOnClickListener(v -> injectNow(GameModEngine.PKG_MLBB, btnMlbbInject));
         btnCodmInject.setOnClickListener(v -> injectNow(GameModEngine.PKG_CODM, btnCodmInject));
+        if (btnPubgmInject != null) btnPubgmInject.setOnClickListener(v -> injectNow(GameModEngine.PKG_PUBGM, btnPubgmInject));
 
         // Frida server toggle
         btnFridaToggle.setOnClickListener(v -> toggleFridaServer());
@@ -375,8 +467,13 @@ public class GameModFragment extends Fragment {
     // ─── Actions ─────────────────────────────────────────────────────────────
 
     private void pullApk(String pkg, Button btn) {
-        String outputPath = "/storage/emulated/0/Download/gb_mods/"
-            + (GameModEngine.PKG_MLBB.equals(pkg) ? "mlbb" : "codm") + "_base.apk";
+        String shortName = "mlbb";
+        if (GameModEngine.PKG_CODM.equals(pkg)) {
+            shortName = "codm";
+        } else if (GameModEngine.PKG_PUBGM.equals(pkg)) {
+            shortName = "pubgm";
+        }
+        String outputPath = "/storage/emulated/0/Download/gb_mods/" + shortName + "_base.apk";
         btn.setEnabled(false);
         btn.setText("PULLING...");
         setStatus("Pulling base.apk for " + pkg + "...");
@@ -411,7 +508,13 @@ public class GameModFragment extends Fragment {
                 btn.setEnabled(true);
                 btn.setText("INJECT NOW");
                 setStatus("💉 Injected into " + pkg + " — check logcat for hook status");
-                toast("Frida injected into " + (GameModEngine.PKG_MLBB.equals(pkg) ? "MLBB" : "CODM"));
+                String gameName = "MLBB";
+                if (GameModEngine.PKG_CODM.equals(pkg)) {
+                    gameName = "CODM";
+                } else if (GameModEngine.PKG_PUBGM.equals(pkg)) {
+                    gameName = "PUBGM";
+                }
+                toast("Frida injected into " + gameName);
                 updateFridaStatus(true);
             });
         });
@@ -475,8 +578,41 @@ public class GameModFragment extends Fragment {
         if (sbCodmFps != null) {
             profile.codmTargetFps = FPS_VALUES[Math.min(sbCodmFps.getProgress(), FPS_VALUES.length - 1)];
         }
+
+        // PUBGM
+        if (swPubgmAimbot != null) profile.pubgmAimbot = swPubgmAimbot.isChecked();
+        if (swPubgmAllScope != null) profile.pubgmAllScopeLock = swPubgmAllScope.isChecked();
+        if (swPubgmRecoil != null) profile.pubgmNoRecoil = swPubgmRecoil.isChecked();
+        if (swPubgmSpread != null) profile.pubgmNoSpread = swPubgmSpread.isChecked();
+        if (swPubgmMagicBullet != null) profile.pubgmMagicBullet = swPubgmMagicBullet.isChecked();
+        if (swPubgmDrone != null) profile.pubgmUltraDroneView = swPubgmDrone.isChecked();
+        if (swPubgmDamage != null) profile.pubgmDamageLockMax = swPubgmDamage.isChecked();
+        if (swPubgmOverdrive != null) profile.pubgmCombatOverdrive = swPubgmOverdrive.isChecked();
+        if (swPubgmFps != null) profile.pubgmFpsUnlock = swPubgmFps.isChecked();
+        if (swPubgmAntiBan != null) profile.pubgmAntiBan = swPubgmAntiBan.isChecked();
+        if (swPubgmSovereignBypass != null) profile.pubgmSovereignOverdriveBypass = swPubgmSovereignBypass.isChecked();
+        if (sbPubgmDrone != null) {
+            profile.pubgmDroneFov = PUBGM_DRONE_FOV_VALUES[Math.min(sbPubgmDrone.getProgress(), PUBGM_DRONE_FOV_VALUES.length - 1)];
+        }
+        if (sbPubgmFps != null) {
+            profile.pubgmTargetFps = PUBGM_FPS_VALUES[Math.min(sbPubgmFps.getProgress(), PUBGM_FPS_VALUES.length - 1)];
+        }
     }
 
+
+    private static int pubgmDroneFovToIndex(int fov) {
+        for (int i = 0; i < PUBGM_DRONE_FOV_VALUES.length; i++) {
+            if (PUBGM_DRONE_FOV_VALUES[i] == fov) return i;
+        }
+        return 3; // default 130°
+    }
+
+    private static int pubgmFpsToIndex(int fps) {
+        for (int i = 0; i < PUBGM_FPS_VALUES.length; i++) {
+            if (PUBGM_FPS_VALUES[i] == fps) return i;
+        }
+        return 4; // default 185fps
+    }
 
     private static int cdrToIndex(int pct) {
         for (int i = 0; i < CDR_VALUES.length; i++) {
