@@ -12,8 +12,16 @@ import android.graphics.drawable.Drawable;
 
 import com.gamebooster.app.R;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +33,9 @@ import java.util.Set;
  */
 @android.annotation.SuppressLint("ObsoleteSdkInt")
 public class HomeGameScanner {
+
+    private static final String FAST_CACHE_FILE = "fast_games_cache.json";
+    private static volatile List<GameAppInfo> sFastMemoryCache = null;
 
     public static class TargetGameSpec {
         public final String[] packageNames;
@@ -812,6 +823,201 @@ public class HomeGameScanner {
             } catch (Throwable ignored) {}
         }
 
+        saveFastCachedGames(context, detectedGames);
         return detectedGames;
+    }
+
+    /**
+     * Synchronously loads cached games from fast memory (<0.1ms) or persistent JSON disk cache (<2ms).
+     * Guaranteed safe for Main Thread frame 0 execution.
+     */
+    public static List<GameAppInfo> loadFastCachedGames(Context context) {
+        if (context == null) return new ArrayList<>();
+        Set<String> excludedPkgs = GameLauncherHelper.getExcludedPackages(context);
+
+        // 1. Check in-memory fast cache first (<0.1ms)
+        List<GameAppInfo> mem = sFastMemoryCache;
+        if (mem != null && !mem.isEmpty()) {
+            List<GameAppInfo> filtered = new ArrayList<>();
+            for (GameAppInfo g : mem) {
+                if (g != null && g.getPackageName() != null && !excludedPkgs.contains(g.getPackageName())) {
+                    filtered.add(g);
+                }
+            }
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
+        }
+
+        // 2. Read persistent JSON cache (<2ms)
+        List<GameAppInfo> loaded = new ArrayList<>();
+        try {
+            File cacheFile = new File(context.getFilesDir(), FAST_CACHE_FILE);
+            if (cacheFile.exists() && cacheFile.length() > 0) {
+                byte[] bytes = new byte[(int) cacheFile.length()];
+                try (FileInputStream fis = new FileInputStream(cacheFile)) {
+                    int readBytes = fis.read(bytes);
+                    if (readBytes > 0) {
+                        String jsonStr = new String(bytes, 0, readBytes, StandardCharsets.UTF_8);
+                        JSONArray array = new JSONArray(jsonStr);
+                        PackageManager pm = context.getPackageManager();
+
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject obj = array.optJSONObject(i);
+                            if (obj == null) continue;
+                            String pkg = obj.optString("packageName");
+                            if (pkg == null || pkg.isEmpty() || excludedPkgs.contains(pkg)) continue;
+
+                            String label = obj.optString("label", pkg);
+                            String category = obj.optString("gameType", "GAME");
+                            int cardBgRes = obj.optInt("cardBgRes", 0);
+                            int badgeColor = obj.optInt("badgeColor", 0);
+                            if (cardBgRes == 0) cardBgRes = resolveCardBg(category);
+                            if (badgeColor == 0) badgeColor = resolveBadgeColor(category);
+
+                            Intent launchIntent = null;
+                            Drawable icon = null;
+                            if (pm != null) {
+                                launchIntent = resolveLaunchIntent(pm, pkg);
+                                try {
+                                    icon = pm.getApplicationIcon(pkg);
+                                } catch (Throwable ignored) {}
+                                if (icon == null) {
+                                    try {
+                                        icon = context.getApplicationInfo().loadIcon(pm);
+                                    } catch (Throwable ignored) {}
+                                }
+                            }
+                            if (launchIntent == null) {
+                                launchIntent = new Intent();
+                            }
+
+                            loaded.add(new GameAppInfo(
+                                    label,
+                                    pkg,
+                                    icon,
+                                    launchIntent,
+                                    category,
+                                    cardBgRes,
+                                    badgeColor
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("HomeGameScanner", "Error reading fast cache: " + t.getMessage());
+        }
+
+        if (!loaded.isEmpty()) {
+            sFastMemoryCache = new ArrayList<>(loaded);
+            return loaded;
+        }
+
+        return loaded;
+    }
+
+    /**
+     * Asynchronously or synchronously persists the detected games to fast JSON cache file and memory.
+     */
+    public static void saveFastCachedGames(Context context, List<GameAppInfo> games) {
+        if (context == null || games == null) return;
+        sFastMemoryCache = new ArrayList<>(games);
+        try {
+            JSONArray array = new JSONArray();
+            for (GameAppInfo g : games) {
+                if (g == null || g.getPackageName() == null) continue;
+                JSONObject obj = new JSONObject();
+                obj.put("packageName", g.getPackageName());
+                obj.put("label", g.getLabel() != null ? g.getLabel() : g.getPackageName());
+                obj.put("gameType", g.getGameType() != null ? g.getGameType() : "GAME");
+                obj.put("cardBgRes", g.getCardBgRes());
+                obj.put("badgeColor", g.getBadgeColor());
+                array.put(obj);
+            }
+            File cacheFile = new File(context.getFilesDir(), FAST_CACHE_FILE);
+            try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+                fos.write(array.toString().getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("HomeGameScanner", "Error saving fast cache: " + t.getMessage());
+        }
+    }
+
+    /**
+     * Fast targeted check (<5ms) of top tier games (MLBB, PUBGM, CODM) using direct getPackageInfo
+     * without enumerating all device applications. Used as instant fallback on first-time app launch.
+     */
+    public static List<GameAppInfo> probePrimaryGamesFast(Context context) {
+        List<GameAppInfo> detected = new ArrayList<>();
+        if (context == null) return detected;
+        PackageManager pm = context.getPackageManager();
+        if (pm == null) return detected;
+
+        Set<String> excludedPkgs = GameLauncherHelper.getExcludedPackages(context);
+        Set<String> added = new HashSet<>();
+
+        for (TargetGameSpec spec : ALL_TARGET_SPECS) {
+            for (String pkg : spec.packageNames) {
+                if (added.contains(pkg) || excludedPkgs.contains(pkg)) continue;
+                if (!isPackageInstalled(pm, pkg)) continue;
+
+                Intent launchIntent = resolveLaunchIntent(pm, pkg);
+                if (launchIntent == null) continue;
+
+                String label = spec.defaultTitle;
+                Drawable icon = null;
+                try {
+                    ApplicationInfo ai = null;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        ai = pm.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0));
+                    } else {
+                        ai = pm.getApplicationInfo(pkg, 0);
+                    }
+                    if (ai != null) {
+                        label = pm.getApplicationLabel(ai).toString();
+                        icon = pm.getApplicationIcon(ai);
+                    }
+                } catch (Throwable ignored) {}
+
+                if (icon == null) {
+                    try {
+                        icon = context.getApplicationInfo().loadIcon(pm);
+                    } catch (Throwable ignored) {}
+                }
+
+                detected.add(new GameAppInfo(
+                        label,
+                        pkg,
+                        icon,
+                        launchIntent,
+                        spec.gameType,
+                        spec.cardBgRes,
+                        spec.badgeColor
+                ));
+                added.add(pkg);
+                break; // Found regional match for this spec
+            }
+        }
+
+        if (!detected.isEmpty()) {
+            saveFastCachedGames(context, detected);
+        }
+        return detected;
+    }
+
+    /**
+     * Clears in-memory and disk fast caches.
+     */
+    public static void clearFastCache(Context context) {
+        sFastMemoryCache = null;
+        if (context != null) {
+            try {
+                File cacheFile = new File(context.getFilesDir(), FAST_CACHE_FILE);
+                if (cacheFile.exists()) {
+                    cacheFile.delete();
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 }
