@@ -809,6 +809,246 @@
 
         </LinearLayout>
 
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- PUBG MOBILE PANEL (v4.6.0)                                          -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_cyber_bg"
+            android:padding="14dp"
+            android:layout_marginBottom="12dp">
+
+            <!-- Game Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🪖 PUBG MOBILE"
+                    android:textColor="#FF8800"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"/>
+
+                <TextView
+                    android:id="@+id/tv_pubgm_version"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="v4.6.0"
+                    android:textColor="#555555"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <!-- Aimbot -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_aimbot"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎯 Aimbot Lock"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- All Scope Lock -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_allscope"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔭 All-Scope Auto-Align"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:checked="true"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Zero Recoil -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_recoil"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚡ 100% Zero Recoil"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- No Bullet Spread -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_spread"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎯 No Bullet Spread / Cone Fix"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Magic Bullet -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_magic_bullet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔮 Magic Bullet (Direct Hit Trace)"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Ultra Drone View -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_pubgm_drone"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🦅 Ultra Drone View (FOV)"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"/>
+
+                <TextView
+                    android:id="@+id/tv_pubgm_drone_value"
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:text="130°"
+                    android:textColor="#00FFD4"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/sb_pubgm_drone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="4"
+                android:progress="2"
+                android:layout_marginBottom="8dp"
+                android:progressTint="#00FFD4"
+                android:thumbTint="#00FFD4"/>
+
+            <!-- Damage Lock Max -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_damage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💥 Damage Lock Max (100% Power)"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Combat Overdrive -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_overdrive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔥 Combat Overdrive (Anti-Sway &amp; Fast ADS)"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- FPS Unlock -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/sw_pubgm_fps"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🚀 Extreme FPS Unlock"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"/>
+
+                <TextView
+                    android:id="@+id/tv_pubgm_fps_value"
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:text="185fps"
+                    android:textColor="#FF8800"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/sb_pubgm_fps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="4"
+                android:progress="4"
+                android:layout_marginBottom="12dp"
+                android:progressTint="#FF8800"
+                android:thumbTint="#FF8800"/>
+
+            <!-- Anti-Ban -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_antiban"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🛡 Anti-Ban Layer (SSL Unpin &amp; Safe Hook)"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:checked="true"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Sovereign Bypass -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sw_pubgm_sovereign_bypass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔒 Sovereign Overdrive Anti-Detection"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:checked="true"
+                android:layout_marginBottom="14dp"/>
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/btn_pubgm_pull"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:text="PULL APK"
+                    android:textSize="11sp"
+                    android:backgroundTint="#1A2A1A"
+                    android:textColor="#44FF44"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_pubgm_inject"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:text="INJECT NOW"
+                    android:textSize="11sp"
+                    android:backgroundTint="#2A1F1A"
+                    android:textColor="#FF8800"
+                    android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
         <!-- ── Frida Server Control ─────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
