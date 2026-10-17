@@ -177,6 +177,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
         View.OnClickListener restoreAction = v -> {
             Context ctx = getContext();
             if (ctx == null) return;
+            HomeGameScanner.clearFastCache(ctx);
             GameLauncherHelper.resetAllExcludedPackages(ctx);
             GameLauncherHelper.clearAllCustomPackages(ctx);
             Toast.makeText(ctx, "✅ Game list restored to defaults!", Toast.LENGTH_SHORT).show();
@@ -194,6 +195,18 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                 }
                 loadAndScanGames(true);
             });
+        }
+
+        // Frame-0 Fast Cache Load: Show MLBB, CODM, PUBGM instantly on startup (<2ms)
+        Context appCtx = getContext() != null ? getContext().getApplicationContext() : null;
+        if (appCtx != null && gameList.isEmpty()) {
+            List<GameAppInfo> cached = HomeGameScanner.loadFastCachedGames(appCtx);
+            if (cached == null || cached.isEmpty()) {
+                cached = HomeGameScanner.probePrimaryGamesFast(appCtx);
+            }
+            if (cached != null && !cached.isEmpty()) {
+                gameList.addAll(cached);
+            }
         }
 
         if (rvGames != null) {
@@ -225,9 +238,15 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                 }
             });
             rvGames.setAdapter(adapter);
+
+            if (!gameList.isEmpty()) {
+                rvGames.setVisibility(View.VISIBLE);
+                if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
+                if (tvGamesHeader != null) {
+                    tvGamesHeader.setText("INSTALLED GAMES (" + gameList.size() + " DETECTED)");
+                }
+            }
         }
-
-
 
         androidx.core.widget.NestedScrollView scrollHome = view.findViewById(R.id.scroll_home);
         if (scrollHome != null) {
@@ -247,7 +266,8 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             dashboardView.bindLifecycle(getViewLifecycleOwner());
         }
 
-        loadAndScanGames(true);
+        // Silent background scan if games already showing; full scan if empty
+        loadAndScanGames(gameList.isEmpty());
         return view;
     }
 
