@@ -143,6 +143,13 @@ public class GameBoosterApp extends Application {
             public void onActivityDestroyed(@NonNull Activity activity) {}
         });
 
+        // 2b. Synchronous fast-warm: ensure memory cache is primed before MainActivity launches
+        try {
+            com.gamebooster.app.games.HomeGameScanner.loadFastCachedGames(this);
+        } catch (Throwable t) {
+            Log.w(TAG, "Fast cache warm note: " + t.getMessage());
+        }
+
         // 3. Pre-warm background engines on dedicated worker thread (Zero Main-Thread Block)
         final Context appCtx = getApplicationContext();
         AppExecutors.getInstance().executeCommand(() -> {
@@ -236,7 +243,8 @@ public class GameBoosterApp extends Application {
 
             // K. Pre-scan installed target games for instant Home screen rendering
             try {
-                HomeGameScanner.scanTargetGames(appCtx);
+                java.util.List<com.gamebooster.app.games.GameAppInfo> scanned = HomeGameScanner.scanTargetGames(appCtx);
+                com.gamebooster.app.games.GameManagerRepository.updateCache(scanned);
             } catch (Throwable t) {
                 Log.w(TAG, "HomeGameScanner pre-cache error: " + t.getMessage());
             }

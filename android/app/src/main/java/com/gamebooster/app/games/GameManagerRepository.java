@@ -39,6 +39,21 @@ public class GameManagerRepository {
         }
     }
 
+    public static void updateCache(List<GameAppInfo> scanned) {
+        if (scanned == null) return;
+        synchronized (sCacheLock) {
+            sCachedGames = Collections.unmodifiableList(new ArrayList<>(scanned));
+            Set<String> pkgs = new HashSet<>();
+            for (GameAppInfo info : scanned) {
+                if (info != null && info.getPackageName() != null) {
+                    pkgs.add(info.getPackageName());
+                }
+            }
+            sCachedGamePackages = Collections.unmodifiableSet(pkgs);
+            sLastScanTime = System.currentTimeMillis();
+        }
+    }
+
     public static List<GameAppInfo> getInstalledGames(Context context) {
         return getInstalledGames(context, false);
     }

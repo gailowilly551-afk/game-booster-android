@@ -287,6 +287,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                 lastPackageEventTime = now;
                 com.gamebooster.app.core.AppExecutors.getInstance().postDelayed(() -> {
                     if (isAdded() && getContext() != null) {
+                        HomeGameScanner.clearFastCache(getContext().getApplicationContext());
                         loadAndScanGames(true);
                     }
                 }, 300L);
