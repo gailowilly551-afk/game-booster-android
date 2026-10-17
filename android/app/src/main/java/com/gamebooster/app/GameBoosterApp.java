@@ -271,6 +271,22 @@ public class GameBoosterApp extends Application {
             } catch (Throwable t) {
                 Log.w(TAG, "Diagnostics pre-warm error: " + t.getMessage());
             }
+
+            // P. Pre-warm PUBG Mobile 4.6.0 UE4 Reflection & Anti-Cheat Offsets
+            try {
+                com.gamebooster.app.mods.pubgm.PubgmUe4Resolver.loadOffsets(appCtx);
+            } catch (Throwable t) {
+                Log.w(TAG, "PUBGM UE4 offset resolver pre-warm note: " + t.getMessage());
+            }
+
+            // Q. Elevate One-Tap All-Files Storage Access via Shizuku if permissions granted
+            try {
+                if (ShizukuExecutor.hasShizukuPermission()) {
+                    com.gamebooster.app.saf.SafStorageManager.grantAllFilesPermissionWithShizuku(appCtx);
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "SAF All-Files storage early grant note: " + t.getMessage());
+            }
         });
 
         Log.i(TAG, "Game Booster Application initialized successfully.");

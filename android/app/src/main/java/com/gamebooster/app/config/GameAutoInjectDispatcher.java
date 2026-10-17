@@ -263,6 +263,16 @@ public final class GameAutoInjectDispatcher {
                 PubgConfigPatcher.applyPubgmHitboxExpander35(pkg);
                 PubgConfigPatcher.applyPubgUltraDroneViewMaxFov(pkg);
                 PubgConfigPatcher.deployPakPatch(pkg);
+                if (ctx != null) {
+                    PubgConfigPatcher.deployPubgmAssets(ctx, pkg);
+                    PubgConfigPatcher.applyPubgm460MasterUpdate(ctx, pkg);
+                }
+                try {
+                    boolean pubgmInjected = com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
+                    Log.i(TAG, "PUBGM 4.6.0 Mod Profile injection result: " + pubgmInjected + " (isPubgmInjected=" + com.gamebooster.app.mods.pubgm.PubgmModManager.isPubgmInjected() + ")");
+                } catch (Throwable modErr) {
+                    Log.w(TAG, "PUBGM Mod Profile injection warning: " + modErr.getMessage());
+                }
             } else if (pkg.contains("cod") || pkg.contains("callofduty") || pkg.contains("warzone")) {
                 CodmConfigPatcher.deployCodmAssets(ctx, pkg);
                 CodmConfigPatcher.deployCodmCombatAssets(ctx, pkg);

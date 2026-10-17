@@ -22,6 +22,18 @@ import java.util.List;
  */
 public class PubgConfigPatcher {
 
+    public static final String PKG_PUBGM = "com.tencent.ig";
+    public static final int TARGET_VERSION_CODE = 21525;
+    public static final String TARGET_VERSION_NAME = "4.6.0";
+    public static final int TARGET_UID = 10000;
+    public static final String DIR_USER_0 = "/data/user/0/com.tencent.ig";
+    public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.tencent.ig";
+
+    public static List<String> resolveRootDirs(String packageName) {
+        String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_PUBGM;
+        return GameConfigPathResolver.generateBasePaths(pkg);
+    }
+
     /**
      * Dedicated BattleConfig & Combat Overdrive for PUBG Mobile (UE4 Engine 2026).
      * Enforces in-battle 185fps tick rate, zero bullet drop, instant hit registration,

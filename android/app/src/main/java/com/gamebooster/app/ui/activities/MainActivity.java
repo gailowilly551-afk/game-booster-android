@@ -407,6 +407,12 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
                 com.gamebooster.app.device.HardwareDisplayController.forceMaxHzNeverFallback(getApplicationContext()));
         com.gamebooster.app.shizuku.ShizukuAutoConnectEngine.pulseConnect(this);
         com.gamebooster.app.shizuku.ShizukuLifecycleManager.getInstance(getApplicationContext()).onResumeCheck();
+
+        // Refresh SAF and storage permission indicators in Settings tab if active
+        Fragment settingsFrag = getSupportFragmentManager().findFragmentByTag(TAG_SETTINGS);
+        if (settingsFrag instanceof SettingsFragment && settingsFrag.isAdded()) {
+            ((SettingsFragment) settingsFrag).refreshSafStatus();
+        }
     }
 
     @Override
