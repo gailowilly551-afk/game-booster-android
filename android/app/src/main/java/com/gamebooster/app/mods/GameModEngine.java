@@ -33,6 +33,7 @@ public final class GameModEngine {
 
     public static final String PKG_MLBB = "com.mobile.legends";
     public static final String PKG_CODM = "com.garena.game.codm";
+    public static final String PKG_PUBGM = "com.tencent.ig";
 
     private static final String FRIDA_SERVER_DEVICE_PATH = "/data/local/tmp/frida-server";
     private static final String FRIDA_HOOK_DEVICE_DIR    = "/data/local/tmp/gb_hooks/";
@@ -157,6 +158,8 @@ public final class GameModEngine {
             com.gamebooster.app.mods.mlbb.MlbbModManager.applyProfile(ctx, packageName, profile);
         } else if (packageName.contains("codm") || packageName.contains("callofduty")) {
             com.gamebooster.app.mods.codm.CodmModManager.applyProfile(ctx, packageName, profile);
+        } else if (packageName.contains("tencent.ig") || packageName.contains("pubg")) {
+            com.gamebooster.app.mods.pubgm.PubgmModManager.applyProfile(ctx, packageName, profile);
         }
     }
 
@@ -174,6 +177,14 @@ public final class GameModEngine {
     public static boolean injectCodmSync(Context ctx, String packageName, GameModProfile profile) {
         if (packageName == null) return false;
         return com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, packageName, profile);
+    }
+
+    /**
+     * Synchronously injects PUBG Mobile 4.6.0 mod suite and returns true when fully hooked.
+     */
+    public static boolean injectPubgmSync(Context ctx, String packageName, GameModProfile profile) {
+        if (packageName == null) return false;
+        return com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(ctx, packageName, profile);
     }
 
     // ─── APK Pull / Push ──────────────────────────────────────────────────────

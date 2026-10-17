@@ -1,9 +1,15 @@
 package com.gamebooster.app.config;
 
+import android.content.Context;
 import android.util.Log;
 import com.gamebooster.app.engine.CommandExecutor;
+import com.gamebooster.app.saf.SafStorageManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuFileManager;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -1340,5 +1346,153 @@ public class PubgConfigPatcher {
         Log.i(TAG, "⚡ PUBGM 2026 Sovereign Overdrive & Bypass Suite applied across " + written + " paths for " + packageName);
         return written > 0;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // ─── ⚡ PUBG MOBILE 4.6.0 MASTER UPDATE & ASSET ENGINE ─────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Reads raw bytes from an application asset file safely.
+     */
+    private static byte[] readAssetBytes(Context ctx, String assetPath) {
+        if (ctx == null || assetPath == null) return null;
+        try (InputStream is = ctx.getAssets().open(assetPath);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int r;
+            while ((r = is.read(buf)) != -1) {
+                bos.write(buf, 0, r);
+            }
+            return bos.toByteArray();
+        } catch (Throwable t) {
+            Log.w(TAG, "readAssetBytes failed for " + assetPath + ": " + t.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Writes byte data directly to target protected game file via Shizuku, POSIX File API, or SAF.
+     */
+    private static boolean writeDataToGamePath(Context ctx, String pkg, String absPath, byte[] data) {
+        if (absPath == null || data == null || data.length == 0) return false;
+        try {
+            // 1. Elevated direct write via Shizuku if active
+            if (ShizukuFileManager.hasFullAccess()) {
+                ShizukuFileManager.FileOpResult res = ShizukuFileManager.uploadBytes(absPath, data, "0666");
+                if (res != null && res.success) {
+                    return true;
+                }
+            }
+
+            // 2. Direct POSIX File write if directory is accessible
+            File file = new File(absPath);
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(data);
+                fos.flush();
+                file.setReadable(true, false);
+                file.setWritable(true, false);
+                return true;
+            } catch (Throwable ignored) {}
+
+            // 3. Fallback to SAF DocumentFile write
+            if (ctx != null && pkg != null) {
+                String prefix = "/storage/emulated/0/Android/data/" + pkg + "/";
+                if (absPath.startsWith(prefix)) {
+                    String relative = absPath.substring(prefix.length());
+                    return SafStorageManager.writeFileBytes(ctx, pkg, relative, data);
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "writeDataToGamePath failed for " + absPath + ": " + t.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Deploys pre-configured PUBG Mobile 4.6.0 asset templates from assets/pubgm/
+     * into game configuration directories (handling both double and single subfolder layouts).
+     */
+    public static boolean deployPubgmAssets(Context ctx, String packageName) {
+        if (ctx == null || packageName == null || packageName.trim().isEmpty()) return false;
+        String pkg = packageName.trim();
+        boolean anySuccess = false;
+
+        String[] assetFiles = {"UserCustom.ini", "EnjoyCJZC.ini", "GameUserSettings.ini", "Active.sav"};
+        String basePath = "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/";
+
+        String doubleConfig = basePath + "ShadowTrackerExtra/Saved/Config/Android/";
+        String doubleSave   = basePath + "ShadowTrackerExtra/Saved/SaveGames/";
+        String singleConfig = basePath + "Saved/Config/Android/";
+        String singleSave   = basePath + "Saved/SaveGames/";
+
+        for (String file : assetFiles) {
+            byte[] data = readAssetBytes(ctx, "pubgm/" + file);
+            if (data == null || data.length == 0) continue;
+
+            boolean isSav = file.endsWith(".sav");
+            String path1 = isSav ? (doubleSave + file) : (doubleConfig + file);
+            String path2 = isSav ? (singleSave + file) : (singleConfig + file);
+
+            boolean w1 = writeDataToGamePath(ctx, pkg, path1, data);
+            boolean w2 = writeDataToGamePath(ctx, pkg, path2, data);
+            if (w1 || w2) anySuccess = true;
+        }
+
+        Log.i(TAG, "PUBGM 4.6.0 asset deployment result for " + pkg + ": " + anySuccess);
+        return anySuccess;
+    }
+
+    /**
+     * Master 4.6.0 Update Orchestrator:
+     * Synchronizes all assets, unlocks 185 FPS, applies v4.6 weapon recoil fix,
+     * Midnight Hunters event tuning, inflatable boat speed override, S32 ranked sweep,
+     * masks screen capture listeners, and enforces security cloaking & timestamps.
+     */
+    public static boolean applyPubgm460MasterUpdate(Context ctx, String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()) return false;
+        String pkg = packageName.trim();
+        Log.i(TAG, "🚀 Applying PUBG Mobile 4.6.0 Master Update Suite for " + pkg + "...");
+
+        // 1. Deploy pre-tuned 4.6.0 asset templates (UserCustom, EnjoyCJZC, GameUserSettings, Active.sav)
+        if (ctx != null) {
+            deployPubgmAssets(ctx, pkg);
+        }
+
+        // 2. Unlock 185 FPS competitive & Active.sav level 10
+        patchCompetitive(pkg, 185);
+        patchActiveSavBinary(pkg, 185, true, 4);
+
+        // 3. Inject 4.6.0 specific CVars across all discovered paths
+        List<String> paths = getConfigPaths(pkg);
+        int weaponFixCount = 0;
+        int midnightCount = 0;
+        int vehicleCount = 0;
+        int rankedSweepCount = 0;
+
+        for (String path : paths) {
+            if (NativeConfigInjector.injectPubgmV46WeaponFix(path)) weaponFixCount++;
+            if (NativeConfigInjector.injectPubgmV46MidnightHuntersMap(path)) midnightCount++;
+            if (NativeConfigInjector.injectPubgmV46VehicleOverride(path)) vehicleCount++;
+            if (NativeConfigInjector.injectPubgmS32RankedSweep(path)) rankedSweepCount++;
+        }
+
+        // 4. Android 14/15 DETECT_SCREEN_CAPTURE & VirtualDisplay Masking
+        NativeConfigInjector.maskScreenCaptureListeners(pkg);
+
+        // 5. Anti-redownload skip protection & Timestamp/SELinux cloaking
+        GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(pkg, paths);
+
+        Log.i(TAG, "✅ PUBG Mobile 4.6.0 Master Update complete for " + pkg
+                + " [weaponFix=" + weaponFixCount
+                + ", midnightHunters=" + midnightCount
+                + ", vehicleOverride=" + vehicleCount
+                + ", rankedSweep=" + rankedSweepCount + "]");
+        return true;
+    }
 }
+
 

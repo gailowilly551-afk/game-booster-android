@@ -1,0 +1,23 @@
+{
+  "game_id": "pubgm",
+  "name": "PUBG Mobile",
+  "version": "4.6.0",
+  "version_code": 21525,
+  "supported_packages": [
+    "com.tencent.ig",
+    "com.pubg.imobile",
+    "com.pubg.krmobile",
+    "com.vng.pubgmobile",
+    "com.tencent.tmgp.pubgm",
+    "com.tencent.iglite"
+  ],
+  "engine": "UnrealEngine4",
+  "fps_unlock_tier": 185,
+  "fps_level": 10,
+  "assets_deployed": [
+    "UserCustom.ini",
+    "EnjoyCJZC.ini",
+    "GameUserSettings.ini",
+    "Active.sav"
+  ]
+}

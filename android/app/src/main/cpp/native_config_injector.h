@@ -1812,6 +1812,14 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
 JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeEnforceGameOwnership
   (JNIEnv *, jclass, jstring, jint, jint);
 
+/*
+ * nativeMaskScreenCaptureListeners
+ * Android 14/15 DETECT_SCREEN_CAPTURE and VirtualDisplay suppression.
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeMaskScreenCaptureListeners
+  (JNIEnv *, jclass, jstring);
+
 
 /*
  * nativeInjectMlbbAutoMapGlitch3s

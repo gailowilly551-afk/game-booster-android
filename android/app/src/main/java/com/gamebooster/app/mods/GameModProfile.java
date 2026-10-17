@@ -9,7 +9,7 @@ import android.content.SharedPreferences;
  */
 public class GameModProfile {
 
-    public enum Game { MLBB, CODM }
+    public enum Game { MLBB, CODM, PUBGM }
 
     // ── MLBB fields ───────────────────────────────────────────────────────────
     public boolean mlbbDamageEnabled    = false;
@@ -56,6 +56,24 @@ public class GameModProfile {
     public boolean codmFpsUnlock       = false;
     public int     codmTargetFps       = 165;
     public boolean codmAntiBan         = true;
+
+    // ── PUBGM fields ──────────────────────────────────────────────────────────
+    public boolean pubgmAimbot                 = false;
+    public boolean pubgmAllScopeLock           = true;
+    public boolean pubgmNoRecoil               = false;
+    public boolean pubgmNoSpread               = false;
+    public boolean pubgmMagicBullet            = false;
+    public boolean pubgmUltraDroneView         = false;
+    public int     pubgmDroneFov               = 130;
+    public boolean pubgmDamageLockMax          = false;
+    public boolean pubgmFpsUnlock              = false;
+    public int     pubgmTargetFps              = 185;
+    public boolean pubgmAntiBan                = true;
+    public boolean pubgmMidnightHuntersFix     = true;
+    public boolean pubgmVehicleOverride        = true;
+    public boolean pubgmS32RankedSweep         = true;
+    public boolean pubgmCombatOverdrive        = false;
+    public boolean pubgmSovereignOverdriveBypass = false;
 
 
     private static final String PREFS_NAME = "game_mod_profile";
@@ -108,6 +126,24 @@ public class GameModProfile {
         p.codmTargetFps         = sp.getInt("codm_fps", 165);
         p.codmAntiBan           = sp.getBoolean("codm_antiban", true);
 
+        // ── PUBGM preferences ──
+        p.pubgmAimbot                 = sp.getBoolean("pubgm_aim", false);
+        p.pubgmAllScopeLock           = sp.getBoolean("pubgm_allscope", true);
+        p.pubgmNoRecoil               = sp.getBoolean("pubgm_recoil", false);
+        p.pubgmNoSpread               = sp.getBoolean("pubgm_spread", false);
+        p.pubgmMagicBullet            = sp.getBoolean("pubgm_magic_bullet", false);
+        p.pubgmUltraDroneView         = sp.getBoolean("pubgm_drone_en", false);
+        p.pubgmDroneFov               = sp.getInt("pubgm_drone_fov", 130);
+        p.pubgmDamageLockMax          = sp.getBoolean("pubgm_dmg_lock", false);
+        p.pubgmFpsUnlock              = sp.getBoolean("pubgm_fps_en", false);
+        p.pubgmTargetFps              = sp.getInt("pubgm_fps", 185);
+        p.pubgmAntiBan                = sp.getBoolean("pubgm_antiban", true);
+        p.pubgmMidnightHuntersFix     = sp.getBoolean("pubgm_midnight_fix", true);
+        p.pubgmVehicleOverride        = sp.getBoolean("pubgm_vehicle_override", true);
+        p.pubgmS32RankedSweep         = sp.getBoolean("pubgm_s32_sweep", true);
+        p.pubgmCombatOverdrive        = sp.getBoolean("pubgm_combat_overdrive", false);
+        p.pubgmSovereignOverdriveBypass = sp.getBoolean("pubgm_sovereign_bypass", false);
+
         return p;
     }
 
@@ -155,6 +191,22 @@ public class GameModProfile {
             .putBoolean("codm_fps_en",       codmFpsUnlock)
             .putInt("codm_fps",              codmTargetFps)
             .putBoolean("codm_antiban",      codmAntiBan)
+            .putBoolean("pubgm_aim",              pubgmAimbot)
+            .putBoolean("pubgm_allscope",         pubgmAllScopeLock)
+            .putBoolean("pubgm_recoil",           pubgmNoRecoil)
+            .putBoolean("pubgm_spread",           pubgmNoSpread)
+            .putBoolean("pubgm_magic_bullet",     pubgmMagicBullet)
+            .putBoolean("pubgm_drone_en",         pubgmUltraDroneView)
+            .putInt("pubgm_drone_fov",            pubgmDroneFov)
+            .putBoolean("pubgm_dmg_lock",         pubgmDamageLockMax)
+            .putBoolean("pubgm_fps_en",           pubgmFpsUnlock)
+            .putInt("pubgm_fps",                  pubgmTargetFps)
+            .putBoolean("pubgm_antiban",          pubgmAntiBan)
+            .putBoolean("pubgm_midnight_fix",     pubgmMidnightHuntersFix)
+            .putBoolean("pubgm_vehicle_override", pubgmVehicleOverride)
+            .putBoolean("pubgm_s32_sweep",        pubgmS32RankedSweep)
+            .putBoolean("pubgm_combat_overdrive", pubgmCombatOverdrive)
+            .putBoolean("pubgm_sovereign_bypass", pubgmSovereignOverdriveBypass)
             .apply();
     }
 

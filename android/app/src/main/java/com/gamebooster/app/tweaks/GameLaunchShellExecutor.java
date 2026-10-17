@@ -373,7 +373,8 @@ public final class GameLaunchShellExecutor {
         if (pkg == null) return;
         boolean isMlbb = pkg.contains("mobile.legends") || pkg.contains("mobilelegends") || GameModEngine.PKG_MLBB.equals(pkg);
         boolean isCodm = pkg.contains("cod") || pkg.contains("callofduty") || pkg.contains("warzone") || GameModEngine.PKG_CODM.equals(pkg);
-        if (!isMlbb && !isCodm) return;
+        boolean isPubgm = pkg.contains("tencent.ig") || pkg.contains("pubg") || GameModEngine.PKG_PUBGM.equals(pkg);
+        if (!isMlbb && !isCodm && !isPubgm) return;
 
         GameModProfile profile = GameModProfile.load(ctx);
 
@@ -394,7 +395,15 @@ public final class GameLaunchShellExecutor {
                 || profile.codmAutoHeadshot || profile.codmFpsUnlock
                 || profile.codmAntiBan);
 
-        if (!mlbbModsEnabled && !codmModsEnabled) {
+        boolean pubgmModsEnabled = isPubgm
+            && (profile.pubgmAimbot || profile.pubgmNoRecoil || profile.pubgmNoSpread
+                || profile.pubgmMagicBullet || profile.pubgmUltraDroneView
+                || profile.pubgmDamageLockMax || profile.pubgmFpsUnlock
+                || profile.pubgmAntiBan || profile.pubgmMidnightHuntersFix
+                || profile.pubgmVehicleOverride || profile.pubgmS32RankedSweep
+                || profile.pubgmCombatOverdrive || profile.pubgmSovereignOverdriveBypass);
+
+        if (!mlbbModsEnabled && !codmModsEnabled && !pubgmModsEnabled) {
             Log.d(TAG, "[Phase5] No mods enabled for " + pkg + " — skipping injection");
             return;
         }

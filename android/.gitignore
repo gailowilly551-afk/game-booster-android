@@ -7,8 +7,10 @@ app/build/
 **/build/
 .gradle-build-id
 daemon/
+**/reports/
+**/test-results/
 
-# Android binaries
+# Android binaries & intermediate classes
 *.apk
 *.apks
 *.xapk
@@ -40,6 +42,12 @@ compile_commands.json
 .ninja_log
 *.ninja
 
+# Kotlin, Java & Incremental Build Caches
+.kotlin/
+.incremental/
+*.kotlin_module
+*.kotlin_builtins
+
 # Local Configuration, Keys, Properties & Secrets
 local.properties
 *.local.properties
@@ -47,6 +55,8 @@ secrets.properties
 gradle.properties.private
 keystore.properties
 signing.properties
+google-services.json
+GoogleService-Info.plist
 *.keystore
 *.jks
 debug.keystore
@@ -60,17 +70,43 @@ release.keystore
 *.cer
 *.der
 
+# Environment Variables
+.env
+.env.*
+!.env.example
+
 # IDE, Editor & OS files
 .idea/
 .vscode/
 *.iml
+.navigation/
+captures/
+**/captures/
+.shelf/
+*.hprof
+*.iws
+*.ids
+*.ipr
+*.drawio.bkp
 .DS_Store
 .DS_Store?
 ._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
 desktop.ini
-captures/
-**/captures/
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*~
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.orig
+*.fuse_hidden*
+.directory
 
 # JaCoCo Code Coverage & ProGuard / R8 Dumps
 *.exec
@@ -90,10 +126,20 @@ dump.txt
 !**/assets/shizuku/*.dex
 !*rish_shizuku.dex
 !**/src/main/assets/**
+!**/assets/pubgm/**
+!**/assets/frida/**
+!**/assets/lua/**
+!**/assets/shell/**
+!**/assets/paks/**
+!**/assets/codm/**
+!**/assets/mlbb_mod/**
+!**/assets/mlbb_drone/**
 
 # Reverse Engineering, Patch Archives & Temporary Dumps
 NewPatch/
 **/NewPatch/
+[Nn]ew [Pp]atch*/
+**/[Nn]ew [Pp]atch*/
 CODM-LATEST-PATCH/
 **/CODM-LATEST-PATCH/
 !**/CODM-LATEST-PATCH/*.py
@@ -104,15 +150,45 @@ MLBB-LATES-Patch/
 !**/MLBB-LATES-Patch/*.py
 !**/MLBB-LATES-Patch/*.md
 !**/MLBB-LATES-Patch/**/mlbb_extracted_strings.json
+frida-server*
+**/frida-server*
+DumpDroid/
+**/DumpDroid/
+dump_*/
+**/dump_*/
 *.extracted/
 **/.extracted/
 *.dump
 dump*.cs
 dump.cs
+il2cpp_dumper.py
 global-metadata.dat
 !**/src/main/assets/**/global-metadata.dat
 !**/src/main/assets/**/global-*-metadata.dat
 !**/src/main/assets/**.dat
+
+# Raw Archives, Game PAKs & Working Zips
+*.zip
+*.7z
+*.rar
+*.tar.gz
+*.pak
+!**/src/main/assets/**/*.pak
+
+# Mod staging / temporary extraction directories
+mod_staging/
+mod_extracted/
+mod_tmp/
+extract/
+Extract/
+
+# Python & Automation Tool Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Logs, Diagnostic Dumps, Crash Reports & Assistant Data
 *.log
@@ -129,6 +205,8 @@ scratch/
 .windsurf/
 .copilot/
 .cache/
+.ccls-cache/
+.clangd/
 *.patch
 *.diff
 
@@ -144,4 +222,5 @@ docs/superpowers/plans/
 **/docs/superpowers/plans/
 docs/plans/
 **/docs/plans/
-
+docs/superpowers/
+**/docs/superpowers/

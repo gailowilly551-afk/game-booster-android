@@ -123,12 +123,23 @@
                     android:textSize="10sp" />
 
                 <Button
-                    android:id="@+id/btn_grant_saf_storage"
+                    android:id="@+id/btn_one_tap_all_files"
                     android:layout_width="match_parent"
                     android:layout_height="42dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/btn_cyber_cyan"
-                    android:text="📂 GRANT ANDROID/DATA ACCESS (SAF)"
+                    android:text="⚡ ONE-TAP ALL FILES PERMISSION"
+                    android:textColor="#000000"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_grant_saf_storage"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_cyber_cyan"
+                    android:text="📂 TARGET FOLDER PICKER (SAF FALLBACK)"
                     android:textColor="#000000"
                     android:textSize="11sp"
                     android:textStyle="bold" />

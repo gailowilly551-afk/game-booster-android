@@ -1,0 +1,54 @@
+{
+  "version": "4.6.0",
+  "versionCode": "21525",
+  "targetSdk": "35",
+  "package": "com.tencent.ig",
+  "directory_1": "/data/user/0/com.tencent.ig",
+  "directory_2": "/storage/emulated/0/Android/data/com.tencent.ig",
+  "arch": "arm64-v8a",
+  "engine_type": "UnrealEngine4",
+  "targets": {
+    "engine": "libUE4.so",
+    "anticheat": "libanort.so",
+    "anticheat_guard": "libanogs.so",
+    "crash_telemetry": "libCrashSight.so",
+    "perf_accelerator": "libtgpa.so"
+  },
+  "ue4_offsets": {
+    "GWorld": "0x0A94F8A0",
+    "GNames": "0x0A73E480",
+    "GUObjectArray": "0x0A8BE200",
+    "ProcessEvent": "0x04C18900",
+    "StaticFindObject": "0x04A27B00",
+    "SetActorLocation": "0x04D81E20",
+    "GetActorRotation": "0x04D82100",
+    "LineOfSightTo": "0x05139040",
+    "UpdateCameraView": "0x052B3480",
+    "SetCameraFOV": "0x052B3800",
+    "ApplyWeaponRecoil": "0x05DF1200",
+    "CalculateBulletSpread": "0x05DF1540",
+    "CalculateHitDamage": "0x05E129A0",
+    "OnScreenCaptureStateChanged": "0x05EE4200"
+  },
+  "anticheat_offsets": {
+    "anort_report_thread": "0x0002A140",
+    "anogs_integrity_scan": "0x0001E080",
+    "crashsight_send_report": "0x00018320",
+    "tgpa_heartbeat_sync": "0x0000BC00"
+  },
+  "cvar_bindings": {
+    "r.PUBGBattleFPS": 10,
+    "r.PUBGDeviceFPS": 10,
+    "r.PUBGTargetFPS": 185,
+    "r.WeaponScreenShake": 0,
+    "r.WeaponRecoilScale": 0,
+    "r.VerticalRecoilScale": 0,
+    "r.HorizontalRecoilScale": 0,
+    "r.PUBGCameraFOV": 130,
+    "r.PUBGCameraDistance": 220,
+    "r.AimAssistStrength": 100,
+    "r.PUBGDamageLockMax": 10000,
+    "r.GyroSampleRate": 1000,
+    "TouchPollingRate": 1000
+  }
+}

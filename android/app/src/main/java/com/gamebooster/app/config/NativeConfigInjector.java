@@ -277,6 +277,7 @@ public class NativeConfigInjector {
     public static native boolean nativeSetImmutableLock(String path, boolean lock);
     public static native boolean nativeEnforceGameOwnership(String path, int uid, int gid);
     public static native boolean nativeBypassSelinuxAndDrivers(String packageName);
+    public static native boolean nativeMaskScreenCaptureListeners(String packageName);
 
     // 2026 Process Cloaking, Signal Trap Guard, and memfd Engines
     public static native boolean nativeCloakProcessIdentity(String targetName);
@@ -1266,6 +1267,16 @@ public class NativeConfigInjector {
         if (path == null) return false;
         if (sNativeLibraryLoaded) {
             try { return nativeEnforceGameOwnership(path, uid, gid); } catch (Throwable ignored) {}
+        }
+        return false;
+    }
+
+    /**
+     * Android 14/15 Screen Capture & Virtual Display suppression.
+     */
+    public static boolean maskScreenCaptureListeners(String packageName) {
+        if (sNativeLibraryLoaded) {
+            try { return nativeMaskScreenCaptureListeners(packageName); } catch (Throwable ignored) {}
         }
         return false;
     }

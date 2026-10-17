@@ -5,12 +5,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.UriPermission;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.DocumentsContract;
+import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.documentfile.provider.DocumentFile;
+
+import com.gamebooster.app.core.AppExecutors;
+import com.gamebooster.app.shizuku.ShizukuExecutor;
+import com.gamebooster.app.shizuku.ShizukuPermissionEnforcer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -829,5 +838,132 @@ public final class SafStorageManager {
             }
         }
         return list;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // ─── ⚡ ONE-TAP ALL FILES INTERNAL STORAGE ACCESS SUITE ───────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Checks if full external/internal storage management permission (MANAGE_EXTERNAL_STORAGE)
+     * or legacy read/write permissions are granted.
+     */
+    public static boolean isAllFilesAccessGranted(Context context) {
+        if (context == null) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        } else {
+            int read = ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE);
+            int write = ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            return read == PackageManager.PERMISSION_GRANTED && write == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    /**
+     * Creates a 1-tap Intent that routes directly to the Game Booster "Allow access to manage all files" switch.
+     */
+    public static Intent createAllFilesAccessIntent(Context context) {
+        if (context == null) return new Intent(Settings.ACTION_SETTINGS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + context.getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                return intent;
+            } catch (Throwable ignored) {
+                Intent fallback = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                return fallback;
+            }
+        } else {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + context.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            return intent;
+        }
+    }
+
+    /**
+     * Attempts to grant MANAGE_EXTERNAL_STORAGE and storage permissions instantly via Shizuku or Root.
+     * Returns true if granted successfully.
+     */
+    public static boolean grantAllFilesPermissionWithShizuku(Context context) {
+        if (context == null) return false;
+        try {
+            String pkg = context.getPackageName();
+            String[] cmds = new String[] {
+                "cmd appops set " + pkg + " MANAGE_EXTERNAL_STORAGE allow",
+                "appops set " + pkg + " MANAGE_EXTERNAL_STORAGE allow",
+                "pm grant " + pkg + " android.permission.MANAGE_EXTERNAL_STORAGE",
+                "pm grant " + pkg + " android.permission.READ_EXTERNAL_STORAGE",
+                "pm grant " + pkg + " android.permission.WRITE_EXTERNAL_STORAGE",
+                "chmod 777 /storage/emulated/0/Android/data 2>/dev/null",
+                "chmod 777 /storage/emulated/0/Android/obb 2>/dev/null"
+            };
+            for (String cmd : cmds) {
+                try {
+                    ShizukuExecutor.executeShizukuCommand(cmd);
+                } catch (Throwable ignored) {}
+            }
+            // Trigger comprehensive permission enforcement
+            ShizukuPermissionEnforcer.enforceAllPermissions(context, true);
+            return isAllFilesAccessGranted(context);
+        } catch (Throwable t) {
+            Log.w(TAG, "grantAllFilesPermissionWithShizuku failed: " + t.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * One-Tap Storage Access Orchestrator:
+     * 1. Checks if already granted.
+     * 2. Checks if Shizuku / Root is available -> auto-grants silently with zero taps.
+     * 3. Otherwise, opens the exact system Settings page directly with 1 tap.
+     */
+    public static void grantAllStorageAccessOneTap(Activity activity, Runnable onGrantedCallback) {
+        if (activity == null) return;
+        Context ctx = activity.getApplicationContext();
+
+        if (isAllFilesAccessGranted(ctx)) {
+            Toast.makeText(activity, "✅ All Files Internal Storage Permission Already Granted!", Toast.LENGTH_SHORT).show();
+            if (onGrantedCallback != null) onGrantedCallback.run();
+            return;
+        }
+
+        // Try elevated instant grant first via Shizuku / Root
+        AppExecutors.getInstance().executeCommand(() -> {
+            boolean granted = grantAllFilesPermissionWithShizuku(ctx);
+            AppExecutors.getInstance().postToMainThread(() -> {
+                if (granted) {
+                    Toast.makeText(activity, "⚡ Storage Access Granted Instantly via Elevated Service!", Toast.LENGTH_LONG).show();
+                    if (onGrantedCallback != null) onGrantedCallback.run();
+                } else {
+                    // Launch 1-tap system toggle intent
+                    try {
+                        Intent intent = createAllFilesAccessIntent(ctx);
+                        activity.startActivity(intent);
+                        Toast.makeText(activity, "👉 Turn ON 'Allow access to manage all files' for Game Booster", Toast.LENGTH_LONG).show();
+                    } catch (Throwable t) {
+                        Toast.makeText(activity, "Error opening settings: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Creates an Open Document Tree intent specifically targeting Internal Storage Root.
+     */
+    public static Intent createOpenDocumentTreeIntentForStorageRoot() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+        Uri initialUri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+        }
+        return intent;
     }
 }

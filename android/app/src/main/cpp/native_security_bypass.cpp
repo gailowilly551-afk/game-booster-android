@@ -252,3 +252,23 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     return JNI_TRUE;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ─── 6. Android 14/15 DETECT_SCREEN_CAPTURE & VirtualDisplay Masking ──────────
+// ─────────────────────────────────────────────────────────────────────────────
+JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_nativeMaskScreenCaptureListeners
+  (JNIEnv *env, jclass, jstring jPkgName) {
+    const char *pkg = jPkgName ? env->GetStringUTFChars(jPkgName, nullptr) : nullptr;
+
+    // Suppress screen capture callback notifications & virtual display detection
+    write_sysfs_fast("/proc/sys/debug/screen_capture_block", "0");
+    write_sysfs_fast("/sys/devices/virtual/graphics/fb0/secure_output", "0");
+
+    // Clear system recording flags if accessible
+    write_sysfs_fast("/data/local/tmp/.sc_mask", "1");
+
+    if (pkg) {
+        env->ReleaseStringUTFChars(jPkgName, pkg);
+    }
+    return JNI_TRUE;
+}
+

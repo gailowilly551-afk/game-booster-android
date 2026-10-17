@@ -79,6 +79,90 @@
       "md5_override": "MATCH_LOCAL",
       "read_only_lock": false,
       "mode": "skip_server_sync"
+    },
+    {
+      "game": "com.tencent.ig",
+      "target_paths": [
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJ.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SrcVersion.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/game_patch.pak",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Paks/game_patch.pak"
+      ],
+      "future_timestamp_seconds": 1893456000,
+      "md5_override": "MATCH_LOCAL",
+      "read_only_lock": false,
+      "mode": "skip_server_sync"
+    },
+    {
+      "game": "com.pubg.imobile",
+      "target_paths": [
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJ.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SrcVersion.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/game_patch.pak",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Paks/game_patch.pak"
+      ],
+      "future_timestamp_seconds": 1893456000,
+      "md5_override": "MATCH_LOCAL",
+      "read_only_lock": false,
+      "mode": "skip_server_sync"
+    },
+    {
+      "game": "com.pubg.krmobile",
+      "target_paths": [
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJ.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SrcVersion.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/game_patch.pak",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Paks/game_patch.pak"
+      ],
+      "future_timestamp_seconds": 1893456000,
+      "md5_override": "MATCH_LOCAL",
+      "read_only_lock": false,
+      "mode": "skip_server_sync"
+    },
+    {
+      "game": "com.vng.pubgmobile",
+      "target_paths": [
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJ.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SrcVersion.ini",
+        "files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/game_patch.pak",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/EnjoyCJZC.ini",
+        "files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+        "files/UE4Game/ShadowTrackerExtra/Saved/Paks/game_patch.pak"
+      ],
+      "future_timestamp_seconds": 1893456000,
+      "md5_override": "MATCH_LOCAL",
+      "read_only_lock": false,
+      "mode": "skip_server_sync"
     }
   ]
 }

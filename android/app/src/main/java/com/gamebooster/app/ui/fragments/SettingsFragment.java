@@ -183,6 +183,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private TextView tvSafStatusBadge;
     private TextView tvSafGamesSummary;
     private Button btnGrantSafStorage;
+    private Button btnOneTapAllFiles;
 
     // Precision Aim Controls
     private SwitchCompat switchPrecisionInputTuner;
@@ -329,6 +330,11 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         // Card 1.5: SAF Storage Access (MT Manager style)
         tvSafStatusBadge = view.findViewById(R.id.tv_saf_status_badge);
         tvSafGamesSummary = view.findViewById(R.id.tv_saf_games_summary);
+        btnOneTapAllFiles = view.findViewById(R.id.btn_one_tap_all_files);
+        if (btnOneTapAllFiles != null) {
+            btnOneTapAllFiles.setOnClickListener(v ->
+                com.gamebooster.app.saf.SafStorageManager.grantAllStorageAccessOneTap(getActivity(), this::refreshSafStatus));
+        }
         btnGrantSafStorage = view.findViewById(R.id.btn_grant_saf_storage);
         if (btnGrantSafStorage != null) {
             btnGrantSafStorage.setOnClickListener(v -> showSafGameTargetSelector());
@@ -2978,15 +2984,34 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 final int finalGrantedCount = grantedCount;
                 final int totalApps = apps.size();
                 final String summaryText = sb.toString();
+                final boolean allFilesGranted = com.gamebooster.app.saf.SafStorageManager.isAllFilesAccessGranted(appCtx);
 
                 AppExecutors.getInstance().postToMainThread(() -> {
                     if (!isAdded() || getContext() == null || getView() == null) return;
+
+                    if (btnOneTapAllFiles != null) {
+                        if (allFilesGranted) {
+                            btnOneTapAllFiles.setText("⚡ ALL FILES ACCESS (GRANTED ✅)");
+                        } else {
+                            btnOneTapAllFiles.setText("⚡ ONE-TAP ALL FILES PERMISSION");
+                        }
+                    }
 
                     if (tvSafGamesSummary != null) {
                         tvSafGamesSummary.setText(summaryText);
                     }
 
-                    if (finalGrantedCount == totalApps && totalApps > 0) {
+                    if (allFilesGranted) {
+                        if (tvSafStatusBadge != null) {
+                            tvSafStatusBadge.setText("STORAGE: ALL FILES UNRESTRICTED ACCESS ACTIVE");
+                            tvSafStatusBadge.setTextColor(0xFF00FF66);
+                            tvSafStatusBadge.setBackgroundColor(0x2000FF66);
+                        }
+                        if (btnGrantSafStorage != null) {
+                            btnGrantSafStorage.setText("✅ ALL INTERNAL STORAGE GRANTED");
+                            btnGrantSafStorage.setEnabled(true);
+                        }
+                    } else if (finalGrantedCount == totalApps && totalApps > 0) {
                         if (tvSafStatusBadge != null) {
                             tvSafStatusBadge.setText("SAF: ALL " + totalApps + " TARGET APPS ACTIVE");
                             tvSafStatusBadge.setTextColor(0xFF00FF66);
