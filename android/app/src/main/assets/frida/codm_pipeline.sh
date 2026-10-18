@@ -86,15 +86,17 @@ do_frida() {
         echo "[✓] GameLauncher internal GameModEngine will execute instant injection on launch!"
     fi
 
-    # Enforce UID 10656, VersionCode 28028 & Permanent Zero-Revert Inode Locks
-    echo "━━━ ENFORCING PERMANENT ZERO-REVERT LOCKS (UID 10656) ━━━"
-    run_cmd "for dir in '/data/user/0/$TARGET_PKG/files' '/storage/emulated/0/Android/data/$TARGET_PKG/files'; do \
-        [ -d \"\$dir\" ] && find \"\$dir\" -type f -name '*config*' -o -name '*Config*' -o -name '*Setting*' 2>/dev/null | while read -r f; do \
-            chown 10656:10656 \"\$f\" 2>/dev/null; \
-            chmod 444 \"\$f\" 2>/dev/null; \
-            chattr +i \"\$f\" 2>/dev/null; \
-            touch -t 203001010000 \"\$f\" 2>/dev/null; \
-        done; \
+    # Safe config unlocking & permission alignment
+    echo "━━━ ALIGNING CODM CONFIG PERMISSIONS & UNLOCKING ━━━"
+    run_cmd "CODM_UID=\$(stat -c %u \"/data/user/0/$TARGET_PKG\" 2>/dev/null || echo 10656); \
+    for dir in '/data/user/0/$TARGET_PKG/files' '/storage/emulated/0/Android/data/$TARGET_PKG/files'; do \
+        if [ -d \"\$dir\" ]; then \
+            find \"\$dir\" -type f \\( -name '*config*' -o -name '*Config*' -o -name '*Setting*' \\) 2>/dev/null | while read -r f; do \
+                chattr -i \"\$f\" 2>/dev/null; \
+                chown \"\$CODM_UID:\$CODM_UID\" \"\$f\" 2>/dev/null; \
+                chmod 666 \"\$f\" 2>/dev/null; \
+            done; \
+        fi; \
     done"
 }
 

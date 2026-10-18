@@ -10,6 +10,7 @@ import com.gamebooster.app.config.GameSecurityBypassEngine;
 import com.gamebooster.app.config.MlbbConfigPatcher;
 import com.gamebooster.app.config.MlbbDroneViewPatcher;
 import com.gamebooster.app.config.NativeConfigInjector;
+import com.gamebooster.app.engine.HardwareDisplayHelper;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuFileManager;
 
@@ -77,18 +78,8 @@ public class HardwareMaskEngine {
             Log.i(TAG, "══════════════════════════════════════════════════════════════════════");
 
             Set<String> batchCommands = new LinkedHashSet<>();
-            String eglVendor = profile.glVendor.toLowerCase().contains("arm") ? "mali" : "adreno";
-            int maxPhysicalHz = 185;
-            if (context != null) {
-                try {
-                    com.gamebooster.app.device.DisplayCapabilitiesDetector.DisplayCaps caps =
-                            com.gamebooster.app.device.DisplayCapabilitiesDetector.detect(context);
-                    if (caps != null && caps.maxRefreshRate > 0) {
-                        maxPhysicalHz = Math.max(185, caps.maxRefreshRate);
-                    }
-                } catch (Throwable ignored) {}
-            }
-            int targetHz = Math.max(60, Math.min(maxPhysicalHz, profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185));
+            int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
+            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
 
             // ═══════════════════════════════════════════════════════════════════
             //  LAYER 1: LAUNCHER TELEMETRY & HARDWARE SPOOF PROPS
@@ -993,19 +984,10 @@ public class HardwareMaskEngine {
         try {
             Log.i(TAG, "⚡ [FAST SPOOF] Activating Instant Hardware Masking: " + profile.displayName);
 
-            Set<String> batchCommands = new LinkedHashSet<>();
-            int maxPhysicalHz = 185;
-            if (context != null) {
-                try {
-                    com.gamebooster.app.device.DisplayCapabilitiesDetector.DisplayCaps caps =
-                            com.gamebooster.app.device.DisplayCapabilitiesDetector.detect(context);
-                    if (caps != null && caps.maxRefreshRate > 0) {
-                        maxPhysicalHz = Math.max(185, caps.maxRefreshRate);
-                    }
-                } catch (Throwable ignored) {}
-            }
-            int targetHz = Math.max(60, Math.min(maxPhysicalHz, profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185));
+            int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
+            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
 
+            List<String> batchCommands = new ArrayList<>();
             // 1. App-Scoped Launcher & Debug Props
             batchCommands.add("setprop debug.game.spoofed_model \"" + profile.model + "\"");
             batchCommands.add("setprop debug.game.spoofed_brand \"" + profile.brand + "\"");
@@ -1169,17 +1151,10 @@ public class HardwareMaskEngine {
                     com.gamebooster.app.games.GameManagerRepository.getInstalledGames(context);
             Set<String> batchCmds = new LinkedHashSet<>();
 
-            Set<String> gamePkgs = new LinkedHashSet<>();
-            int maxPhysicalHz = 185;
-            try {
-                com.gamebooster.app.device.DisplayCapabilitiesDetector.DisplayCaps caps =
-                        com.gamebooster.app.device.DisplayCapabilitiesDetector.detect(context);
-                if (caps != null && caps.maxRefreshRate > 0) {
-                    maxPhysicalHz = Math.max(185, caps.maxRefreshRate);
-                }
-            } catch (Throwable ignored) {}
-            int targetHz = Math.max(60, Math.min(maxPhysicalHz, profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185));
+            int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
+            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
 
+            Set<String> gamePkgs = new LinkedHashSet<>();
             if (installedGames != null) {
                 for (com.gamebooster.app.games.GameAppInfo game : installedGames) {
                     if (game == null || game.getPackageName() == null) continue;

@@ -55,37 +55,34 @@ case "$PKG" in
     *garena.game.codm*|*callofduty.shooter*|*codm*)
         UID_VAL=10656
         VER_CODE=28028
-        echo "[*] Target CODM -> UID: $UID_VAL, VersionCode: $VER_CODE"
+        echo "[*] Target CODM -> Default UID: $UID_VAL, VersionCode: $VER_CODE"
+        REAL_UID=$(stat -c %u "$DIR1" 2>/dev/null || stat -c %u "$DIR2" 2>/dev/null || echo "$UID_VAL")
 
         for BASE in "$DIR1/files" "$DIR2/files"; do
             CFG_DIR="$BASE/Config"
             mkdir -p "$CFG_DIR" 2>/dev/null
 
-            touch -t 203001010000 "$CFG_DIR/UserSetting.json" 2>/dev/null
-            touch -t 203001010000 "$CFG_DIR/GameConfig.xml" 2>/dev/null
-            touch -t 203001010000 "$CFG_DIR/ControlsSettings.ini" 2>/dev/null
-            touch -t 203001010000 "$CFG_DIR/GraphicsSettings.ini" 2>/dev/null
-            touch -t 203001010000 "$BASE/res_skip_patch" 2>/dev/null
-
             for f in "$CFG_DIR"/* "$BASE/res_skip_patch"; do
                 if [ -f "$f" ]; then
                     chattr -i "$f" 2>/dev/null
-                    chmod 444 "$f" 2>/dev/null
-                    chown $UID_VAL:$UID_VAL "$f" 2>/dev/null
-                    chattr +i "$f" 2>/dev/null
+                    chmod 666 "$f" 2>/dev/null
+                    chown $REAL_UID:$REAL_UID "$f" 2>/dev/null
                 fi
             done
+            chmod 775 "$CFG_DIR" 2>/dev/null
         done
-        echo "[✓] CODM permanent zero-revert locks applied across Directory 1 and Directory 2."
+        echo "[✓] CODM writable config permissions applied across Directory 1 and Directory 2."
         ;;
     *)
         UID_VAL=10000
+        REAL_UID=$(stat -c %u "$DIR1" 2>/dev/null || stat -c %u "$DIR2" 2>/dev/null || echo "$UID_VAL")
         ;;
 esac
 
 # SELinux context & directory ownership alignment
-chown -R $UID_VAL:$UID_VAL "$DIR1" 2>/dev/null
-chown -R $UID_VAL:$UID_VAL "$DIR2" 2>/dev/null
+[ -z "$REAL_UID" ] && REAL_UID=$UID_VAL
+chown -R $REAL_UID:$REAL_UID "$DIR1" 2>/dev/null
+chown -R $REAL_UID:$REAL_UID "$DIR2" 2>/dev/null
 chcon -R u:object_r:app_data_file:s0 "$DIR1" 2>/dev/null
 chcon -R u:object_r:app_data_file:s0 "$DIR2" 2>/dev/null
 

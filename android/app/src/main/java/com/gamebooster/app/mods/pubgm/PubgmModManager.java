@@ -63,12 +63,13 @@ public final class PubgmModManager {
                 Log.w(TAG, "PUBGM UE4 offset load warning: " + t.getMessage());
             }
 
-            // Layer 1: Display refresh rate & SurfaceFlinger unlock
+            // Layer 1: Display refresh rate & SurfaceFlinger unlock (hardware adaptive up to 165Hz-185Hz)
+            int targetFps = com.gamebooster.app.engine.HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, profile.pubgmFpsUnlock ? profile.pubgmTargetFps : 185);
             if (profile.pubgmFpsUnlock) {
-                GameModEngine.enforceDisplayRefreshRate(profile.pubgmTargetFps);
+                GameModEngine.enforceDisplayRefreshRate(targetFps);
                 try {
-                    PubgConfigPatcher.patchCompetitive(pkg, profile.pubgmTargetFps);
-                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.pubgmTargetFps);
+                    PubgConfigPatcher.patchCompetitive(pkg, targetFps);
+                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, targetFps);
                 } catch (Throwable t) {
                     Log.w(TAG, "PUBGM static config patch note: " + t.getMessage());
                 }
@@ -79,7 +80,7 @@ public final class PubgmModManager {
                 if (ctx != null) {
                     PubgConfigPatcher.deployPubgmAssets(ctx, pkg);
                 }
-                PubgConfigPatcher.patchActiveSavBinary(pkg, profile.pubgmTargetFps, true, 4);
+                PubgConfigPatcher.patchActiveSavBinary(pkg, targetFps, true, 4);
             } catch (Throwable t) {
                 Log.w(TAG, "PUBGM asset deploy error: " + t.getMessage());
             }
@@ -144,7 +145,7 @@ public final class PubgmModManager {
             setprop("gamebooster.pubgm.recoil",  profile.pubgmNoRecoil ? "1" : "0");
             setprop("gamebooster.pubgm.spread",  profile.pubgmNoSpread ? "1" : "0");
             setprop("gamebooster.pubgm.fov",     String.valueOf(profile.pubgmDroneFov));
-            setprop("gamebooster.pubgm.fps",     String.valueOf(profile.pubgmFpsUnlock ? profile.pubgmTargetFps : 185));
+            setprop("gamebooster.pubgm.fps",     String.valueOf(targetFps));
             setprop("gamebooster.pubgm.antiban", profile.pubgmAntiBan ? "1" : "0");
 
             // Layer 5: Frida dynamic hooks injection

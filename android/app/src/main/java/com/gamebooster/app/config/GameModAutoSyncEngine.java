@@ -181,16 +181,18 @@ public final class GameModAutoSyncEngine {
     public static boolean applyAntiRedownloadLocks(String pkg) {
         if (pkg == null) return false;
         String cleanPkg = pkg.trim();
-        int uid = cleanPkg.contains("codm") ? 10656 : (cleanPkg.contains("legends") ? 10677 : 10000);
+        int fallbackUid = cleanPkg.contains("codm") ? 10656 : (cleanPkg.contains("legends") ? 10677 : 10000);
 
         String script = "sh /data/data/com.gamebooster.app/assets/shell/install_game_mod_core.sh " + cleanPkg + " 2>/dev/null; "
+                      + "APP_UID=$(stat -c %u \"/data/user/0/" + cleanPkg + "\" 2>/dev/null || stat -c %u \"/storage/emulated/0/Android/data/" + cleanPkg + "\" 2>/dev/null || echo \"" + fallbackUid + "\"); "
                       + "for dir in '/data/user/0/" + cleanPkg + "/files' '/storage/emulated/0/Android/data/" + cleanPkg + "/files'; do "
-                      + "  [ -d \"$dir\" ] && find \"$dir\" -type f -name '*config*' -o -name '*Config*' -o -name '*Setting*' -o -name '*patch*' 2>/dev/null | while read -r f; do "
-                      + "    chown " + uid + ":" + uid + " \"$f\" 2>/dev/null; "
-                      + "    chmod 444 \"$f\" 2>/dev/null; "
-                      + "    chattr +i \"$f\" 2>/dev/null; "
-                      + "    touch -t 203001010000 \"$f\" 2>/dev/null; "
-                      + "  done; "
+                      + "  if [ -d \"$dir\" ]; then "
+                      + "    find \"$dir\" -type f \\( -name '*config*' -o -name '*Config*' -o -name '*Setting*' -o -name '*patch*' \\) 2>/dev/null | while read -r f; do "
+                      + "      chattr -i \"$f\" 2>/dev/null; "
+                      + "      chown \"$APP_UID:$APP_UID\" \"$f\" 2>/dev/null; "
+                      + "      chmod 666 \"$f\" 2>/dev/null; "
+                      + "    done; "
+                      + "  fi; "
                       + "done";
         try {
             if (ShizukuExecutor.hasShizukuPermission()) {

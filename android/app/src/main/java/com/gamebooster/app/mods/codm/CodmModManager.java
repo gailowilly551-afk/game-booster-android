@@ -62,12 +62,13 @@ public final class CodmModManager {
                 Log.w(TAG, "CODM IL2CPP offset load warning: " + t.getMessage());
             }
 
-            // Layer 1: Display refresh rate & surface flinger unlock
+            // Layer 1: Display refresh rate & surface flinger unlock (adaptive up to 165Hz-185Hz)
+            int targetFps = com.gamebooster.app.engine.HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, profile.codmFpsUnlock ? profile.codmTargetFps : 120);
             if (profile.codmFpsUnlock) {
-                GameModEngine.enforceDisplayRefreshRate(profile.codmTargetFps);
+                GameModEngine.enforceDisplayRefreshRate(targetFps);
                 try {
-                    CodmConfigPatcher.patch(pkg, profile.codmTargetFps);
-                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, profile.codmTargetFps);
+                    CodmConfigPatcher.patch(pkg, targetFps);
+                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, targetFps);
                 } catch (Throwable t) {
                     Log.w(TAG, "CODM static config patch note: " + t.getMessage());
                 }
@@ -127,7 +128,7 @@ public final class CodmModManager {
             setprop("gamebooster.codm.crit",    profile.codmCriticalEnabled ? String.valueOf(profile.codmCriticalMult) : "3.0");
             setprop("gamebooster.codm.recoil",  profile.codmNoRecoil ? "1" : "0");
             setprop("gamebooster.codm.spread",  profile.codmNoSpread ? "1" : "0");
-            setprop("gamebooster.codm.fps",     String.valueOf(profile.codmFpsUnlock ? profile.codmTargetFps : 60));
+            setprop("gamebooster.codm.fps",     String.valueOf(targetFps));
             setprop("gamebooster.codm.antiban", profile.codmAntiBan ? "1" : "0");
 
             // Layer 5: Frida dynamic hooks injection
