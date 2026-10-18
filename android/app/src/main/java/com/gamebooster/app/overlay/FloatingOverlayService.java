@@ -390,6 +390,8 @@ public class FloatingOverlayService extends Service {
                         fgPkg = com.gamebooster.app.config.LobbyInjectionEngine.getActiveGamePackage();
                     }
                     boolean isCodm = fgPkg != null && (fgPkg.contains("cod") || fgPkg.contains("callofduty") || fgPkg.contains("warzone"));
+                    boolean isPubgm = fgPkg != null && (fgPkg.contains("pubg") || fgPkg.contains("iglite") || fgPkg.contains("tencent.ig"));
+                    String targetName = "MLBB S42";
                     if (isCodm) {
                         try {
                             com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(
@@ -398,6 +400,16 @@ public class FloatingOverlayService extends Service {
                                     com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
                             );
                         } catch (Throwable ignored) {}
+                        targetName = "CODM";
+                    } else if (isPubgm) {
+                        try {
+                            com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(
+                                    getApplicationContext(),
+                                    fgPkg,
+                                    com.gamebooster.app.mods.GameModProfile.load(getApplicationContext())
+                            );
+                        } catch (Throwable ignored) {}
+                        targetName = "PUBGM v4.6.0";
                     } else {
                         try {
                             com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(
@@ -407,9 +419,9 @@ public class FloatingOverlayService extends Service {
                             );
                         } catch (Throwable ignored) {}
                     }
-                    final boolean codmTarget = isCodm;
+                    final String displayTarget = targetName;
                     AppExecutors.getInstance().postToMainThread(() -> {
-                        Toast.makeText(getApplicationContext(), codmTarget ? "⚡ 185Hz Overdrive & CODM Active!" : "⚡ 185Hz Overdrive & MLBB S42 Active!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "⚡ 185Hz Overdrive & " + displayTarget + " Active!", Toast.LENGTH_SHORT).show();
                         updateTelemetryData();
                     });
                 });

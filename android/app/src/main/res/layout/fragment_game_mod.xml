@@ -381,8 +381,8 @@
                 android:id="@+id/sb_mlbb_fps"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:max="4"
-                android:progress="4"
+                android:max="5"
+                android:progress="5"
                 android:layout_marginBottom="12dp"
                 android:progressTint="#A855F7"
                 android:thumbTint="#A855F7"/>
@@ -760,8 +760,8 @@
                 android:id="@+id/sb_codm_fps"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:max="4"
-                android:progress="4"
+                android:max="5"
+                android:progress="5"
                 android:layout_marginBottom="12dp"
                 android:progressTint="#A855F7"
                 android:thumbTint="#A855F7"/>

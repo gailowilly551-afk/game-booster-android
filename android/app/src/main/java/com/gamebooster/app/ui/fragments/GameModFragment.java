@@ -88,7 +88,7 @@ public class GameModFragment extends Fragment {
     private static final int[]   DRONE_TIERS  = {15, 20, 30, 40, 50, 100};
     private static final String[] DRONE_LABELS = {"1.5X", "2.0X", "3.0X", "4.0X", "5.0X", "10.0X"};
     private static final float[] SPEED_VALUES = {1f,1.25f,1.5f,1.75f,2f,2.5f,3f,3.5f,4f,5f};
-    private static final int[]   FPS_VALUES   = {60, 90, 120, 144, 165};
+    private static final int[]   FPS_VALUES   = {60, 90, 120, 144, 165, 185};
     private static final int[]   PUBGM_DRONE_FOV_VALUES = {90, 105, 120, 130, 150};
     private static final int[]   PUBGM_FPS_VALUES       = {90, 120, 144, 165, 185};
 

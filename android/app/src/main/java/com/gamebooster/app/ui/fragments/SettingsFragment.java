@@ -89,6 +89,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
     // Activity Result API launcher — replaces deprecated startActivityForResult for SAF tree picker
     private ActivityResultLauncher<Intent> safTreeLauncher;
+    private ActivityResultLauncher<Intent> configImportLauncher;
 
     private LoopingVideoBackgroundView videoSettingsBg;
 
@@ -249,6 +250,35 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                             Toast.makeText(getContext(),
                                 "⚠️ Folder not recognized as a target game (MLBB, PUBGM, CODM)",
                                 Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+            }
+        );
+
+        configImportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK
+                        && result.getData() != null) {
+                    android.net.Uri fileUri = result.getData().getData();
+                    if (fileUri != null && getContext() != null) {
+                        try (java.io.InputStream in = getContext().getContentResolver().openInputStream(fileUri);
+                             java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))) {
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line).append("\n");
+                            }
+                            boolean success = GameProfileExportManager.importProfilesFromJson(getContext(), sb.toString());
+                            if (success) {
+                                Toast.makeText(getContext(), "✅ .gbcfg Presets Imported Successfully!", Toast.LENGTH_SHORT).show();
+                                if (spoofProfileAdapter != null) spoofProfileAdapter.notifyDataSetChanged();
+                            } else {
+                                Toast.makeText(getContext(), "⚠️ Invalid .gbcfg file format", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Throwable t) {
+                            Toast.makeText(getContext(), "Import failed: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -1864,6 +1894,25 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     Intent terminalIntent = new Intent(getContext(), com.gamebooster.app.terminal.TerminalActivity.class);
                     startActivity(terminalIntent);
                 }
+            });
+        }
+
+        // Card 6.5: Preset Backup & Restore (.gbcfg)
+        Button btnExportGbcfg = view.findViewById(R.id.btn_export_gbcfg);
+        Button btnImportGbcfg = view.findViewById(R.id.btn_import_gbcfg);
+        if (btnExportGbcfg != null) {
+            btnExportGbcfg.setOnClickListener(v -> {
+                if (getActivity() != null) {
+                    GameProfileExportManager.shareConfigFile(getActivity());
+                }
+            });
+        }
+        if (btnImportGbcfg != null) {
+            btnImportGbcfg.setOnClickListener(v -> {
+                Intent pickIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                pickIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                pickIntent.setType("*/*");
+                configImportLauncher.launch(pickIntent);
             });
         }
 

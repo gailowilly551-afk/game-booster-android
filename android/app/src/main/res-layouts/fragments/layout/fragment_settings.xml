@@ -1566,6 +1566,64 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- CARD 6.5: CONFIG PRESETS BACKUP & RESTORE (.GBCFG) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/card_glass_shape"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💾 PRESET BACKUP &amp; SHARING (.GBCFG)"
+                    android:textColor="@color/accent_neon_green"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.03" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Export or import your 185Hz display configurations, device spoofing parameters, touch sensitivities, and mod presets into a shareable .gbcfg backup file."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_export_gbcfg"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="5dp"
+                        android:background="@drawable/btn_cyber_dark"
+                        android:text="📤 EXPORT .GBCFG"
+                        android:textColor="@color/accent_cyan"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btn_import_gbcfg"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="5dp"
+                        android:background="@drawable/btn_cyber_dark"
+                        android:text="📥 IMPORT .GBCFG"
+                        android:textColor="@color/accent_neon_green"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- CARD 7: APP INFO & LINKS -->
             <LinearLayout
                 android:layout_width="match_parent"
