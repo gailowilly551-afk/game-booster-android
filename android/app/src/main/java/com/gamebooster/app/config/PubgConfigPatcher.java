@@ -1602,6 +1602,59 @@ public class PubgConfigPatcher {
                 + ", rankedSweep=" + rankedSweepCount + "]");
         return true;
     }
+
+    /**
+     * PUBG Mobile Self-Repair & Startup Optimization (UE4 Engine 2026).
+     * Cleans stale crash logs, corrupt lock files, and hanging temp files that cause
+     * infinite loading loops, crashes, or black screens on startup.
+     * CRITICAL SAFETY: Strictly preserves user session tokens (Active.sav, LoginToken.dat,
+     * guest_uuid.dat, login_state.json, and player GameUserSettings.ini preferences).
+     */
+    public static boolean repairAndRestorePubgmGame(Context context, String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()) return false;
+        String pkg = packageName.trim();
+        try {
+            List<String> roots = resolveRootDirs(pkg);
+            for (String root : roots) {
+                String ue4Path1 = root + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved";
+                String ue4Path2 = root + "/files/UE4Game/ShadowTrackerExtra/Saved";
+
+                String[] subdirsToClean = {"Logs", "Crashes", "Tmp", "StatData"};
+                for (String dirName : subdirsToClean) {
+                    String d1 = ue4Path1 + "/" + dirName;
+                    String d2 = ue4Path2 + "/" + dirName;
+                    String cleanCmd = "rm -rf '" + d1 + "'/* 2>/dev/null; rm -rf '" + d2 + "'/* 2>/dev/null; ";
+                    try {
+                        if (ShizukuExecutor.hasShizukuPermission()) {
+                            ShizukuExecutor.executeShizukuCommand(cleanCmd);
+                        } else {
+                            CommandExecutor.executeSystemCommand(cleanCmd);
+                        }
+                    } catch (Throwable ignored) {}
+                }
+
+                // Unlock files and ensure readable/writable config trees
+                String unlockCmd = "chattr -R -i '" + root + "/files' 2>/dev/null; "
+                                 + "chmod -R 777 '" + root + "/files' 2>/dev/null; ";
+                try {
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand(unlockCmd);
+                    } else {
+                        CommandExecutor.executeSystemCommand(unlockCmd);
+                    }
+                } catch (Throwable ignored) {}
+            }
+            Log.i(TAG, "🛡️ PUBGM self-repair & cache optimization complete for " + pkg);
+            return true;
+        } catch (Throwable t) {
+            Log.e(TAG, "Error in repairAndRestorePubgmGame: " + t.getMessage(), t);
+            return false;
+        }
+    }
+
+    public static boolean repairAndRestorePubgmGame(String packageName) {
+        return repairAndRestorePubgmGame(null, packageName);
+    }
 }
 
 

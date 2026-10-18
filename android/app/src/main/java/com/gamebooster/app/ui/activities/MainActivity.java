@@ -165,6 +165,19 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
                         com.gamebooster.app.config.MlbbConfigPatcher.cleanLegacyLoadingLocks("com.mobile.legends");
                         com.gamebooster.app.config.CodmConfigPatcher.repairAndRestoreCodmGame(getApplicationContext(), "com.activision.callofduty.shooter");
                         com.gamebooster.app.config.CodmConfigPatcher.repairAndRestoreCodmGame(getApplicationContext(), "com.garena.game.codm");
+
+                        // PUBG Mobile (Global, KR/JP, BGMI, VN, TW) - Self-repair & fast load async streaming
+                        String[] pubgPackages = new String[]{
+                            "com.tencent.ig",
+                            "com.pubg.krmobile",
+                            "com.pubg.imobile",
+                            "com.vng.pubgmobile",
+                            "com.rekoo.pubgm"
+                        };
+                        for (String pubgPkg : pubgPackages) {
+                            com.gamebooster.app.config.PubgConfigPatcher.repairAndRestorePubgmGame(getApplicationContext(), pubgPkg);
+                            com.gamebooster.app.config.PubgConfigPatcher.applyFastLoadAsyncStreaming(pubgPkg);
+                        }
                     } catch (Throwable t) {
                         Log.w("MainActivity", "Startup cache optimization warning: " + t.getMessage());
                     }
