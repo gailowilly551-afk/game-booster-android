@@ -323,6 +323,12 @@ public final class PreLaunchGameDialog {
                 }
             }
 
+            final int finalRequestedRate = requestedRate;
+            com.gamebooster.app.core.AppExecutors.getInstance().executeCommand(() -> {
+                com.gamebooster.app.engine.FpsForceUnlockEngine.applyFpsForceUnlock(context, packageName, finalRequestedRate);
+                com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(context, packageName, finalRequestedRate);
+            });
+
             dismissCurrent();
             GameManagerLauncher.launchGame(context, game);
         });

@@ -153,7 +153,12 @@ public class ShizukuStatusDashboardView extends LinearLayout {
         }
 
         // App Status
-        tvAppStatus.setText(status.getAppStatus().getLabel());
+        float maxHz = com.gamebooster.app.device.HardwareDisplayController.getMaxHardwareRefreshRate(getContext());
+        if (maxHz >= 90f) {
+            tvAppStatus.setText(status.getAppStatus().getLabel() + " • " + Math.round(maxHz) + "Hz Display");
+        } else {
+            tvAppStatus.setText(status.getAppStatus().getLabel());
+        }
         tvAppStatus.setTextColor(COLOR_ACTIVE);
 
         // Action button text and indicator badge

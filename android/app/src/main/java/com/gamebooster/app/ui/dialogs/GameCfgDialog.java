@@ -386,12 +386,9 @@ public class GameCfgDialog {
                     }
                     com.gamebooster.app.config.CommonConfigTuningInjector.applyAllEnabledTunings(pkg, profile);
                     com.gamebooster.app.config.GameAutoInjectDispatcher.dispatchForPackage(pkg);
-                    // MLBB: New map / camera keys are synced ONLY via DroneView toggle,
-                    // NOT on every CFG apply. Injecting newMapUpdate here overwrote live
-                    // dragon2017 assets (SplitLibMD5.xml, BattleConfig.unity3d) while the
-                    // game was loading, causing Unity table-signature failures on the splash screen.
+                    com.gamebooster.app.engine.FpsForceUnlockEngine.applyFpsForceUnlock(context, pkg, targetFps);
                     if (profile.isHardwareMaskEnabled()) {
-                        com.gamebooster.app.spoofer.DeviceSpooferEngine.applySpoofing(context, pkg);
+                        com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(context, pkg, targetFps);
                     }
                     patchedFilesCount = 1;
 

@@ -57,11 +57,19 @@ public class SpoofProfileAdapter extends RecyclerView.Adapter<SpoofProfileAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SpoofProfile profile = profiles.get(position);
-        holder.tvDeviceName.setText(profile.displayName);
-        holder.tvBrandBadge.setText(profile.brandLabel != null ? profile.brandLabel.toUpperCase() : "GAMING");
-
         int ramGb = profile.ramTotalMb / 1024;
-        String details = profile.model + " • " + profile.socModel + " • " + profile.glRenderer + " • " + ramGb + "GB RAM";
+        int maxHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 120;
+        String brandText = profile.brandLabel != null ? profile.brandLabel.toUpperCase() : "GAMING";
+        holder.tvBrandBadge.setText(brandText + " [" + maxHz + "Hz]");
+        if (maxHz >= 185) {
+            holder.tvBrandBadge.setTextColor(0xFF00FFCC);
+        } else if (maxHz >= 165) {
+            holder.tvBrandBadge.setTextColor(0xFF00FF66);
+        } else if (maxHz >= 144) {
+            holder.tvBrandBadge.setTextColor(0xFF00E5FF);
+        }
+
+        String details = profile.model + " • " + profile.socModel + " • " + profile.glRenderer + " • " + ramGb + "GB RAM • " + maxHz + "Hz Ultra Mode";
         holder.tvDeviceDetails.setText(details);
 
         // Dynamic Brand Emoji

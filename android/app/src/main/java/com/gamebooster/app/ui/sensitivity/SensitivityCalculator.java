@@ -28,11 +28,26 @@ public class SensitivityCalculator {
     }
 
     public static SensitivityModel calculate(int dpi, double screenSizeInches, GameProfile gameProfile, RecoilMode recoilMode) {
+        return calculate(dpi, screenSizeInches, gameProfile, recoilMode, 185);
+    }
+
+    public static SensitivityModel calculate(int dpi, double screenSizeInches, GameProfile gameProfile, RecoilMode recoilMode, int targetHz) {
         SensitivityModel model = new SensitivityModel();
 
         // Baseline DPI scaling factor (Standard mobile baseline ~ 400 DPI)
         double dpiFactor = 400.0 / Math.max(160, dpi);
         double screenFactor = Math.max(4.5, screenSizeInches) / 6.5;
+
+        // Refresh rate touch latency compensation (185Hz, 165Hz, 144Hz, 120Hz)
+        int effectiveHz = targetHz > 0 ? targetHz : 185;
+        double hzTouchDampening = 1.0;
+        if (effectiveHz >= 185) {
+            hzTouchDampening = 0.94; // Ultra-high 185Hz touch polling micro-stability
+        } else if (effectiveHz >= 165) {
+            hzTouchDampening = 0.96;
+        } else if (effectiveHz >= 144) {
+            hzTouchDampening = 0.98;
+        }
 
         double gameModifier = 1.0;
         switch (gameProfile) {
@@ -59,7 +74,7 @@ public class SensitivityCalculator {
                 break;
         }
 
-        double baseCoeff = 100.0 * dpiFactor * screenFactor * gameModifier * recoilMultiplier;
+        double baseCoeff = 100.0 * dpiFactor * screenFactor * gameModifier * recoilMultiplier * hzTouchDampening;
 
         model.freeLook = clamp((int) (baseCoeff * 1.2));
         model.noScope3rdPerson = clamp((int) (baseCoeff * 1.0)); // TPP sensitivity
@@ -79,8 +94,8 @@ public class SensitivityCalculator {
         model.scope6x = clamp((int) (baseCoeff * 0.18));
         model.scope8x = clamp((int) (baseCoeff * 0.11));
 
-        // Gyroscope dampening & recoil compensation values
-        double gyroBase = 300.0 * gyroRecoilMultiplier;
+        // Gyroscope dampening & recoil compensation values with Hz scaling
+        double gyroBase = 300.0 * gyroRecoilMultiplier * (effectiveHz >= 144 ? 1.10 : 1.0);
         model.gyroNoScope = clampGyro((int) (gyroBase * 1.0));
         model.gyroRedDot = clampGyro((int) (gyroBase * 0.95));
         model.gyro2x = clampGyro((int) (gyroBase * 0.85));
@@ -89,8 +104,8 @@ public class SensitivityCalculator {
         model.gyro6x = clampGyro((int) (gyroBase * 0.45));
         model.gyro8x = clampGyro((int) (gyroBase * 0.35));
 
-        model.summary = String.format("%s profile (%s) - %d DPI, %.1f\" screen",
-                gameProfile.getLabel(), recoilMode.getLabel(), dpi, screenSizeInches);
+        model.summary = String.format("%s profile (%s) - %d DPI, %.1f\" screen @ %dHz",
+                gameProfile.getLabel(), recoilMode.getLabel(), dpi, screenSizeInches, effectiveHz);
 
         return model;
     }
