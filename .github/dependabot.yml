@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Enable version updates for Gradle dependencies in the Android project
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Manila"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+
+  # Enable version updates for GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Manila"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
