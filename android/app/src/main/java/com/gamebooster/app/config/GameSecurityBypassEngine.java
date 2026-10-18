@@ -235,16 +235,20 @@ public final class GameSecurityBypassEngine {
             // 1. Ensure file exists and set safe readable permissions
             sb.append("test -f '").append(path).append("' && chmod 666 '").append(path).append("' 2>/dev/null; ");
 
-            // 2. Kernel-level Read-Only Bind-Mount on critical battle & camera configs
+            // 2. Kernel-level Read-Only Bind-Mount on static game battle & camera configs
+            // NOTE: Active.sav, UserCustom.ini, and UserSetting.json must NEVER be mounted read-only
+            // because Unreal Engine and Unity need write access during login and profile serialization.
             if (path.contains("BattleConfig.json") || path.contains("BattleSystemConfig.bytes")
                     || path.contains("HeroStatConfig.json") || path.contains("DroneViewConfig.json")
-                    || path.contains("UserCustom.ini") || path.contains("ResCheckConf.xml")
-                    || path.contains("Active.sav")) {
+                    || path.contains("ResCheckConf.xml")) {
                 sb.append("if [ -f '").append(path).append("' ]; then ")
                   .append("mount --bind '").append(path).append("' '").append(path).append("' 2>/dev/null && ")
                   .append("mount -o remount,ro,bind '").append(path).append("' '").append(path).append("' 2>/dev/null; ")
                   .append("chmod 444 '").append(path).append("' 2>/dev/null; ")
                   .append("fi; ");
+            } else {
+                // Ensure dynamic configs remain writable (read/write 666) by game process
+                sb.append("test -f '").append(path).append("' && chmod 666 '").append(path).append("' 2>/dev/null; ");
             }
         }
 
@@ -449,13 +453,13 @@ public final class GameSecurityBypassEngine {
      */
     public static boolean sinkholeTelemetryEndpoints(String packageName) {
         if (!ShellSafety.isSafePackageName(packageName)) return false;
+        // Exclude tpns.tencent.com (Tencent Push & Auth callback),
+        // telemetry.activision.com, and report.games.garena.com (MSDK CDN verification)
+        // so games do not stall on login or enter download loops.
         String[] blacklistedDomains = {
             "log.anticheat.qq.com",
             "mtp.moonton.com",
-            "tpns.tencent.com",
-            "telemetry.activision.com",
             "hawk.game.163.com",
-            "report.games.garena.com",
             "crashlytics.com",
             "settings.crashlytics.com"
         };

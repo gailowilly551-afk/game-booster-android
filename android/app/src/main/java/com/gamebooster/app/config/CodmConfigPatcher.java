@@ -32,27 +32,26 @@ public class CodmConfigPatcher {
                 root + "/files/Config/GameConfig.xml",
                 root + "/files/Config/ControlsSettings.ini",
                 root + "/files/Config/GraphicsSettings.ini",
-                root + "/files/res_skip_patch",
-                root + "/files/MSDKConfig.ini",
-                root + "/files/Config/config.json",
-                root + "/files/config.json"
+                root + "/files/res_skip_patch"
             };
             for (String f : targetFiles) {
-                NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
-                NativeConfigInjector.setImmutableLock(f, true);
+                // Ensure files are unlocked and writable by game process
+                NativeConfigInjector.setImmutableLock(f, false);
             }
         }
-        String shellLock = "for f in '/data/user/0/" + pkg + "/files/Config/'* "
-                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/Config/'*; do "
-                         + "  [ -f \"$f\" ] && chown " + TARGET_UID + ":" + TARGET_UID + " \"$f\" 2>/dev/null && "
-                         + "  chmod 444 \"$f\" 2>/dev/null && chattr +i \"$f\" 2>/dev/null && "
-                         + "  touch -t 203001010000 \"$f\" 2>/dev/null; "
-                         + "done";
+        // Unlock any stale immutable flags and ensure game can write its configs
+        String shellUnlock = "for d in '/data/user/0/" + pkg + "/files/Config' "
+                           + "'/storage/emulated/0/Android/data/" + pkg + "/files/Config'; do "
+                           + "  if [ -d \"$d\" ]; then "
+                           + "    chattr -R -i \"$d\" 2>/dev/null; "
+                           + "    chmod -R 775 \"$d\" 2>/dev/null; "
+                           + "  fi; "
+                           + "done";
         try {
             if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellLock);
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellUnlock);
             } else {
-                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellLock);
+                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellUnlock);
             }
         } catch (Throwable ignored) {}
     }
@@ -235,6 +234,8 @@ public class CodmConfigPatcher {
 
     /**
      * Deploys complete CODM asset template suite from assets/codm/ into target game paths.
+     * Only deploys graphics and user preferences. Never touches CDN manifests, MSDK caches,
+     * or engine boot configs to prevent infinite download loops.
      */
     public static boolean deployCodmAssets(android.content.Context context, String packageName) {
         if (packageName == null) return false;
@@ -246,32 +247,23 @@ public class CodmConfigPatcher {
         List<String> roots = resolveRootDirs(packageName);
         boolean anyDeployed = false;
 
-        String[] assetFiles = {
+        int adaptiveFps = GameProfileAutoConfigurator.clampTargetFpsToDisplay(context, 185);
+        int adaptiveLevel = FpsUnlockTier.fromFps(adaptiveFps).level;
+
+        // SAFE ASSETS ONLY: User graphics & controls preferences.
+        // Omitted: boot.config, config.json, MSDKConfig.ini, settings.xml, ConfigCache,
+        // and dummy blobs (.W6JBf0B, GJmkJwm0gBq0fJ) which cause Garena/Activision CDN mismatch.
+        String[] safeAssetFiles = {
             "UserSetting.json",
             "HardwareProfile.json",
             "GraphicSetting.json",
             "GraphicsSettings_2026.json",
             "GraphicsSettings.ini",
             "ControlsSettings.ini",
-            "boot.config",
             "cod_prefs.json",
             "GameConfig.xml",
             "GraphicsSetting.xml",
-            "UserProfile.xml",
-            // Safe patch assets — MSDK config, encryption bypass
-            "config.json",
-            "MSDKConfig.ini",
-            "MSDKBuglyConfig.json",
-            "MSDKPopupLocal.config",
-            "MSDKRetMsg.json",
-            "encrypt.json",
-            "captcha_encrpted",
-            "blit.txt",
-            "settings.xml"
-        };
-
-        String[] configCacheFiles = {
-            "1", "2", "3", "5", "6", "7", "8", "16", "18", "20", "22", "29", "30"
+            "UserProfile.xml"
         };
 
         for (String root : roots) {
@@ -282,7 +274,6 @@ public class CodmConfigPatcher {
             String joystickDir = root + "/files/Config/joystick";
             String prefsDir = root + "/files/prefs";
             String sharedPrefsDir = root + "/shared_prefs";
-            String cacheDir = root + "/files/Config/ConfigCache/3771080214970436972/1.6.57.0";
 
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(filesDir);
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(configDir);
@@ -291,12 +282,25 @@ public class CodmConfigPatcher {
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(joystickDir);
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(prefsDir);
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(sharedPrefsDir);
-            com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(cacheDir);
 
-            // Deploy standard assets
-            for (String assetName : assetFiles) {
+            // Deploy safe configuration assets
+            for (String assetName : safeAssetFiles) {
                 byte[] data = readAssetBytes(am, "codm/" + assetName);
                 if (data == null || data.length <= 20) continue;
+
+                // Dynamically adapt UserSetting.json & GraphicSetting.json to device display panel
+                if (assetName.equals("UserSetting.json") || assetName.equals("GraphicSetting.json")) {
+                    try {
+                        String jsonStr = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+                        jsonStr = jsonStr.replaceAll("\"MaxFrameRate\":\\s*\\d+", "\"MaxFrameRate\": " + adaptiveFps)
+                                         .replaceAll("\"TargetFPS\":\\s*\\d+", "\"TargetFPS\": " + adaptiveFps)
+                                         .replaceAll("\"FPSLimit\":\\s*\\d+", "\"FPSLimit\": " + adaptiveFps)
+                                         .replaceAll("\"FrameRateLimit\":\\s*\\d+", "\"FrameRateLimit\": " + adaptiveFps)
+                                         .replaceAll("\"MobileFPSLimit\":\\s*\\d+", "\"MobileFPSLimit\": " + adaptiveFps)
+                                         .replaceAll("\"FrameRateLevel\":\\s*\\d+", "\"FrameRateLevel\": " + adaptiveLevel);
+                        data = jsonStr.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    } catch (Throwable ignored) {}
+                }
 
                 if (assetName.equals("UserSetting.json") || assetName.equals("HardwareProfile.json") ||
                     assetName.equals("GraphicSetting.json") || assetName.equals("GraphicsSettings_2026.json")) {
@@ -310,7 +314,7 @@ public class CodmConfigPatcher {
                     if (!com.gamebooster.app.shizuku.ShizukuFileManager.fileExists(dest) && !new java.io.File(dest).exists()) {
                         writeAssetWithFallback(dest, data);
                     }
-                } else if (assetName.equals("GameConfig.xml") || assetName.equals("GraphicsSetting.xml") || assetName.equals("UserProfile.xml") || assetName.equals("settings.xml")) {
+                } else if (assetName.equals("GameConfig.xml") || assetName.equals("GraphicsSetting.xml") || assetName.equals("UserProfile.xml")) {
                     writeAssetWithFallback(prefsDir + "/" + assetName, data);
                     writeAssetWithFallback(sharedPrefsDir + "/" + assetName, data);
                     writeAssetWithFallback(filesDir + "/" + assetName, data);
@@ -323,43 +327,15 @@ public class CodmConfigPatcher {
                     anyDeployed = true;
                 }
             }
-
-            // Deploy engine binary blob .W6JBf0B
-            byte[] blobData = readAssetBytes(am, "codm/Config/.W6JBf0B");
-            if (blobData != null && blobData.length > 0) {
-                writeAssetWithFallback(configDir + "/.W6JBf0B", blobData);
-                writeAssetWithFallback(configDirLower + "/.W6JBf0B", blobData);
-                anyDeployed = true;
-            }
-
-            // Deploy engine config GJmkJwm0gBq0fJ.rDfVJw
-            byte[] gjmData = readAssetBytes(am, "codm/Config/GJmkJwm0gBq0fJ.rDfVJw");
-            if (gjmData != null && gjmData.length > 0) {
-                writeAssetWithFallback(configDir + "/GJmkJwm0gBq0fJ.rDfVJw", gjmData);
-                writeAssetWithFallback(configDirLower + "/GJmkJwm0gBq0fJ.rDfVJw", gjmData);
-                anyDeployed = true;
-            }
-
-            // Deploy ConfigCache files
-            for (String cacheId : configCacheFiles) {
-                byte[] cacheData = readAssetBytes(am, "codm/Config/ConfigCache/3771080214970436972/1.6.57.0/" + cacheId);
-                if (cacheData != null && cacheData.length > 0) {
-                    writeAssetWithFallback(cacheDir + "/" + cacheId, cacheData);
-                    anyDeployed = true;
-                }
-            }
         }
 
-        // Safe bypass: Do NOT overwrite APK shared libraries (.so) to prevent linker SIGSEGV / ACE integrity crash
-        // deployCodmNativeLibs(context, packageName, am);
-
-        Log.i(TAG, "📦 [CODM Asset Deployer] Deployed asset templates for " + packageName + " (success=" + anyDeployed + ")");
+        Log.i(TAG, "📦 [CODM Asset Deployer] Deployed safe graphics & settings templates for " + packageName + " (adaptiveFps=" + adaptiveFps + ")");
         return anyDeployed;
     }
 
     /**
-     * Deploys CODM combat patch assets (boot.config, MSDKConfig.ini, settings.xml)
-     * directly into game storage directories with 2026 combat multipliers.
+     * Deploys CODM combat patch settings (UserSetting.json, ControlsSettings.ini, GraphicsSettings.ini)
+     * safely without touching boot.config or MSDK configs.
      */
     public static boolean deployCodmCombatAssets(android.content.Context context, String packageName) {
         if (packageName == null) return false;
@@ -371,19 +347,15 @@ public class CodmConfigPatcher {
         List<String> roots = resolveRootDirs(packageName);
         boolean anyDeployed = false;
 
-        String[] combatFiles = {"boot.config", "MSDKConfig.ini", "config.json", "settings.xml", "ControlsSettings.ini", "UserSetting.json"};
+        String[] combatFiles = {"ControlsSettings.ini", "GraphicsSettings.ini", "UserSetting.json"};
 
         for (String root : roots) {
             String filesDir = root + "/files";
             String configDir = root + "/files/Config";
             String configDirLower = root + "/files/config";
-            String sharedPrefsDir = root + "/shared_prefs";
-            String prefsDir = root + "/files/prefs";
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(filesDir);
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(configDir);
             com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(configDirLower);
-            com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(sharedPrefsDir);
-            com.gamebooster.app.shizuku.ShizukuFileManager.makeDirectory(prefsDir);
 
             for (String file : combatFiles) {
                 byte[] data = readAssetBytes(am, "codm/" + file);
@@ -391,14 +363,10 @@ public class CodmConfigPatcher {
                 writeAssetWithFallback(filesDir + "/" + file, data);
                 writeAssetWithFallback(configDir + "/" + file, data);
                 writeAssetWithFallback(configDirLower + "/" + file, data);
-                if (file.endsWith(".xml")) {
-                    writeAssetWithFallback(sharedPrefsDir + "/" + file, data);
-                    writeAssetWithFallback(prefsDir + "/" + file, data);
-                }
                 anyDeployed = true;
             }
         }
-        Log.i(TAG, "⚡ [CODM Combat Deployer] Deployed combat assets (boot.config, MSDKConfig.ini, settings.xml) for " + packageName);
+        Log.i(TAG, "⚡ [CODM Combat Deployer] Deployed safe combat settings for " + packageName);
         return anyDeployed;
     }
 
@@ -415,7 +383,8 @@ public class CodmConfigPatcher {
 
     /**
      * Automated self-repair and recovery routine for CODM.
-     * Cleans up stale anti-cheat locks, temporary token files, and ensures proper read/write permissions.
+     * Cleans up stale anti-cheat locks, temporary token files, mismatched CDN files,
+     * and ensures proper read/write permissions so CODM doesn't get stuck downloading or crashing.
      */
     public static boolean repairAndRestoreCodmGame(android.content.Context context, String packageName) {
         if (packageName == null) return false;
@@ -424,6 +393,8 @@ public class CodmConfigPatcher {
             for (String root : roots) {
                 String filesDir = root + "/files";
                 String configDir = root + "/files/Config";
+                String configDirLower = root + "/files/config";
+
                 // Remove stale AC token files and corrupting temp files
                 String[] toxicFiles = {
                     filesDir + "/acginf.dat",
@@ -434,7 +405,20 @@ public class CodmConfigPatcher {
                     configDir + "/verifier",
                     configDir + "/__accfinfo.tsb",
                     configDir + "/__acinfo.tsb",
-                    filesDir + "/app_pref.xml"
+                    filesDir + "/app_pref.xml",
+                    // Clean up dummy/legacy assets that cause CDN hash mismatch and infinite download loop
+                    configDir + "/.W6JBf0B",
+                    configDirLower + "/.W6JBf0B",
+                    configDir + "/GJmkJwm0gBq0fJ.rDfVJw",
+                    configDirLower + "/GJmkJwm0gBq0fJ.rDfVJw",
+                    filesDir + "/boot.config",
+                    configDir + "/boot.config",
+                    filesDir + "/MSDKConfig.ini",
+                    configDir + "/MSDKConfig.ini",
+                    filesDir + "/config.json",
+                    configDir + "/config.json",
+                    filesDir + "/settings.xml",
+                    configDir + "/settings.xml"
                 };
                 for (String toxic : toxicFiles) {
                     try {
@@ -443,8 +427,18 @@ public class CodmConfigPatcher {
                     } catch (Throwable ignored) {}
                 }
 
-                // Enforce proper permissions on game data directory via Shizuku
-                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand("chmod -R 777 " + root + "/files 2>/dev/null");
+                // Remove mismatched ConfigCache directory and unlock any immutable locks
+                String shellCleanup = "rm -rf '" + configDir + "/ConfigCache' 2>/dev/null; "
+                                    + "rm -rf '" + configDirLower + "/ConfigCache' 2>/dev/null; "
+                                    + "chattr -R -i '" + root + "/files' 2>/dev/null; "
+                                    + "chmod -R 777 '" + root + "/files' 2>/dev/null; ";
+                try {
+                    if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
+                        com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellCleanup);
+                    } else {
+                        com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellCleanup);
+                    }
+                } catch (Throwable ignored) {}
             }
             Log.i(TAG, "🛡️ CODM self-repair complete for " + packageName);
             return true;

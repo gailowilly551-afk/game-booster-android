@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.gamebooster.app.engine.FpsForceUnlockEngine;
+import com.gamebooster.app.engine.HardwareDisplayHelper;
 import com.gamebooster.app.engine.PlayIntegrityBypassEngine;
 import com.gamebooster.app.engine.AceContainerEvasionEngine;
 
@@ -241,17 +242,19 @@ public final class GameAutoInjectDispatcher {
                 });
 
             } else if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("imobile") || pkg.contains("vng.pubgmobile") || pkg.contains("pubgm")) {
-                int pubgmTargetFps = 185;
+                int pubgmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, 185);
                 try {
                     int storedFps = GameProfilePreferences.getTargetHz(ctx, pkg);
-                    if (storedFps >= 120) pubgmTargetFps = storedFps;
+                    if (storedFps >= 60) {
+                        pubgmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, storedFps);
+                    }
                 } catch (Throwable ignored) {}
 
                 if (pubgmTargetFps == 165) {
                     PubgConfigPatcher.patchUltraExtreme165(pkg);
                     PubgConfigPatcher.patchSuperSmooth165(pkg);
                     PubgConfigPatcher.apply165FpsHdrUnlock(pkg);
-                } else {
+                } else if (pubgmTargetFps >= 185) {
                     PubgConfigPatcher.patchUltraExtreme185(pkg);
                 }
                 PubgConfigPatcher.patch(pkg, pubgmTargetFps);
@@ -264,6 +267,7 @@ public final class GameAutoInjectDispatcher {
                 PubgConfigPatcher.applyPubgUltraDroneViewMaxFov(pkg);
                 PubgConfigPatcher.deployPakPatch(pkg);
                 if (ctx != null) {
+                    // Safe non-destructive asset deployment & 4.6.0 master update
                     PubgConfigPatcher.deployPubgmAssets(ctx, pkg);
                     PubgConfigPatcher.applyPubgm460MasterUpdate(ctx, pkg);
                 }
@@ -274,10 +278,27 @@ public final class GameAutoInjectDispatcher {
                     Log.w(TAG, "PUBGM Mod Profile injection warning: " + modErr.getMessage());
                 }
             } else if (pkg.contains("cod") || pkg.contains("callofduty") || pkg.contains("warzone")) {
+                // 1. Self-repair: Clean up any mismatched legacy cache/dummy files that cause download loop
+                CodmConfigPatcher.repairAndRestoreCodmGame(ctx, pkg);
+
+                // 2. Resolve hardware adaptive FPS (up to 165Hz - 185Hz)
+                int codmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, 185);
+                try {
+                    int storedFps = GameProfilePreferences.getTargetHz(ctx, pkg);
+                    if (storedFps >= 60) {
+                        codmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, storedFps);
+                    }
+                } catch (Throwable ignored) {}
+
+                // 3. Deploy safe graphics settings and combat configs
                 CodmConfigPatcher.deployCodmAssets(ctx, pkg);
                 CodmConfigPatcher.deployCodmCombatAssets(ctx, pkg);
-                CodmConfigPatcher.patchUltraExtreme185(pkg);
-                CodmConfigPatcher.patch(pkg, 185);
+                if (codmTargetFps >= 185) {
+                    CodmConfigPatcher.patchUltraExtreme185(pkg);
+                } else if (codmTargetFps == 165) {
+                    CodmConfigPatcher.patchUltraExtreme165(pkg);
+                }
+                CodmConfigPatcher.patch(pkg, codmTargetFps);
                 CodmConfigPatcher.applyDamage10000AttackSpeedMax(pkg);
                 CodmConfigPatcher.applyCodmGodModeFullOverdrive(pkg);
                 CodmConfigPatcher.applyCodmMasterSuite(pkg);

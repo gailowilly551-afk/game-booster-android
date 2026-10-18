@@ -43,9 +43,11 @@ public class PubgConfigPatcher {
         if (packageName == null || packageName.trim().isEmpty()) return;
         String pkg = packageName.trim();
 
-        // Resolve the UE4 frame-rate level for the requested package (185fps → level 10, 165fps → level 9, etc.)
-        final FpsUnlockTier battleTier = FpsUnlockTier.FPS_185; // Battle overdrive always targets max supported
-        final int battleLevel = battleTier.level; // level 10 for 185fps; matches Active.sav patcher logic
+        // Resolve the UE4 frame-rate level dynamically based on device display panel (up to 165Hz - 185Hz)
+        Context appCtx = com.gamebooster.app.GameBoosterApp.getInstance();
+        int resolvedFps = com.gamebooster.app.config.GameProfileAutoConfigurator.clampTargetFpsToDisplay(appCtx, 185);
+        final FpsUnlockTier battleTier = FpsUnlockTier.fromFps(resolvedFps);
+        final int battleLevel = battleTier.level;
         String[] battleCvArs = {
             // ── In-Battle Real-Time Engine Frame Rate & Refresh ──
             "+CVars=r.PUBGBattleFPS=" + battleLevel,
@@ -100,9 +102,9 @@ public class PubgConfigPatcher {
             }
         }
 
-        // Also enforce Active.sav binary level 7 (185/120 FPS tier)
-        patchActiveSavBinary(pkg, 185, true);
-        Log.i("PubgConfigPatcher", "⚔️ [PUBGM BattleConfig] Full in-battle 185 FPS + combat ballistics applied for " + pkg);
+        // Also enforce Active.sav binary level (adaptive up to 165Hz/185Hz)
+        patchActiveSavBinary(pkg, battleTier.fps, true);
+        Log.i("PubgConfigPatcher", "⚔️ [PUBGM BattleConfig] Full in-battle " + battleTier.fps + " FPS + combat ballistics applied for " + pkg);
     }
 
     /**
@@ -1449,6 +1451,61 @@ public class PubgConfigPatcher {
             String path1 = isSav ? (doubleSave + file) : (doubleConfig + file);
             String path2 = isSav ? (singleSave + file) : (singleConfig + file);
 
+            // CRITICAL FIX: Active.sav contains the player's active session token, guest/OAuth login
+            // state and auth certificate. Overwriting Active.sav causes the game to enter an infinite
+            // loading spinner during login. NEVER overwrite Active.sav if it already exists;
+            // in-place byte patching via patchActiveSavBinary will be used instead.
+            if (file.equals("Active.sav")) {
+                boolean p1Exists = new File(path1).exists() || ShizukuFileManager.fileExists(path1);
+                boolean p2Exists = new File(path2).exists() || ShizukuFileManager.fileExists(path2);
+                if (p1Exists || p2Exists) {
+                    Log.i(TAG, "Active.sav exists for " + pkg + " — preserving session tokens; in-place binary patch will be used.");
+                    continue;
+                }
+            }
+
+            // CRITICAL FIX: GameUserSettings.ini contains player credentials, control layouts,
+            // sensitivity, and audio preferences. If it exists, patch only the graphics/FPS keys
+            // rather than wiping out the entire user profile.
+            if (file.equals("GameUserSettings.ini")) {
+                boolean p1Exists = new File(path1).exists() || ShizukuFileManager.fileExists(path1);
+                boolean p2Exists = new File(path2).exists() || ShizukuFileManager.fileExists(path2);
+                if (p1Exists || p2Exists) {
+                    int adaptiveFps = GameProfileAutoConfigurator.clampTargetFpsToDisplay(ctx, 185);
+                    int adaptiveLvl = FpsUnlockTier.fromFps(adaptiveFps).level;
+                    String[] userSettingKeys = {
+                        "FrameRateLevel=" + adaptiveLvl,
+                        "BattleFPS=" + adaptiveLvl,
+                        "LobbyFPS=" + adaptiveLvl,
+                        "FPS=" + adaptiveFps,
+                        "MaxFPS=" + adaptiveFps,
+                        "TargetFPS=" + adaptiveFps,
+                        "FrameRateLimit=" + adaptiveFps,
+                        "MobileFPSLimit=" + adaptiveFps,
+                        "GraphicQuality=1",
+                        "ArtQuality=1",
+                        "ShadowQuality=1",
+                        "MobileHDRMode=0",
+                        "HighFPSMode=6",
+                        "bUseHDRMode=False",
+                        "bUseUltraExtreme=True",
+                        "bFramePacingEnabled=True",
+                        "ResolutionScale=100",
+                        "ResolutionQuality=100",
+                        "UnlockFPS=1",
+                        "Unlock120Hz=1",
+                        "Unlock144Hz=1",
+                        "Unlock165Hz=1",
+                        "Unlock185Hz=1",
+                        "Unlock240Hz=1"
+                    };
+                    if (p1Exists) ConfigFileHelper.patchKeys(path1, userSettingKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
+                    if (p2Exists) ConfigFileHelper.patchKeys(path2, userSettingKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
+                    anySuccess = true;
+                    continue;
+                }
+            }
+
             boolean w1 = writeDataToGamePath(ctx, pkg, path1, data);
             boolean w2 = writeDataToGamePath(ctx, pkg, path2, data);
             if (w1 || w2) anySuccess = true;
@@ -1460,7 +1517,7 @@ public class PubgConfigPatcher {
 
     /**
      * Master 4.6.0 Update Orchestrator:
-     * Synchronizes all assets, unlocks 185 FPS, applies v4.6 weapon recoil fix,
+     * Synchronizes all assets, unlocks adaptive FPS up to 165Hz/185Hz, applies v4.6 weapon recoil fix,
      * Midnight Hunters event tuning, inflatable boat speed override, S32 ranked sweep,
      * masks screen capture listeners, and enforces security cloaking & timestamps.
      */
@@ -1469,14 +1526,20 @@ public class PubgConfigPatcher {
         String pkg = packageName.trim();
         Log.i(TAG, "🚀 Applying PUBG Mobile 4.6.0 Master Update Suite for " + pkg + "...");
 
-        // 1. Deploy pre-tuned 4.6.0 asset templates (UserCustom, EnjoyCJZC, GameUserSettings, Active.sav)
+        // Resolve hardware display capabilities (up to 165Hz - 185Hz)
+        int targetFps = 185;
+        if (ctx != null) {
+            targetFps = GameProfileAutoConfigurator.clampTargetFpsToDisplay(ctx, 185);
+        }
+
+        // 1. Deploy pre-tuned 4.6.0 asset templates safely (without wiping existing login session)
         if (ctx != null) {
             deployPubgmAssets(ctx, pkg);
         }
 
-        // 2. Unlock 185 FPS competitive & Active.sav level 10
-        patchCompetitive(pkg, 185);
-        patchActiveSavBinary(pkg, 185, true, 4);
+        // 2. Unlock adaptive FPS (up to 165/185 FPS depending on screen panel) & Active.sav
+        patchCompetitive(pkg, targetFps);
+        patchActiveSavBinary(pkg, targetFps, true, 4);
 
         // 3. Inject 4.6.0 specific CVars across all discovered paths
         List<String> paths = getConfigPaths(pkg);
