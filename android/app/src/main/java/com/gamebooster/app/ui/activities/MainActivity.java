@@ -159,6 +159,15 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
                     } catch (Throwable t) {
                         Log.w("MainActivity", "Startup device spoofing warning: " + t.getMessage());
                     }
+
+                    // Pre-warm cleanups to prevent infinite loading/downloading loops on first game launch
+                    try {
+                        com.gamebooster.app.config.MlbbConfigPatcher.cleanLegacyLoadingLocks("com.mobile.legends");
+                        com.gamebooster.app.config.CodmConfigPatcher.repairAndRestoreCodmGame(getApplicationContext(), "com.activision.callofduty.shooter");
+                        com.gamebooster.app.config.CodmConfigPatcher.repairAndRestoreCodmGame(getApplicationContext(), "com.garena.game.codm");
+                    } catch (Throwable t) {
+                        Log.w("MainActivity", "Startup cache optimization warning: " + t.getMessage());
+                    }
                 } else if (!ShizukuExecutor.isShizukuAvailable()) {
                     // Auto-Active: Shizuku not running — auto-prompt activation once per install
                     android.content.SharedPreferences prefs =
