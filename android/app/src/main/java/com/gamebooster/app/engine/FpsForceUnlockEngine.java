@@ -38,18 +38,29 @@ public final class FpsForceUnlockEngine {
      * Call this from GameAutoInjectDispatcher.dispatchForPackage() before launch.
      */
     public static void applyFps185ForceUnlock(Context context, String packageName) {
+        applyFpsForceUnlock(context, packageName, TARGET_FPS);
+    }
+
+    public static void applyFpsForceUnlock(Context context, String packageName, int requestedFps) {
         if (packageName == null || packageName.trim().isEmpty()) return;
-        int resolvedHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, TARGET_FPS);
-        Log.i(TAG, "▶ [FPS" + resolvedHz + "] Starting " + resolvedHz + "fps adaptive force unlock for: " + packageName);
+        int targetHz = requestedFps > 0 ? requestedFps : TARGET_FPS;
+        try {
+            int stored = com.gamebooster.app.config.GameProfilePreferences.getTargetHz(context, packageName);
+            if (stored >= 60) {
+                targetHz = stored;
+            }
+        } catch (Throwable ignored) {}
 
-        applySystemLevelUnlock(resolvedHz);
-        applySurfaceFlingerForce(resolvedHz);
+        Log.i(TAG, "▶ [FPS" + targetHz + "] Starting " + targetHz + "fps full force unlock for: " + packageName);
+
+        applySystemLevelUnlock(targetHz);
+        applySurfaceFlingerForce(targetHz);
         applySwappyDisable();
-        applyKernelDisplayForce(resolvedHz);
+        applyKernelDisplayForce(targetHz);
         applyGameModeClampRemoval(packageName);
-        applyPerGamePatch(packageName, resolvedHz);
+        applyPerGamePatch(packageName, targetHz);
 
-        Log.i(TAG, "✅ [FPS" + resolvedHz + "] All 4 layers applied for: " + packageName);
+        Log.i(TAG, "✅ [FPS" + targetHz + "] All 4 layers applied for: " + packageName);
     }
 
     /**

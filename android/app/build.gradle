@@ -41,8 +41,8 @@ android {
         applicationId "com.gamebooster.app"
         minSdk 34
         targetSdk 36
-        versionCode 2003
-        versionName "20.3.0"
+        versionCode 2004
+        versionName "20.4.0"
 
         ndk {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86_64"

@@ -30,7 +30,7 @@ setprop debug.egl.buffcount 3
 # ── Dynamic Hz Resolution ─────────────────────────────────────────────────────
 TARGET_HZ="{TARGET_HZ}"
 case "$TARGET_HZ" in
-  *{*}*|"") TARGET_HZ=120 ;;
+  *{*}*|"") TARGET_HZ=185 ;;
 esac
 
 # ── Hz Lock (resists OEM reverting mid-match) ─────────────────────────────────

@@ -64,7 +64,7 @@ public final class CodmModManager {
             }
 
             // Layer 1: Display refresh rate & surface flinger unlock (adaptive up to 165Hz-185Hz)
-            int targetFps = com.gamebooster.app.engine.HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, profile.codmFpsUnlock ? profile.codmTargetFps : 120);
+            int targetFps = profile.codmFpsUnlock ? (profile.codmTargetFps > 0 ? profile.codmTargetFps : 185) : 185;
             if (profile.codmFpsUnlock) {
                 GameModEngine.enforceDisplayRefreshRate(targetFps);
                 try {

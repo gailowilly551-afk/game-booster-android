@@ -79,7 +79,7 @@ public class HardwareMaskEngine {
 
             Set<String> batchCommands = new LinkedHashSet<>();
             int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
-            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
+            int targetHz = requestedHz;
 
             // ═══════════════════════════════════════════════════════════════════
             //  LAYER 1: LAUNCHER TELEMETRY & HARDWARE SPOOF PROPS
@@ -573,8 +573,12 @@ public class HardwareMaskEngine {
             if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("imobile") ||
                 pkg.contains("vng.pubgmobile") || pkg.contains("krmobile") || pkg.contains("rekoo")) {
                 try {
-                    if (targetFps >= 165) {
+                    if (targetFps >= 185) {
+                        com.gamebooster.app.config.PubgConfigPatcher.patchSuperSmooth185(packageName);
+                    } else if (targetFps >= 165) {
                         com.gamebooster.app.config.PubgConfigPatcher.patchSuperSmooth165(packageName);
+                    } else if (targetFps >= 144) {
+                        com.gamebooster.app.config.PubgConfigPatcher.patchSuperSmooth144(packageName);
                     } else if (targetFps >= 120) {
                         com.gamebooster.app.config.PubgConfigPatcher.patchUltraHdr120(packageName);
                     } else {
@@ -641,6 +645,13 @@ public class HardwareMaskEngine {
             // Direct sync with all extracted 2026 CODM assets
             try {
                 CodmConfigPatcher.deployCodmAssets(pkg);
+                if (targetFps >= 185) {
+                    CodmConfigPatcher.patchUltraExtreme185(pkg);
+                } else if (targetFps >= 165) {
+                    CodmConfigPatcher.patchUltraExtreme165(pkg);
+                } else if (targetFps >= 144) {
+                    CodmConfigPatcher.patchUltraExtreme144(pkg);
+                }
                 CodmConfigPatcher.patch(pkg, targetFps);
             } catch (Throwable t) {
                 Log.w(TAG, "CodmConfigPatcher sync error: " + t.getMessage());
@@ -676,9 +687,7 @@ public class HardwareMaskEngine {
                     MlbbConfigPatcher.patchUltraExtreme185(packageName);
                 } else if (targetFps >= 165) {
                     MlbbConfigPatcher.patchUltraExtreme165(packageName);
-                } else if (targetFps >= 120) {
-                    MlbbConfigPatcher.patchUltraExtreme185(packageName);
-                } else if (targetFps >= 90) {
+                } else if (targetFps >= 144) {
                     MlbbConfigPatcher.patchUltraExtreme144(packageName);
                 } else {
                     MlbbConfigPatcher.patch(packageName, targetFps);
@@ -985,7 +994,7 @@ public class HardwareMaskEngine {
             Log.i(TAG, "⚡ [FAST SPOOF] Activating Instant Hardware Masking: " + profile.displayName);
 
             int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
-            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
+            int targetHz = requestedHz;
 
             List<String> batchCommands = new ArrayList<>();
             // 1. App-Scoped Launcher & Debug Props
@@ -1152,7 +1161,7 @@ public class HardwareMaskEngine {
             Set<String> batchCmds = new LinkedHashSet<>();
 
             int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
-            int targetHz = HardwareDisplayHelper.resolveAdaptiveGameFps(context, requestedHz);
+            int targetHz = requestedHz;
 
             Set<String> gamePkgs = new LinkedHashSet<>();
             if (installedGames != null) {

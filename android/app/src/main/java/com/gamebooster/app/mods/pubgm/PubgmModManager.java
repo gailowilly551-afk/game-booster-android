@@ -64,7 +64,7 @@ public final class PubgmModManager {
             }
 
             // Layer 1: Display refresh rate & SurfaceFlinger unlock (hardware adaptive up to 165Hz-185Hz)
-            int targetFps = com.gamebooster.app.engine.HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, profile.pubgmFpsUnlock ? profile.pubgmTargetFps : 185);
+            int targetFps = profile.pubgmFpsUnlock ? (profile.pubgmTargetFps > 0 ? profile.pubgmTargetFps : 185) : 185;
             if (profile.pubgmFpsUnlock) {
                 GameModEngine.enforceDisplayRefreshRate(targetFps);
                 try {

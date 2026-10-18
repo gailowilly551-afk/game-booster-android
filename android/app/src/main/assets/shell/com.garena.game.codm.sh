@@ -20,7 +20,7 @@ done
 # ── Dynamic Hz Resolution ─────────────────────────────────────────────────────
 TARGET_HZ="{TARGET_HZ}"
 case "$TARGET_HZ" in
-  *{*}*|"") TARGET_HZ=120 ;;
+  *{*}*|"") TARGET_HZ=185 ;;
 esac
 
 # ── SurfaceFlinger & System Settings ──────────────────────────────────────────

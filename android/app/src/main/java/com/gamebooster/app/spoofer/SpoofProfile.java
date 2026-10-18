@@ -461,7 +461,7 @@ public class SpoofProfile {
     // ─────────────────────────────────────────────────────────────────────────
 
     public String[] generateUe4DeviceProfileKeys(int targetFps) {
-        int clampedFps = Math.max(60, Math.min(185, targetFps));
+        int clampedFps = Math.max(60, Math.min(185, targetFps > 0 ? targetFps : 185));
         int effectiveLevel = (clampedFps >= 185) ? 10
                 : ((clampedFps >= 165) ? 9
                 : ((clampedFps >= 144) ? 8
@@ -537,7 +537,7 @@ public class SpoofProfile {
             "FpsLevelInLobby=" + effectiveLevel,
             "FpsOption=" + effectiveLevel,
             "SelectFps=" + effectiveLevel,
-            "HighFPSMode=3",
+            "HighFPSMode=6",
             "SuperHighFPS=1",
             "TargetFPS=" + clampedFps,
             "MaxFPS=" + clampedFps,
@@ -590,8 +590,8 @@ public class SpoofProfile {
 
     public String generateJsonHardwareProfile(int targetFps) {
         int safeFps = targetFps > 0 ? Math.min(185, targetFps) : 185;
-        int highFpsMode = safeFps >= 120 ? 3 : (safeFps >= 90 ? 2 : 1);
-        int frameRateLevel = safeFps >= 165 ? 6 : (safeFps >= 144 ? 5 : (safeFps >= 120 ? 4 : (safeFps >= 90 ? 3 : 2)));
+        int highFpsMode = 6; // Ultra Extreme 2026
+        int frameRateLevel = com.gamebooster.app.config.FpsUnlockTier.getCodmFrameRateLevel(safeFps);
         return "{\n" +
                 "  \"DeviceModel\": \"" + model + "\",\n" +
                 "  \"DeviceBrand\": \"" + brand + "\",\n" +
@@ -629,8 +629,8 @@ public class SpoofProfile {
 
     public String generateMlbbDeviceConfig(int targetFps) {
         int fps = targetFps > 0 ? targetFps : 185;
-        int highFpsMode = fps >= 120 ? 3 : (fps >= 90 ? 2 : 1);
-        int frameRateLevel = fps >= 165 ? 6 : (fps >= 144 ? 5 : (fps >= 120 ? 4 : (fps >= 90 ? 3 : 2)));
+        int highFpsMode = 6; // Ultra Max 2026
+        int frameRateLevel = fps >= 185 ? 7 : (fps >= 165 ? 6 : (fps >= 144 ? 5 : (fps >= 120 ? 4 : (fps >= 90 ? 3 : 2))));
         return "[Hardware]\n" +
                 "DeviceModel=" + model + "\n" +
                 "DeviceBrand=" + brand + "\n" +
@@ -642,6 +642,10 @@ public class SpoofProfile {
                 "FrameRateLevel=" + frameRateLevel + "\n" +
                 "UltraFrameRate=1\n" +
                 "SuperFrameRate=1\n" +
+                "Unlock185Hz=1\n" +
+                "Unlock165Hz=1\n" +
+                "Unlock144Hz=1\n" +
+                "Unlock120Hz=1\n" +
                 "TargetFPS=" + fps + "\n" +
                 "FPS=" + fps + "\n" +
                 "MaxFPS=" + fps + "\n" +

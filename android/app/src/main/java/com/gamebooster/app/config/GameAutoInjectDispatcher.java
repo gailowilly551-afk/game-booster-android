@@ -177,10 +177,24 @@ public final class GameAutoInjectDispatcher {
                         if (needsAssetDeploy) {
                             MlbbConfigPatcher.deployMlbbAssets(fCtx, fPkg);
                         }
-                        MlbbConfigPatcher.patchUltraExtreme185(fPkg);
-                        MlbbConfigPatcher.patch(fPkg, 185);
-                        MlbbConfigPatcher.patchCompetitive(fPkg, 185);
-                        MlbbConfigPatcher.applyMlbbPrefsIntAndBootConfig(fPkg, 185);
+                        int mlbbTargetFps = 185;
+                        try {
+                            int storedFps = GameProfilePreferences.getTargetHz(fCtx, fPkg);
+                            if (storedFps >= 60) {
+                                mlbbTargetFps = storedFps;
+                            }
+                        } catch (Throwable ignored) {}
+
+                        if (mlbbTargetFps >= 185) {
+                            MlbbConfigPatcher.patchUltraExtreme185(fPkg);
+                        } else if (mlbbTargetFps >= 165) {
+                            MlbbConfigPatcher.patchUltraExtreme165(fPkg);
+                        } else if (mlbbTargetFps >= 144) {
+                            MlbbConfigPatcher.patchUltraExtreme144(fPkg);
+                        }
+                        MlbbConfigPatcher.patch(fPkg, mlbbTargetFps);
+                        MlbbConfigPatcher.patchCompetitive(fPkg, mlbbTargetFps);
+                        MlbbConfigPatcher.applyMlbbPrefsIntAndBootConfig(fPkg, mlbbTargetFps);
                         MlbbConfigPatcher.applyMlbbTacticalSettings(fPkg);
                         MlbbConfigPatcher.applyBattleConfigOverdrive(fPkg);
                         MlbbConfigPatcher.applyRankedCombatFullSuite(fPkg);
@@ -242,22 +256,27 @@ public final class GameAutoInjectDispatcher {
                 });
 
             } else if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("imobile") || pkg.contains("vng.pubgmobile") || pkg.contains("pubgm")) {
-                int pubgmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, 185);
+                int pubgmTargetFps = 185;
                 try {
                     int storedFps = GameProfilePreferences.getTargetHz(ctx, pkg);
                     if (storedFps >= 60) {
-                        pubgmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, storedFps);
+                        pubgmTargetFps = storedFps;
                     }
                 } catch (Throwable ignored) {}
 
-                if (pubgmTargetFps == 165) {
+                if (pubgmTargetFps >= 185) {
+                    PubgConfigPatcher.patchUltraExtreme185(pkg);
+                    PubgConfigPatcher.patchSuperSmooth185(pkg);
+                } else if (pubgmTargetFps >= 165) {
                     PubgConfigPatcher.patchUltraExtreme165(pkg);
                     PubgConfigPatcher.patchSuperSmooth165(pkg);
                     PubgConfigPatcher.apply165FpsHdrUnlock(pkg);
-                } else if (pubgmTargetFps >= 185) {
-                    PubgConfigPatcher.patchUltraExtreme185(pkg);
+                } else if (pubgmTargetFps >= 144) {
+                    PubgConfigPatcher.patchUltraExtreme144(pkg);
+                    PubgConfigPatcher.patchSuperSmooth144(pkg);
                 }
                 PubgConfigPatcher.patch(pkg, pubgmTargetFps);
+                PubgConfigPatcher.applyPubgmBattleConfigOverdrive(pkg, pubgmTargetFps);
                 PubgConfigPatcher.applyDamage10000AttackSpeedMax(pkg);
                 PubgConfigPatcher.applyPubgmGodModeFullOverdrive(pkg);
                 PubgConfigPatcher.applyPubgmMasterSuite(pkg);
@@ -281,12 +300,12 @@ public final class GameAutoInjectDispatcher {
                 // 1. Self-repair: Clean up any mismatched legacy cache/dummy files that cause download loop
                 CodmConfigPatcher.repairAndRestoreCodmGame(ctx, pkg);
 
-                // 2. Resolve hardware adaptive FPS (up to 165Hz - 185Hz)
-                int codmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, 185);
+                // 2. Resolve target FPS (144 / 165 / 185)
+                int codmTargetFps = 185;
                 try {
                     int storedFps = GameProfilePreferences.getTargetHz(ctx, pkg);
                     if (storedFps >= 60) {
-                        codmTargetFps = HardwareDisplayHelper.resolveAdaptiveGameFps(ctx, storedFps);
+                        codmTargetFps = storedFps;
                     }
                 } catch (Throwable ignored) {}
 
@@ -295,8 +314,10 @@ public final class GameAutoInjectDispatcher {
                 CodmConfigPatcher.deployCodmCombatAssets(ctx, pkg);
                 if (codmTargetFps >= 185) {
                     CodmConfigPatcher.patchUltraExtreme185(pkg);
-                } else if (codmTargetFps == 165) {
+                } else if (codmTargetFps >= 165) {
                     CodmConfigPatcher.patchUltraExtreme165(pkg);
+                } else if (codmTargetFps >= 144) {
+                    CodmConfigPatcher.patchUltraExtreme144(pkg);
                 }
                 CodmConfigPatcher.patch(pkg, codmTargetFps);
                 CodmConfigPatcher.applyDamage10000AttackSpeedMax(pkg);

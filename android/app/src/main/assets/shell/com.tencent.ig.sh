@@ -20,7 +20,7 @@ done
 # ── Dynamic Refresh Rate Resolution ──────────────────────────────────────────
 TARGET_HZ="{TARGET_HZ}"
 case "$TARGET_HZ" in
-  *{*}*|"") TARGET_HZ=120 ;;
+  *{*}*|"") TARGET_HZ=185 ;;
 esac
 
 # ── Refresh Rate Unlock (PUBGM — UE4 FPS unlock) ──────────────────────────────

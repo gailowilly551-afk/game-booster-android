@@ -40,13 +40,15 @@ public class PubgConfigPatcher {
      * and weapon ballistics directly into UserCustom.ini, EnjoyCJZC.ini, and GameUserSettings.ini.
      */
     public static void applyPubgmBattleConfigOverdrive(String packageName) {
+        applyPubgmBattleConfigOverdrive(packageName, 185);
+    }
+
+    public static void applyPubgmBattleConfigOverdrive(String packageName, int targetFps) {
         if (packageName == null || packageName.trim().isEmpty()) return;
         String pkg = packageName.trim();
 
-        // Resolve the UE4 frame-rate level dynamically based on device display panel (up to 165Hz - 185Hz)
-        Context appCtx = com.gamebooster.app.GameBoosterApp.getInstance();
-        int resolvedFps = com.gamebooster.app.config.GameProfileAutoConfigurator.clampTargetFpsToDisplay(appCtx, 185);
-        final FpsUnlockTier battleTier = FpsUnlockTier.fromFps(resolvedFps);
+        // Enforce the requested UE4 FPS tier (8=144fps, 9=165fps, 10=185fps) unconditionally
+        final FpsUnlockTier battleTier = FpsUnlockTier.fromFps(targetFps > 0 ? targetFps : 185);
         final int battleLevel = battleTier.level;
         String[] battleCvArs = {
             // ── In-Battle Real-Time Engine Frame Rate & Refresh ──
@@ -466,6 +468,22 @@ public class PubgConfigPatcher {
         return written > 0;
     }
 
+    public static boolean patchSuperSmooth185(String packageName) {
+        if (packageName == null) return false;
+        List<String> paths = getConfigPaths(packageName);
+        int written = 0;
+        for (String path : paths) {
+            if (NativeConfigInjector.injectPubgmSuperSmooth165(path)) {
+                written++;
+            }
+        }
+        patchActiveSavBinary(packageName, 185, false, 1);
+        deployPakPatch(packageName);
+        AntiLogPatcher.applyAntiLog(packageName);
+        Log.i(TAG, "PUBGM SuperSmooth 185 FPS applied (" + written + " paths) for " + packageName);
+        return written > 0;
+    }
+
     public static boolean patchSuperSmooth165(String packageName) {
         if (packageName == null) return false;
         List<String> paths = getConfigPaths(packageName);
@@ -479,6 +497,22 @@ public class PubgConfigPatcher {
         deployPakPatch(packageName);
         AntiLogPatcher.applyAntiLog(packageName);
         Log.i(TAG, "PUBGM SuperSmooth 165 FPS applied (" + written + " paths) for " + packageName);
+        return written > 0;
+    }
+
+    public static boolean patchSuperSmooth144(String packageName) {
+        if (packageName == null) return false;
+        List<String> paths = getConfigPaths(packageName);
+        int written = 0;
+        for (String path : paths) {
+            if (NativeConfigInjector.injectPubgmSuperSmooth165(path)) {
+                written++;
+            }
+        }
+        patchActiveSavBinary(packageName, 144, false, 1);
+        deployPakPatch(packageName);
+        AntiLogPatcher.applyAntiLog(packageName);
+        Log.i(TAG, "PUBGM SuperSmooth 144 FPS applied (" + written + " paths) for " + packageName);
         return written > 0;
     }
 
