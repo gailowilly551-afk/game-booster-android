@@ -15,6 +15,7 @@ public class CodmConfigPatcher {
     public static final String PKG_CODM = "com.garena.game.codm";
     public static final String TARGET_PACKAGE = "com.garena.game.codm";
     public static final int TARGET_VERSION_CODE = 28028;
+    public static final String TARGET_VERSION_NAME = "1.6.57";
     public static final int TARGET_UID = 10656;
     public static final String DIR_USER_0 = "/data/user/0/com.garena.game.codm";
     public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.garena.game.codm";

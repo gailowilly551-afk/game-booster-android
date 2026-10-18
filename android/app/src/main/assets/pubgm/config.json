@@ -1,0 +1,64 @@
+
+{
+    "cdnvister":
+    {
+        "default_url":
+        {
+            "remoteConfigUrl":"https://gvoice-config.igamecj.com:443",
+            "logReportUrl":"https://127.0.0.1:443",
+            "voiceReportUrl":"https://reportcomplaintpubgm.iegcom.com:443",
+            "voiceTranslateUrl":"https://sg.api.translator.voice.gcloudsdk.com:443",
+            "voiceUrl":"udp://sg.voice.gcloudcs.com:8700",
+            "flqUrl":"udp://127.0.0.1:18301",
+            "voiceMessageUrl": "https://sg-offline.gcloud.gcloudsdk.com:443",
+            "dataReportUrl":"udp://qos.hk.gcloudcs.com:8011"
+        }
+    },
+    "tve":
+    {
+        "volume_scala" :
+        {
+            "HM NOTE 1TDXiaomi":30
+            ,"HUAWEI G750-T00Huawei":60
+            ,"Coolpad 8675-HDCoolpad":40
+            ,"HTC M8ehtc":60
+        ,"Nexus 4google":400
+        }
+        ,"delay_time" :
+        {
+            "2G":{
+                "max":1600
+                ,"default":600
+                ,"min":600
+            }
+            ,"3G":{
+                "max":1600
+                ,"default":600
+                ,"min":600
+            }
+            ,"4G":{
+                "max":1200
+                ,"default":400
+                ,"min":400
+            }
+            ,"WiFi":{
+                "max":1200
+                ,"default":300
+                ,"min":300
+            }
+            ,"unknown":{
+                "max":1200
+                ,"default":600
+                ,"min":600
+            }
+        }
+        ,"device_config":
+        {        
+        }
+    }
+    ,
+    "rstt": {
+        "rstt_max_record_seconds": 60
+    }
+
+}

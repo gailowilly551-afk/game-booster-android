@@ -70,8 +70,12 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         {"RecoilScaleJumping",      "0"},
         {"RecoilScaleCrouch",       "0"},
         {"RecoilScaleWalking",      "0"},
+        {"RecoilScaleWeaponShake",  "0"},
         // ── Zero Spread (GAS Inaccuracy & Dispersion Zeroed) ──
         {"WeaponSpread",            "0"},
+        {"ShotSpread",              "0"},
+        {"RandomShotSpread",        "0"},
+        {"CalcShotSpreadSize",      "0"},
         {"WeaponSway",              "0"},
         {"BulletSpreadScale",       "0"},
         {"SpreadDecayRate",         "10"},
