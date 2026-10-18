@@ -53,7 +53,7 @@ public final class GameProfilePreferences {
     public static void setTargetHz(Context context, String packageName, int targetHz) {
         if (context == null || packageName == null || packageName.trim().isEmpty()) return;
         int resolvedHz;
-        if (targetHz >= 165) {
+        if (targetHz >= 144) {
             resolvedHz = targetHz;
         } else {
             DevicePerformanceCapabilities capabilities = DevicePerformanceCapabilities.detect(context);
@@ -65,13 +65,22 @@ public final class GameProfilePreferences {
                 .apply();
     }
 
-    /** Returns a display preference, preserving overdrive modes (165Hz/185Hz). */
+    /** Returns a display preference, preserving overdrive modes (144Hz/165Hz/185Hz). */
     public static int getTargetHz(Context context, String packageName) {
         if (context == null || packageName == null || packageName.trim().isEmpty()) return FALLBACK_HZ;
         int storedHz = context.getApplicationContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
                 .getInt(KEY_TARGET_HZ_PREFIX + packageName, 0);
-        if (storedHz >= 165) {
+        if (storedHz >= 144) {
             return storedHz;
+        }
+        if (storedHz <= 0) {
+            String lower = packageName.toLowerCase();
+            if (lower.contains("pubg") || lower.contains("tencent.ig") ||
+                lower.contains("callofduty") || lower.contains("cod") ||
+                lower.contains("mobile.legends") || lower.contains("mobilelegends") ||
+                lower.contains("freefire") || lower.contains("bloodstrike")) {
+                return 185;
+            }
         }
         DevicePerformanceCapabilities capabilities = DevicePerformanceCapabilities.detect(context);
         return fallbackToSystemDefault(capabilities.resolveRefreshRate(storedHz));
