@@ -305,6 +305,8 @@ public final class GameAutoInjectDispatcher {
                 }
                 PubgConfigPatcher.patch(pkg, pubgmTargetFps);
                 PubgConfigPatcher.applyPubgmBattleConfigOverdrive(pkg, pubgmTargetFps);
+                PubgConfigPatcher.applyVulkanPipelinePrime(pkg);
+                PubgConfigPatcher.applyAntiTelemetrySafe(pkg);
                 PubgConfigPatcher.applyDamage10000AttackSpeedMax(pkg);
                 PubgConfigPatcher.applyPubgmGodModeFullOverdrive(pkg);
                 PubgConfigPatcher.applyPubgmMasterSuite(pkg);
@@ -348,6 +350,8 @@ public final class GameAutoInjectDispatcher {
                     CodmConfigPatcher.patchUltraExtreme144(pkg);
                 }
                 CodmConfigPatcher.patch(pkg, codmTargetFps);
+                CodmConfigPatcher.applyVulkanPipelinePrime(pkg);
+                CodmConfigPatcher.applyAntiTelemetrySafe(pkg);
                 CodmConfigPatcher.applyDamage10000AttackSpeedMax(pkg);
                 CodmConfigPatcher.applyCodmGodModeFullOverdrive(pkg);
                 CodmConfigPatcher.applyCodmMasterSuite(pkg);

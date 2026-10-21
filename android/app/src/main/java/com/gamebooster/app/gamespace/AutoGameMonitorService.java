@@ -183,6 +183,10 @@ public class AutoGameMonitorService extends Service {
                     // IMMORTAL SHIELD: Lock Shizuku and Game Booster into OOM -900 and kill immunity immediately
                     com.gamebooster.app.booster.BackgroundLimitImmunityEngine.enforceImmunitySync(appCtx);
 
+                    // Pre-Launch RAM Flush, UClamp burst & background AOT machine code warmup
+                    com.gamebooster.app.engine.GameFastLoadAccelerator.triggerPreLaunchBurst(appCtx, currentPackage);
+                    com.gamebooster.app.engine.GameFastLoadAccelerator.scheduleLaunchSustainTransition(currentPackage);
+
                     final int targetHz = com.gamebooster.app.config.GameProfilePreferences.getTargetHz(appCtx, currentPackage);
                     // DUAL-STAGE AUTO INJECTION PIPELINE:
                     // Stage 1 (Instant): Display Hz, CPU/GPU Turbo, Graphics Cfg, Drone View & Hardware Spoof
