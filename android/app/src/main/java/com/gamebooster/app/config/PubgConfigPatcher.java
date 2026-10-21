@@ -1067,7 +1067,7 @@ public class PubgConfigPatcher {
                     modified |= patchGvasIntProperty(data, "FpsLevelInLobby", effectiveFpsLevel);
                     modified |= patchGvasIntProperty(data, "FpsOption", effectiveFpsLevel);
                     modified |= patchGvasIntProperty(data, "SelectFps", effectiveFpsLevel);
-                    modified |= patchGvasIntProperty(data, "HighFPSMode", 6); // 6 = Ultra Extreme 2026 (max HighFPSMode)
+                    modified |= patchGvasIntProperty(data, "HighFPSMode", 1); // 1 = High FPS Mode enabled (UE4 canonical enum)
 
                     // Graphics unlocks (HDR vs Smooth)
                     modified |= patchGvasIntProperty(data, "BattleRenderQuality", effectiveQuality);
@@ -1469,7 +1469,7 @@ public class PubgConfigPatcher {
         String pkg = packageName.trim();
         boolean anySuccess = false;
 
-        String[] assetFiles = {"UserCustom.ini", "EnjoyCJZC.ini", "GameUserSettings.ini", "Active.sav"};
+        String[] assetFiles = {"UserCustom.ini", "EnjoyCJZC.ini", "GameUserSettings.ini"};
         String basePath = "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/";
 
         String doubleConfig = basePath + "ShadowTrackerExtra/Saved/Config/Android/";
@@ -1484,19 +1484,6 @@ public class PubgConfigPatcher {
             boolean isSav = file.endsWith(".sav");
             String path1 = isSav ? (doubleSave + file) : (doubleConfig + file);
             String path2 = isSav ? (singleSave + file) : (singleConfig + file);
-
-            // CRITICAL FIX: Active.sav contains the player's active session token, guest/OAuth login
-            // state and auth certificate. Overwriting Active.sav causes the game to enter an infinite
-            // loading spinner during login. NEVER overwrite Active.sav if it already exists;
-            // in-place byte patching via patchActiveSavBinary will be used instead.
-            if (file.equals("Active.sav")) {
-                boolean p1Exists = new File(path1).exists() || ShizukuFileManager.fileExists(path1);
-                boolean p2Exists = new File(path2).exists() || ShizukuFileManager.fileExists(path2);
-                if (p1Exists || p2Exists) {
-                    Log.i(TAG, "Active.sav exists for " + pkg + " — preserving session tokens; in-place binary patch will be used.");
-                    continue;
-                }
-            }
 
             // CRITICAL FIX: GameUserSettings.ini contains player credentials, control layouts,
             // sensitivity, and audio preferences. If it exists, patch only the graphics/FPS keys
@@ -1520,7 +1507,7 @@ public class PubgConfigPatcher {
                         "ArtQuality=1",
                         "ShadowQuality=1",
                         "MobileHDRMode=0",
-                        "HighFPSMode=6",
+                        "HighFPSMode=1",
                         "bUseHDRMode=False",
                         "bUseUltraExtreme=True",
                         "bFramePacingEnabled=True",

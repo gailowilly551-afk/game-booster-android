@@ -398,27 +398,26 @@ public final class GameLaunchShellExecutor {
         boolean pubgmModsEnabled = isPubgm
             && (profile.pubgmAimbot || profile.pubgmNoRecoil || profile.pubgmNoSpread
                 || profile.pubgmMagicBullet || profile.pubgmUltraDroneView
-                || profile.pubgmDamageLockMax || profile.pubgmFpsUnlock
-                || profile.pubgmAntiBan || profile.pubgmMidnightHuntersFix
-                || profile.pubgmVehicleOverride || profile.pubgmS32RankedSweep
-                || profile.pubgmCombatOverdrive || profile.pubgmSovereignOverdriveBypass);
+                || profile.pubgmDamageLockMax);
 
         if (!mlbbModsEnabled && !codmModsEnabled && !pubgmModsEnabled) {
-            Log.d(TAG, "[Phase5] No mods enabled for " + pkg + " — skipping injection");
+            Log.d(TAG, "[Phase5] No dynamic hook mods enabled for " + pkg + " — skipping Frida injection");
             return;
         }
 
-        Log.i(TAG, "💉 [Phase5] Frida injection starting for " + pkg);
+        Log.i(TAG, "💉 [Phase5] Scheduling safe post-login Frida injection for " + pkg);
 
-        // Start frida-server (idempotent — kills existing instance first)
-        GameModEngine.startFridaServer(ctx);
-
-        // Small delay to let frida-server bind before injecting
-        try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
-
-        // Apply mods (sets SystemProperties + injects script)
-        GameModEngine.applyMods(ctx, pkg, profile);
-
-        Log.i(TAG, "💉 [Phase5] Frida injection dispatched for " + pkg);
+        // Run Frida injection with sufficient delay (12s) so the game passes splash screen & login
+        AppExecutors.getInstance().executeCommand(() -> {
+            try {
+                Thread.sleep(12000);
+                GameModEngine.startFridaServer(ctx);
+                Thread.sleep(1000);
+                GameModEngine.applyMods(ctx, pkg, profile);
+                Log.i(TAG, "💉 [Phase5] Delayed Frida injection complete for " + pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "Delayed Frida injection error: " + t.getMessage());
+            }
+        });
     }
 }

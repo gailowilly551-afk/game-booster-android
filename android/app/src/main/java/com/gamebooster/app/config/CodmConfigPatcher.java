@@ -396,7 +396,7 @@ public class CodmConfigPatcher {
                 String configDir = root + "/files/Config";
                 String configDirLower = root + "/files/config";
 
-                // Remove stale AC token files and corrupting temp files
+                // Remove stale AC token files and corrupting temp files (NEVER delete MSDKConfig.ini, config.json, settings.xml or ConfigCache)
                 String[] toxicFiles = {
                     filesDir + "/acginf.dat",
                     filesDir + "/verifier",
@@ -407,19 +407,11 @@ public class CodmConfigPatcher {
                     configDir + "/__accfinfo.tsb",
                     configDir + "/__acinfo.tsb",
                     filesDir + "/app_pref.xml",
-                    // Clean up dummy/legacy assets that cause CDN hash mismatch and infinite download loop
+                    // Clean up dummy/legacy assets that cause CDN hash mismatch
                     configDir + "/.W6JBf0B",
                     configDirLower + "/.W6JBf0B",
                     configDir + "/GJmkJwm0gBq0fJ.rDfVJw",
-                    configDirLower + "/GJmkJwm0gBq0fJ.rDfVJw",
-                    filesDir + "/boot.config",
-                    configDir + "/boot.config",
-                    filesDir + "/MSDKConfig.ini",
-                    configDir + "/MSDKConfig.ini",
-                    filesDir + "/config.json",
-                    configDir + "/config.json",
-                    filesDir + "/settings.xml",
-                    configDir + "/settings.xml"
+                    configDirLower + "/GJmkJwm0gBq0fJ.rDfVJw"
                 };
                 for (String toxic : toxicFiles) {
                     try {
@@ -428,11 +420,9 @@ public class CodmConfigPatcher {
                     } catch (Throwable ignored) {}
                 }
 
-                // Remove mismatched ConfigCache directory and unlock any immutable locks
-                String shellCleanup = "rm -rf '" + configDir + "/ConfigCache' 2>/dev/null; "
-                                    + "rm -rf '" + configDirLower + "/ConfigCache' 2>/dev/null; "
-                                    + "chattr -R -i '" + root + "/files' 2>/dev/null; "
-                                    + "chmod -R 777 '" + root + "/files' 2>/dev/null; ";
+                // Unlock any immutable locks and ensure full read/write permissions
+                String shellCleanup = "chattr -R -i '" + root + "/files' 2>/dev/null; "
+                                    + "chmod -R 775 '" + root + "/files' 2>/dev/null; ";
                 try {
                     if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
                         com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellCleanup);

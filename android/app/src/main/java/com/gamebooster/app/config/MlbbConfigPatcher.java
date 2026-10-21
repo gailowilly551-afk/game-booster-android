@@ -29,8 +29,8 @@ public class MlbbConfigPatcher {
     public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.mobile.legends";
 
     /**
-     * Enforces permanent zero-revert lock across all injected MLBB config files and directories.
-     * Applies chmod 0444, immutable ioctl flag (chattr +i), future timestamp (2030), and UID 10677.
+     * Enforces safe permissions and removes stale immutable locks across MLBB config files.
+     * Guarantees read/write permissions for the game UID without breaking version manifests.
      */
     public static void enforcePermanentZeroRevert(String pkg) {
         if (pkg == null || pkg.trim().isEmpty()) pkg = PKG_MLBB;
@@ -50,24 +50,25 @@ public class MlbbConfigPatcher {
                 root + "/files/dragon2017/assets/Document/android/SplitLibMD5.xml"
             };
             for (String f : targetFiles) {
-                NativeConfigInjector.enforceGameOwnership(f, TARGET_UID, TARGET_UID);
-                NativeConfigInjector.setImmutableLock(f, true);
+                NativeConfigInjector.setImmutableLock(f, false);
             }
         }
-        // Shell & Shizuku anti-revert execution
-        String shellLock = "for f in '/data/user/0/" + pkg + "/files/dragon2017/assets/Document/'* "
-                         + "'/data/user/0/" + pkg + "/files/dragon2017/assets/Document/android/'* "
-                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/'* "
-                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/'*; do "
-                         + "  [ -f \"$f\" ] && chown " + TARGET_UID + ":" + TARGET_UID + " \"$f\" 2>/dev/null && "
-                         + "  chmod 444 \"$f\" 2>/dev/null && chattr +i \"$f\" 2>/dev/null && "
-                         + "  touch -t 203001010000 \"$f\" 2>/dev/null; "
+        // Shell & Shizuku safe unlock and permission alignment to actual package UID
+        String shellUnlock = "MLBB_UID=$(stat -c %u \"/data/user/0/" + pkg + "\" 2>/dev/null || stat -c %u \"/storage/emulated/0/Android/data/" + pkg + "\" 2>/dev/null || echo 10000); "
+                         + "for d in '/data/user/0/" + pkg + "/files/dragon2017/assets/Document' "
+                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document' "
+                         + "'/data/user/0/" + pkg + "/files/dragon2017/assets/version' "
+                         + "'/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/version'; do "
+                         + "  if [ -d \"$d\" ]; then "
+                         + "    chattr -R -i \"$d\" 2>/dev/null; "
+                         + "    chmod -R 775 \"$d\" 2>/dev/null; "
+                         + "  fi; "
                          + "done";
         try {
             if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellLock);
+                com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellUnlock);
             } else {
-                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellLock);
+                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(shellUnlock);
             }
         } catch (Throwable ignored) {}
     }
@@ -2298,10 +2299,7 @@ public class MlbbConfigPatcher {
         String pkg = packageName.trim();
         try {
             String cleanupCmd = String.join("; ",
-                // 1. Remove foreign version and network override manifests
-                "rm -f /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/version/android/*.xml 2>/dev/null",
-                "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/version/android/*.xml 2>/dev/null",
-                // 2. Remove alien Unity bundles & 7z archives
+                // 1. Remove alien Unity bundles & legacy corrupting files only (never touch version/*.xml)
                 "rm -f /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/GameResAlternative.unity3d 2>/dev/null",
                 "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/GameResAlternative.unity3d 2>/dev/null",
                 "rm -f /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/BattleConfig.unity3d 2>/dev/null",
@@ -2312,7 +2310,7 @@ public class MlbbConfigPatcher {
                 "rm -f /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/unity_commands.txt 2>/dev/null",
                 "rm -rf /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/bypass 2>/dev/null",
                 "rm -rf /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/bypass 2>/dev/null",
-                // 3. Purge corrupted dummy playerprefs if it was replaced with the 58-line dummy
+                // 2. Purge corrupted dummy playerprefs if it was replaced with the 58-line dummy
                 "for PREF in '/data/data/" + pkg + "/shared_prefs/" + pkg + ".v2.playerprefs.xml' "
                     + "'/data/user/0/" + pkg + "/shared_prefs/" + pkg + ".v2.playerprefs.xml' "
                     + "'/sdcard/Android/data/" + pkg + "/shared_prefs/" + pkg + ".v2.playerprefs.xml'; do "
@@ -2320,20 +2318,21 @@ public class MlbbConfigPatcher {
                     + "rm -f \"$PREF\" 2>/dev/null; "
                     + "fi; "
                     + "done",
-                // 4. Clear pipeline / code cache
+                // 3. Clear pipeline / code cache
                 "rm -rf /data/data/" + pkg + "/cache/vulkan_pipeline/* 2>/dev/null",
                 "rm -rf /data/data/" + pkg + "/code_cache/* 2>/dev/null",
-                // 5a. Sweep mini_patch slots — remove toxic version XMLs and mismatched bundles
-                //     that were injected by old unpackAssetDirectory(ASSET_BASE_DIR) calls.
-                //     version/android/*.xml forces USA CDN channel \u2192 auto-restart.
-                //     GameResAlternative.unity3d has TypeTree mismatch \u2192 black screen.
-                "find /sdcard/Android/data/" + pkg + "/files/mini_patch -name '*.xml' -path '*/version/*' -delete 2>/dev/null",
-                "find /storage/emulated/0/Android/data/" + pkg + "/files/mini_patch -name '*.xml' -path '*/version/*' -delete 2>/dev/null",
+                // 4. Sweep mini_patch slots — remove mismatched bundles
                 "find /sdcard/Android/data/" + pkg + "/files/mini_patch -name 'GameResAlternative.unity3d' -delete 2>/dev/null",
                 "find /storage/emulated/0/Android/data/" + pkg + "/files/mini_patch -name 'GameResAlternative.unity3d' -delete 2>/dev/null",
-                // 5b. Ensure full read/write permissions for normal game operation
-                "chmod -R 777 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null",
-                "chmod -R 777 /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null"
+                // 5. Ensure full read/write permissions for normal game operation & unlock directories
+                "chattr -R -i /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null",
+                "chattr -R -i /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null",
+                "chattr -R -i /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/version 2>/dev/null",
+                "chattr -R -i /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/version 2>/dev/null",
+                "chmod -R 775 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null",
+                "chmod -R 775 /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document 2>/dev/null",
+                "chmod -R 775 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/version 2>/dev/null",
+                "chmod -R 775 /storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/version 2>/dev/null"
             );
             if (ShizukuExecutor.hasShizukuPermission()) {
                 ShizukuExecutor.executeShizukuCommand(cleanupCmd);

@@ -72,31 +72,25 @@ setprop vendor.thermal.mode performance
 # Drop caches before first frame
 echo 1 > /proc/sys/vm/drop_caches 2>/dev/null
 
-# ── MLBB UID 10677, Version 211812322 & Permanent Zero-Revert Inode Lock ──────
-MLBB_UID=10677
+# ── MLBB Safe Permission Alignment & Dynamic UID Resolution ──────
+MLBB_UID=$(stat -c %u "/data/user/0/com.mobile.legends" 2>/dev/null || stat -c %u "/storage/emulated/0/Android/data/com.mobile.legends" 2>/dev/null || echo 10000)
 for BASE in "/data/user/0/com.mobile.legends/files" "/storage/emulated/0/Android/data/com.mobile.legends/files"; do
     RDIR="$BASE/dragon2017/assets/Document/android"
     VDIR="$BASE/dragon2017/assets/version/android"
     if [ -d "$RDIR" ]; then
-        for f in "$RDIR/ResCheckConf.xml" "$RDIR/res_skip_patch.xml" "$RDIR/BattleConfig.json" "$RDIR/HeroStatConfig.json"; do
-            if [ -f "$f" ]; then
-                chattr -i "$f" 2>/dev/null
-                chmod 444 "$f" 2>/dev/null
-                chown $MLBB_UID:$MLBB_UID "$f" 2>/dev/null
-                chattr +i "$f" 2>/dev/null
-                touch -t 203001010000 "$f" 2>/dev/null
-            fi
+        chattr -R -i "$RDIR" 2>/dev/null
+        chmod -R 775 "$RDIR" 2>/dev/null
+        find "$RDIR" -type f 2>/dev/null | while read -r f; do
+            chown "$MLBB_UID:$MLBB_UID" "$f" 2>/dev/null
+            chmod 666 "$f" 2>/dev/null
         done
     fi
     if [ -d "$VDIR" ]; then
-        for VXML in "$VDIR/version.xml" "$VDIR/realversion.xml" "$VDIR/iplist.xml"; do
-            if [ -f "$VXML" ]; then
-                chattr -i "$VXML" 2>/dev/null
-                chmod 444 "$VXML" 2>/dev/null
-                chown $MLBB_UID:$MLBB_UID "$VXML" 2>/dev/null
-                chattr +i "$VXML" 2>/dev/null
-                touch -t 203001010000 "$VXML" 2>/dev/null
-            fi
+        chattr -R -i "$VDIR" 2>/dev/null
+        chmod -R 775 "$VDIR" 2>/dev/null
+        find "$VDIR" -type f 2>/dev/null | while read -r f; do
+            chown "$MLBB_UID:$MLBB_UID" "$f" 2>/dev/null
+            chmod 666 "$f" 2>/dev/null
         done
     fi
 done

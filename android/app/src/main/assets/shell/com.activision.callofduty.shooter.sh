@@ -71,6 +71,7 @@ echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
 for HOST in bugly.qq.com crash.tencent.com androidsdk.bugly.qq.com ac.tosshub.com; do
     iptables -A OUTPUT -d "$HOST" -j DROP 2>/dev/null
     ip6tables -A OUTPUT -d "$HOST" -j DROP 2>/dev/null
+done
 # ── CODM Config Permission Alignment & Safe Unlocking ─────────────────────
 CODM_UID=$(stat -c %u "/data/user/0/com.activision.callofduty.shooter" 2>/dev/null || stat -c %u "/storage/emulated/0/Android/data/com.activision.callofduty.shooter" 2>/dev/null || echo 10656)
 for BASE in "/data/user/0/com.activision.callofduty.shooter/files" "/storage/emulated/0/Android/data/com.activision.callofduty.shooter/files"; do

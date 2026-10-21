@@ -148,12 +148,9 @@ public final class BotLobbyRankMatchEngine {
     public static void applyMatchmakingNetworkQoS(Context context) {
         try {
             PrivilegeBridgeEngine.executePrivileged(
-                // 1. Flush stale DNS resolvers and pin ultra-low jitter resolvers
-                "ndc resolver flushdefaultif 2>/dev/null; " +
-                "ndc resolver clearnetdns 2>/dev/null; " +
-                "ndc resolver setnetdns 100 1.1.1.1 8.8.8.8 2>/dev/null; " +
-                "setprop net.dns1 1.1.1.1; " +
-                "setprop net.dns2 8.8.8.8; " +
+                // 1. Safe DNS property hints without wiping active resolver tables
+                "setprop net.dns1 1.1.1.1 2>/dev/null; " +
+                "setprop net.dns2 8.8.8.8 2>/dev/null; " +
                 "setprop net.rmnet0.dns1 1.1.1.1; " +
                 "setprop net.rmnet0.dns2 8.8.8.8; " +
                 // 2. Wi-Fi Never Sleep during matchmaking queue
