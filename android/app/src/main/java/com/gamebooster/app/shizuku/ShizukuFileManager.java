@@ -50,6 +50,16 @@ public final class ShizukuFileManager {
     }
 
     /**
+     * Dispatches command through Shizuku elevated shell if available, falling back to standard shell.
+     */
+    public static String executePrivileged(String cmd) {
+        if (ShizukuExecutor.hasShizukuPermission()) {
+            return ShizukuExecutor.executeShizukuCommand(cmd);
+        }
+        return CommandExecutor.executeSystemCommand(cmd);
+    }
+
+    /**
      * Checks if a file or directory exists at the given path.
      */
     public static boolean fileExists(String path) {
@@ -62,7 +72,7 @@ public final class ShizukuFileManager {
                 return ShizukuUserServiceConnector.getInstance().fileExists(path);
             }
 
-            String res = CommandExecutor.executeSystemCommand("test -e '" + path + "' && echo EXISTS");
+            String res = executePrivileged("test -e '" + path + "' && echo EXISTS");
             return res != null && res.contains("EXISTS");
         } catch (Throwable t) {
             Log.w(TAG, "fileExists exception for " + path, t);
@@ -79,7 +89,7 @@ public final class ShizukuFileManager {
             File localFile = new File(path);
             if (localFile.isDirectory()) return true;
 
-            String res = CommandExecutor.executeSystemCommand("test -d '" + path + "' && echo IS_DIR");
+            String res = executePrivileged("test -d '" + path + "' && echo IS_DIR");
             return res != null && res.contains("IS_DIR");
         } catch (Throwable t) {
             Log.w(TAG, "isDirectory exception for " + path, t);
@@ -115,14 +125,8 @@ public final class ShizukuFileManager {
             }
 
             String cmd = "mkdir -p '" + dirPath + "' && chmod 777 '" + dirPath + "'";
-            if (hasFullAccess()) {
-                String res = CommandExecutor.executeSystemCommand(cmd);
-                return res != null && !res.toLowerCase().contains("error");
-            } else {
-                dir.mkdirs();
-                CommandExecutor.executeSystemCommand(cmd);
-                return dir.exists();
-            }
+            String res = executePrivileged(cmd);
+            return res != null && !res.toLowerCase().contains("error");
         } catch (Throwable t) {
             Log.w(TAG, "makeDirectory exception for " + dirPath, t);
             return false;
@@ -189,7 +193,7 @@ public final class ShizukuFileManager {
             String writeCmd = "echo '" + b64 + "' | base64 -d > '" + path + "' && chmod " + mode + " '" + path + "'";
 
             if (hasFullAccess()) {
-                String res = CommandExecutor.executeSystemCommand(writeCmd);
+                String res = executePrivileged(writeCmd);
                 boolean ok = res != null && !res.toLowerCase().contains("error");
                 if (ok) {
                     Log.d(TAG, "writeFile SUCCESS: " + path + " (" + bytes.length + " bytes, mode=" + mode + ")");
@@ -199,7 +203,7 @@ public final class ShizukuFileManager {
                     return FileOpResult.fail(path, "Write failed: " + res);
                 }
             } else {
-                String res = CommandExecutor.executeSystemCommand(writeCmd);
+                String res = executePrivileged(writeCmd);
                 File testF = new File(path);
                 if (testF.exists() && testF.length() > 0) {
                     Log.d(TAG, "writeFile via CommandExecutor SUCCESS: " + path);
@@ -272,7 +276,7 @@ public final class ShizukuFileManager {
         }
 
         String moveCmd = "mv -f '" + tmpPath + "' '" + path + "' && chmod " + (chmodMode != null ? chmodMode : "666") + " '" + path + "'";
-        String res = CommandExecutor.executeSystemCommand(moveCmd);
+        String res = executePrivileged(moveCmd);
         boolean ok = res != null && !res.toLowerCase().contains("error");
         if (!ok) {
             deleteFile(tmpPath);
@@ -293,7 +297,7 @@ public final class ShizukuFileManager {
         try {
             ensureParentDirectory(destDir);
             String cmd = "cp -rf '" + srcDir + "/.' '" + destDir + "/' && chmod -R 777 '" + destDir + "'";
-            String res = CommandExecutor.executeSystemCommand(cmd);
+            String res = executePrivileged(cmd);
             return res != null && !res.toLowerCase().contains("error");
         } catch (Throwable t) {
             Log.w(TAG, "copyDirectory exception: " + srcDir + " -> " + destDir, t);
@@ -322,7 +326,7 @@ public final class ShizukuFileManager {
                 } catch (Throwable ignored) {}
             }
 
-            String res = CommandExecutor.executeSystemCommand("cat '" + path + "'");
+            String res = executePrivileged("cat '" + path + "'");
             if (res != null && !res.startsWith("ERROR:")) {
                 return res;
             }
@@ -341,7 +345,7 @@ public final class ShizukuFileManager {
 
         try {
             String cmd = "base64 -w0 '" + path + "' 2>/dev/null";
-            String res = CommandExecutor.executeSystemCommand(cmd);
+            String res = executePrivileged(cmd);
             if (res != null && !res.startsWith("ERROR:") && !res.trim().isEmpty()) {
                 return Base64.decode(res.trim(), Base64.DEFAULT);
             }
@@ -368,7 +372,7 @@ public final class ShizukuFileManager {
             String safeReplace = replacement.replace("'", "'\\''");
             String sedCmd = "sed -i 's/" + safeSearch + "/" + safeReplace + "/g' '" + path + "' && chmod 666 '" + path + "'";
 
-            String res = CommandExecutor.executeSystemCommand(sedCmd);
+            String res = executePrivileged(sedCmd);
             boolean ok = res != null && !res.toLowerCase().contains("error");
             return ok ? FileOpResult.ok(path, "File edited successfully via sed")
                       : FileOpResult.fail(path, "Sed edit failed: " + res);
@@ -402,15 +406,10 @@ public final class ShizukuFileManager {
         }
         ensureParentDirectory(path);
         String cmd = "touch '" + path + "' && chmod 666 '" + path + "'";
-        if (hasFullAccess()) {
-            String res = ShizukuExecutor.executeShizukuCommand(cmd);
-            return res != null && !res.toLowerCase().contains("error")
-                    ? FileOpResult.ok(path, "File created (touched)")
-                    : FileOpResult.fail(path, "Touch failed: " + res);
-        } else {
-            CommandExecutor.executeSystemCommand(cmd);
-            return FileOpResult.ok(path, "File created (touched)");
-        }
+        String res = executePrivileged(cmd);
+        return res != null && !res.toLowerCase().contains("error")
+                ? FileOpResult.ok(path, "File created (touched)")
+                : FileOpResult.fail(path, "Touch failed: " + res);
     }
 
     /**
@@ -472,14 +471,17 @@ public final class ShizukuFileManager {
             }
         } catch (Throwable ignored) {}
 
-        // Strategy 1: Staged Copy via App's accessible storage
+        // Strategy 1: Staged Copy via App's accessible storage or /data/local/tmp
         // Completely bypasses shell command-line size limits (ARG_MAX) for files of any size (e.g. 690KB BattleSystemConfig)
         try {
             Context ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
             if (ctx == null) {
                 ctx = com.gamebooster.app.GameBoosterApp.getInstance();
             }
-            File stageDir = ctx != null ? ctx.getExternalFilesDir(null) : null;
+            File stageDir = new File("/data/local/tmp");
+            if (!stageDir.exists() || !stageDir.canWrite()) {
+                stageDir = ctx != null ? ctx.getExternalFilesDir(null) : null;
+            }
             if (stageDir == null && ctx != null) {
                 stageDir = ctx.getFilesDir();
             }
@@ -490,7 +492,8 @@ public final class ShizukuFileManager {
                     fos.write(data);
                     fos.flush();
                 }
-                stageFile.setReadable(true, true);
+                stageFile.setReadable(true, false);
+                stageFile.setWritable(true, false);
 
                 String cpCmd = "mkdir -p \"$(dirname '" + targetProtectedPath + "')\" && cp -f '" 
                         + stageFile.getAbsolutePath() + "' '" + targetProtectedPath + "'; chmod " + mode + " '" + targetProtectedPath + "' 2>/dev/null; [ -f '" + targetProtectedPath + "' ] && echo UPLOAD_OK";
@@ -528,7 +531,9 @@ public final class ShizukuFileManager {
             try {
                 String b64 = Base64.encodeToString(data, Base64.NO_WRAP);
                 String cmd = "mkdir -p \"$(dirname '" + targetProtectedPath + "')\" && echo '" + b64 + "' | base64 -d > '" + targetProtectedPath + "' && chmod " + mode + " '" + targetProtectedPath + "'";
-                String res = CommandExecutor.executeSystemCommand(cmd);
+                String res = ShizukuExecutor.hasShizukuPermission()
+                        ? ShizukuExecutor.executeShizukuCommand(cmd)
+                        : CommandExecutor.executeSystemCommand(cmd);
                 File target = new File(targetProtectedPath);
                 if (target.exists() && target.length() == data.length) {
                     return FileOpResult.ok(targetProtectedPath, "Uploaded " + data.length + " bytes to " + targetProtectedPath);
@@ -550,7 +555,7 @@ public final class ShizukuFileManager {
                 fos.flush();
             }
             try {
-                CommandExecutor.executeSystemCommand("chmod " + mode + " '" + targetProtectedPath + "'");
+                executePrivileged("chmod " + mode + " '" + targetProtectedPath + "'");
             } catch (Throwable ignored) {}
             if (f.exists() && f.length() == data.length) {
                 return FileOpResult.ok(targetProtectedPath, "Uploaded bytes directly");
@@ -602,7 +607,7 @@ public final class ShizukuFileManager {
         String b64 = Base64.encodeToString(textToAppend.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
         String cmd = "echo '" + b64 + "' | base64 -d >> '" + path + "' && chmod 666 '" + path + "'";
 
-        String res = CommandExecutor.executeSystemCommand(cmd);
+        String res = executePrivileged(cmd);
         return res != null && !res.toLowerCase().contains("error")
                 ? FileOpResult.ok(path, "Appended text to " + path)
                 : FileOpResult.fail(path, "Append failed: " + res);
