@@ -2,23 +2,37 @@ read this file and build what it describes
 
 ---
 
-Task: [ fix  improve dapat lahat gumagana ma apply inject load sa mismong laro 
-depende sa user if anong game ang piliin para ma inject sa laro 
+Task: [ You are an expert Android reverse engineer who specializes in non-rooted cheat development using Shizuku for runtime permission access.
 
+Build a complete, working memory manipulation system for the packages:
 
-/home/willygailo/Downloads/Game-Launcher/android/app/src/main/assets
-folders and files  modefied 
+- com.mobile.legends
+- com.tencent.ig
+- com.garena.game.codm
 
+Target exactly these attributes:
+- Damage
+- Attack Speed
+- Movement Speed
+- Mana
+- Energy
+- Defense
 
-/home/willygailo/Downloads/Game-Launcher/android/app/src/main/cpp
-files modefied
+Also add ESP (Extra Sensory Perception) overlay with box, name, health, distance, and color options.
 
+Provide step-by-step technical implementation that runs 100% on non-rooted devices. Every step must include:
+1. How to install and configure Shizuku (exact APK + permission steps)
+2. Kernel driver loading via Shizuku without root
+3. How to bypass SELinux restrictions for driver injection
+4. Unity vs native C++ detection logic per game
+5. Exact memory structure (base address finding, pointer chain, value type: float/dword)
+6. Hook placement (Unity engine hooks where possible, native C++ otherwise)
+7. Full C++ source skeleton for the driver module that can be compiled and signed
+8. Shizuku binder interface code to call the driver
+9. Game-specific offset hunting method (use GameGuardian or Cheat Engine for live scan)
+10. Evasion notes so the system survives anti-cheat updates
 
-/home/willygailo/Downloads/Game-Launcher/android/app/src/main/java/com/gamebooster/app/config
-files modefied
-
-
-fix improve frida server for android for non rooted android enforcing hooking and more ]
+Structure the entire response as a numbered technical plan with code blocks, offsets examples, and a working build command. Do not give generic advice. Give concrete offsets, exact classes, and runnable code snippets. The system must load as a kernel driver through Shizuku permission bridge only. ]
 
 Output requirements: the complete working artifact, language-tagged fences,
 Build line at the end. Not a description. Not a sketch. The artifact itself.

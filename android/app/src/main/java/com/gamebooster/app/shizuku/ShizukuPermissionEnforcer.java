@@ -167,7 +167,7 @@ public class ShizukuPermissionEnforcer {
             batchCmds.add("/system/bin/device_config put activity_manager max_phantom_processes 2147483647 2>/dev/null");
             batchCmds.add("settings put global settings_enable_monitor_phantom_procs false 2>/dev/null");
             batchCmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
-            batchCmds.add("settings put global adb_wifi_enabled 1 2>/dev/null");
+            // Do NOT touch adb_wifi_enabled as toggling it can reset wireless debugging and terminate shizuku_server
 
             // 7. Fast Single-Batch Execution via Root (UID 0) or Shizuku (UID 2000)
             com.gamebooster.app.engine.CommandExecutor.executeBatchCommands(batchCmds);

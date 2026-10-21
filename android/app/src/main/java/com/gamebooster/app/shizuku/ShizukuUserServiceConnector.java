@@ -67,7 +67,7 @@ public class ShizukuUserServiceConnector {
             } catch (Throwable ignored) {}
         }
         try {
-            Shizuku.unbindUserService(serviceArgs, serviceConnection, true);
+            Shizuku.unbindUserService(serviceArgs, serviceConnection, false);
         } catch (Throwable ignored) {}
         userServiceInstance = null;
         isBinding = false;
@@ -213,7 +213,7 @@ public class ShizukuUserServiceConnector {
             }
             Log.w(TAG, "Bind stuck > " + BIND_STUCK_TIMEOUT_MS + "ms — forcing clean rebind");
             try {
-                Shizuku.unbindUserService(serviceArgs, serviceConnection, true);
+                Shizuku.unbindUserService(serviceArgs, serviceConnection, false);
             } catch (Throwable ignored) {}
             isBinding = false;
         }
@@ -239,7 +239,7 @@ public class ShizukuUserServiceConnector {
                 userServiceInstance.asBinder().unlinkToDeath(deathRecipient, 0);
             } catch (Throwable ignored) {}
             try {
-                Shizuku.unbindUserService(serviceArgs, serviceConnection, true);
+                Shizuku.unbindUserService(serviceArgs, serviceConnection, false);
                 Log.d(TAG, "Shizuku UserService unbound.");
             } catch (Exception e) {
                 Log.e(TAG, "Error unbinding Shizuku UserService", e);

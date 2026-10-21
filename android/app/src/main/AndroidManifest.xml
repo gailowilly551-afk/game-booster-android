@@ -319,6 +319,16 @@
                 android:value="Virtual shoulder trigger air keys" />
         </service>
 
+        <service
+            android:name="com.gamebooster.app.overlay.EspOverlayService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Extra sensory perception visual HUD overlay" />
+        </service>
+
         <receiver
             android:name="com.gamebooster.app.gamemanager.GameManagerScanBroadcast"
             android:enabled="true"

@@ -8,12 +8,9 @@ import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.Constructor;
-
 import moe.shizuku.server.IRemoteProcess;
 import moe.shizuku.server.IShizukuService;
 import rikka.shizuku.Shizuku;
-import rikka.shizuku.ShizukuRemoteProcess;
 
 public class ShizukuExecutor {
 
@@ -88,34 +85,30 @@ public class ShizukuExecutor {
             return "ERROR: No elevated channel available (Shizuku binder dead, rish unavailable)";
         }
 
-        // Tier 1: Direct native Shizuku Server Binder remote process execution (Zero overhead, works on all devices)
+        // Tier 1: IShizukuService AIDL direct remote process execution (v11/v12/v13/v13.6 compatible)
         if (hasShizukuPermission()) {
-            Process process = null;
-            try {
-                IBinder binder = Shizuku.getBinder();
-                if (binder != null && binder.isBinderAlive()) {
+            IBinder binder = Shizuku.getBinder();
+            if (binder != null && binder.isBinderAlive()) {
+                IRemoteProcess remoteProcess = null;
+                try {
                     IShizukuService service = IShizukuService.Stub.asInterface(binder);
                     if (service != null) {
-                        IRemoteProcess remoteProcess = service.newProcess(new String[]{"sh", "-c", command}, null, null);
+                        remoteProcess = service.newProcess(new String[]{"sh", "-c", command}, null, null);
                         if (remoteProcess != null) {
-                            Constructor<ShizukuRemoteProcess> c =
-                                    ShizukuRemoteProcess.class.getDeclaredConstructor(IRemoteProcess.class);
-                            c.setAccessible(true);
-                            process = c.newInstance(remoteProcess);
-                            String res = readProcessOutput(process, 8000L);
+                            String res = readRemoteProcessOutput(remoteProcess, 8000L);
                             if (res != null && !res.startsWith("ERROR: Command timed out")) {
                                 return res;
                             }
                         }
                     }
-                }
-            } catch (Throwable e) {
-                Log.w(TAG, "Shizuku IShizukuService.newProcess execution failed: " + e.getMessage());
-            } finally {
-                if (process != null) {
-                    try {
-                        process.destroy();
-                    } catch (Throwable ignored) {}
+                } catch (Throwable e) {
+                    Log.w(TAG, "IShizukuService.newProcess execution failed: " + e.getMessage());
+                } finally {
+                    if (remoteProcess != null) {
+                        try {
+                            remoteProcess.destroy();
+                        } catch (Throwable ignored) {}
+                    }
                 }
             }
 
@@ -250,6 +243,83 @@ public class ShizukuExecutor {
         t.setDaemon(true);
         return t;
     });
+
+    public static String readRemoteProcessOutput(IRemoteProcess remoteProcess, long timeoutMs) {
+        if (remoteProcess == null) return "ERROR: RemoteProcess is null";
+        final StringBuffer stdout = new StringBuffer();
+        final StringBuffer stderr = new StringBuffer();
+
+        java.util.concurrent.Future<?> outFuture = PROCESS_IO_POOL.submit(() -> {
+            try {
+                android.os.ParcelFileDescriptor pfd = remoteProcess.getInputStream();
+                if (pfd != null) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            new android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd), java.nio.charset.StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            stdout.append(line).append("\n");
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {}
+        });
+
+        java.util.concurrent.Future<?> errFuture = PROCESS_IO_POOL.submit(() -> {
+            try {
+                android.os.ParcelFileDescriptor pfd = remoteProcess.getErrorStream();
+                if (pfd != null) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            new android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd), java.nio.charset.StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            stderr.append(line).append("\n");
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {}
+        });
+
+        final int[] exitCodeHolder = new int[]{-1};
+        java.util.concurrent.Future<?> waitFuture = PROCESS_IO_POOL.submit(() -> {
+            try {
+                exitCodeHolder[0] = remoteProcess.waitFor();
+            } catch (Throwable ignored) {}
+        });
+
+        try {
+            waitFuture.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.TimeoutException te) {
+            try {
+                remoteProcess.destroy();
+            } catch (Throwable ignored) {}
+            outFuture.cancel(true);
+            errFuture.cancel(true);
+            waitFuture.cancel(true);
+            return "ERROR: Command timed out after " + timeoutMs + "ms";
+        } catch (Throwable t) {
+            try {
+                remoteProcess.destroy();
+            } catch (Throwable ignored) {}
+            return "ERROR: " + t.getMessage();
+        }
+
+        try {
+            outFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            errFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (Throwable ignored) {}
+
+        String stdoutStr = stdout.toString().trim();
+        String stderrStr = stderr.toString().trim();
+        int exitCode = exitCodeHolder[0];
+
+        if (exitCode == 0) {
+            return stdoutStr.isEmpty() ? "SUCCESS" : stdoutStr;
+        } else if (!stderrStr.isEmpty()) {
+            return "ERROR: " + stderrStr;
+        } else {
+            return stdoutStr.isEmpty() ? "ERROR: Exit code " + exitCode : stdoutStr;
+        }
+    }
 
     public static String readProcessOutput(Process process, long timeoutMs) {
         if (process == null) return "ERROR: Process is null";
