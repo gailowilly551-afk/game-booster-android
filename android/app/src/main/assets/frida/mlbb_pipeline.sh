@@ -53,10 +53,10 @@ do_frida() {
     run_cmd "setprop gamebooster.mlbb.def 2.0"
     run_cmd "setprop gamebooster.mlbb.cdr 40"
     run_cmd "setprop gamebooster.mlbb.drone 30"
-    run_cmd "setprop gamebooster.mlbb.fps 120"
+    run_cmd "setprop gamebooster.mlbb.fps \${TARGET_HZ:-185}"
     run_cmd "setprop gamebooster.mlbb.antiban 1"
     run_cmd "setprop gamebooster.mlbb.nocool 1"
-    echo "[✓] Combat properties active (MapHack, 3x Dmg, 2x ASPD, 120 FPS, 3X Drone)"
+    echo "[✓] Combat properties active (MapHack, 3x Dmg, 2x ASPD, 185 FPS, 3X Drone)"
 
     # Check and launch frida-server in background if present
     if run_cmd "[ -f $FRIDA_SERVER ]"; then

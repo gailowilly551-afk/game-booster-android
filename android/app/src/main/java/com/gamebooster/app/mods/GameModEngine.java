@@ -90,15 +90,34 @@ public final class GameModEngine {
         }
     }
 
-    /** Start frida-server in background on device (requires root/Shizuku). */
+    /** Start frida-server in background on device (requires root/Shizuku). Polls until responsive. */
     public static void startFridaServer(Context ctx) {
         AppExecutors.getInstance().executeCommand(() -> {
             try {
                 deployFridaServer(ctx);
+                // Check if already running and responsive
+                String running = execOutput("pgrep -f frida-server 2>/dev/null || pidof frida-server 2>/dev/null");
+                if (running != null && !running.trim().isEmpty() && !running.startsWith("ERROR:")) {
+                    Log.i(TAG, "✅ frida-server already running (PID: " + running.trim().split("\n")[0] + ")");
+                    return;
+                }
                 exec("killall frida-server 2>/dev/null; sleep 0.2");
                 exec(FRIDA_SERVER_DEVICE_PATH + " &");
-                Thread.sleep(800); // let server bind
-                Log.i(TAG, "✅ frida-server started");
+
+                // Poll readiness: check for process existence up to 15 iterations (1.5s max)
+                boolean active = false;
+                for (int i = 0; i < 15; i++) {
+                    Thread.sleep(100);
+                    String pid = execOutput("pgrep -f frida-server 2>/dev/null || pidof frida-server 2>/dev/null");
+                    if (pid != null && !pid.trim().isEmpty() && !pid.startsWith("ERROR:")) {
+                        active = true;
+                        Log.i(TAG, "✅ frida-server started & responsive (PID: " + pid.trim().split("\n")[0] + ") after " + ((i + 1) * 100) + "ms");
+                        break;
+                    }
+                }
+                if (!active) {
+                    Log.w(TAG, "⚠️ frida-server launched but PID not detected after 1.5s wait");
+                }
             } catch (Throwable t) {
                 Log.e(TAG, "frida-server start failed: " + t.getMessage());
             }

@@ -55,10 +55,10 @@ do_frida() {
     run_cmd "setprop gamebooster.codm.hp 3.0"
     run_cmd "setprop gamebooster.codm.recoil 1"
     run_cmd "setprop gamebooster.codm.spread 1"
-    run_cmd "setprop gamebooster.codm.fps 120"
+    run_cmd "setprop gamebooster.codm.fps \${TARGET_HZ:-185}"
     run_cmd "setprop gamebooster.codm.antiban 1"
     run_cmd "setprop gamebooster.codm.bullet 1"
-    echo "[✓] Combat properties active (Aimbot, Zero Recoil, 3x Dmg, 120 FPS)"
+    echo "[✓] Combat properties active (Aimbot, Zero Recoil, 3x Dmg, 185 FPS)"
 
     # Check and launch frida-server in background if present
     if run_cmd "[ -f $FRIDA_SERVER ]"; then

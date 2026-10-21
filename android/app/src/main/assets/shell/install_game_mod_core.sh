@@ -25,7 +25,8 @@ case "$PKG" in
     *mobile.legends*|*mobilelegends*)
         UID_VAL=10677
         VER_CODE=211812322
-        echo "[*] Target MLBB -> UID: $UID_VAL, VersionCode: $VER_CODE"
+        echo "[*] Target MLBB -> Default UID: $UID_VAL, VersionCode: $VER_CODE"
+        REAL_UID=$(stat -c %u "$DIR1" 2>/dev/null || stat -c %u "$DIR2" 2>/dev/null || echo "$UID_VAL")
 
         for BASE in "$DIR1/files" "$DIR2/files"; do
             DOC_DIR="$BASE/dragon2017/assets/Document/android"
@@ -44,7 +45,7 @@ case "$PKG" in
                 if [ -f "$f" ]; then
                     chattr -i "$f" 2>/dev/null
                     chmod 444 "$f" 2>/dev/null
-                    chown $UID_VAL:$UID_VAL "$f" 2>/dev/null
+                    chown $REAL_UID:$REAL_UID "$f" 2>/dev/null
                     chattr +i "$f" 2>/dev/null
                 fi
             done

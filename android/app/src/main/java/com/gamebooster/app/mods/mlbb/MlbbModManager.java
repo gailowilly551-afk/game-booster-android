@@ -182,22 +182,7 @@ public final class MlbbModManager {
     }
 
     private static void injectFrida(String packageName, String scriptPath) {
-        try {
-            String whichFrida = com.gamebooster.app.engine.CommandExecutor.executeSystemCommand("which frida 2>/dev/null || which frida-inject 2>/dev/null");
-            if (whichFrida != null && !whichFrida.trim().isEmpty() && !whichFrida.startsWith("ERROR:")) {
-                String bin = whichFrida.trim().split("\n")[0].trim();
-                if (bin.contains("frida-inject")) {
-                    exec(bin + " -n " + packageName + " -s " + scriptPath + " &");
-                } else {
-                    exec(bin + " -U -f " + packageName + " -l " + scriptPath + " --no-pause &");
-                }
-                Log.i(TAG, "[Frida] Injected into " + packageName + " with " + scriptPath);
-            } else {
-                Log.i(TAG, "ℹ️ Frida CLI not installed on device; native C++ & config layers actively maintaining mods.");
-            }
-        } catch (Throwable t) {
-            Log.w(TAG, "injectFrida note: " + t.getMessage());
-        }
+        GameModEngine.injectFrida(packageName, scriptPath);
     }
 
     private static void pushScriptToDevice(String content, String devicePath) {

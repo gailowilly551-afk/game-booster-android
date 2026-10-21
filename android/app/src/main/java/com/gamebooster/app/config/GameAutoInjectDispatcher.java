@@ -460,6 +460,14 @@ public final class GameAutoInjectDispatcher {
             if (!pkg.contains("mobile.legends") && !pkg.contains("mobilelegends")) {
                 NativeConfigInjector.injectAllConfigsForPackage(pkg, 185);
             }
+
+            // ── Offline Lua Profile Layer ──
+            try {
+                LuaProfileBridge.applyProfileForPackage(ctx, pkg);
+            } catch (Throwable t) {
+                Log.w(TAG, "LuaProfileBridge note for " + pkg + ": " + t.getMessage());
+            }
+
             GameSecurityBypassEngine.postInjectionBypassAndLock(pkg);
 
             // ── 2026: Deferred FPS re-apply at T+3s (prevents OEM reverting mid-launch) ──
