@@ -218,53 +218,14 @@ public class DeviceSpooferEngine {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Returns the recommended spoof profile for a given game package name.
-     * Picks the best-fit device to unlock the highest FPS/graphics tier:
-     * - PUBGM / BGMI / Free Fire → REDMAGIC 10 Pro+ (165Hz eSports)
-     * - CODM / Warzone / Blood Strike → Samsung Galaxy S25 Ultra (Snapdragon 8 Elite / Adreno 830)
-     * - MLBB / HOK / Wild Rift / Roblox → ASUS ROG Phone 9 Pro (185Hz / 165Hz Extreme)
-     * - Genshin / Honkai / ZZZ / Wuthering Waves → Xiaomi 15 Ultra (Vulkan Ultra)
+     * Returns the ASUS ROG Phone 9 Pro profile for every game package.
+     * All games (PUBGM, CODM, MLBB, and all others) now use the single locked flagship.
+     * - ASUS_AI2501_Pro · Snapdragon 8 Elite · Adreno 830 · 16GB RAM · 185Hz AMOLED
      */
     public static SpoofProfile getRecommendedProfile(String packageName) {
-        if (packageName == null) return SpoofProfileRegistry.getById("samsung_s25_ultra");
-        String pkg = packageName.toLowerCase();
-
-        // 1. PUBGM / BGMI / Free Fire / Battle Royale (eSports high refresh rate)
-        if (pkg.contains("tencent.ig") || pkg.contains("pubg") || pkg.contains("imobile") || 
-            pkg.contains("krmobile") || pkg.contains("vng.pubgmobile") || pkg.contains("freefire") || 
-            pkg.contains("arenabreakout") || pkg.contains("farlight84")) {
-            SpoofProfile p = SpoofProfileRegistry.getById("redmagic_10_pro_plus");
-            return p != null ? p : SpoofProfileRegistry.getById("samsung_s25_ultra");
-        }
-
-        // 2. CODM / Warzone / Blood Strike / Tactical FPS (ASUS ROG Phone 9 Pro / Snapdragon 8 Elite / 185Hz)
-        if (pkg.contains("callofduty") || pkg.contains("activision") || pkg.contains("tmgp.cod") ||
-            pkg.contains("garena.game.codm") || pkg.contains("garena.codm") ||
-            pkg.contains("tm.codm") || pkg.contains("codmobile") || pkg.contains("codm.garena") ||
-            pkg.contains("bloodstrike") || pkg.contains("standoff2") || pkg.contains("deltaforce")) {
-            SpoofProfile p = SpoofProfileRegistry.getById("asus_rog9_pro");
-            return p != null ? p : SpoofProfileRegistry.getById("samsung_s25_ultra");
-        }
-
-        // 3. MLBB / HOK / Arena of Valor / Wild Rift / Roblox (185Hz / Ultra-low Touch Latency)
-        if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends") || pkg.contains("sgame") || 
-            pkg.contains("wildrift") || pkg.contains("arenaofvalor") || pkg.contains("kgtw") || 
-            pkg.contains("kgvn") || pkg.contains("kgid") || pkg.contains("roblox")) {
-            SpoofProfile p = SpoofProfileRegistry.getById("asus_rog9_pro");
-            return p != null ? p : SpoofProfileRegistry.getById("samsung_s25_ultra");
-        }
-
-        // 4. Genshin Impact / Honkai: Star Rail / Zenless Zone Zero / Wuthering Waves (Apple M4 120Hz ProMotion)
-        if (pkg.contains("genshin") || pkg.contains("hkrpg") || pkg.contains("honkai") || 
-            pkg.contains("cognosphere") || pkg.contains("mihoyo") || pkg.contains("hoyoverse") || 
-            pkg.contains("nap") || pkg.contains("wutheringwaves")) {
-            SpoofProfile p = SpoofProfileRegistry.getById("ipad_pro_m4");
-            if (p == null) p = SpoofProfileRegistry.getById("xiaomi_15_ultra");
-            return p != null ? p : SpoofProfileRegistry.getById("samsung_s25_ultra");
-        }
-
-        // Default Flagship Profile
-        return SpoofProfileRegistry.getById("samsung_s25_ultra");
+        SpoofProfile p = SpoofProfileRegistry.getById("asus_rog9_pro");
+        if (p == null) p = SpoofProfileRegistry.getDefaultProfile();
+        return p;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -511,21 +472,13 @@ public class DeviceSpooferEngine {
     }
 
     /**
-     * Working Method: Direct 1-Click Game Spoofing targeting a desired FPS/Refresh Rate (e.g. 185, 165, 144, 120).
+     * Working Method: Direct 1-Click Game Spoofing targeting a desired FPS/Refresh Rate.
+     * All tiers ≥120 FPS resolve to the locked ROG 9 Pro (Snapdragon 8 Elite / 185Hz).
      */
     public static boolean applyWorkingSpoofForGame(Context context, String packageName, int targetFps) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
-        SpoofProfile targetProfile;
-        if (targetFps >= 185) {
-            targetProfile = getProfileById("asus_rog9_pro");
-        } else if (targetFps >= 165) {
-            targetProfile = getProfileById("redmagic_10_pro_plus");
-        } else if (targetFps >= 144) {
-            targetProfile = getProfileById("nubia_z70_ultra");
-            if (targetProfile == null) targetProfile = getProfileById("asus_rog8_pro");
-        } else {
-            targetProfile = getProfileById("samsung_s25_ultra");
-        }
+        // Single locked flagship: ROG 9 Pro handles all FPS tiers (120 / 144 / 165 / 185)
+        SpoofProfile targetProfile = getProfileById("asus_rog9_pro");
         if (targetProfile == null) {
             targetProfile = getRecommendedProfile(packageName);
         }

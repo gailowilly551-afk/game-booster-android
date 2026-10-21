@@ -101,6 +101,18 @@ public class GameModProfile {
         p.mlbbNoSpread          = sp.getBoolean("mlbb_spread", false);
         p.mlbbDroneViewEnabled  = sp.getBoolean("mlbb_drone_en", true);
         p.mlbbDroneTier         = sp.getInt("mlbb_drone_tier", 20);
+
+        // Cross-sync from mlbb_drone_prefs if present
+        try {
+            android.content.SharedPreferences dsp = ctx.getSharedPreferences("mlbb_drone_prefs", Context.MODE_PRIVATE);
+            if (dsp != null && dsp.contains("drone_enabled")) {
+                p.mlbbDroneViewEnabled = dsp.getBoolean("drone_enabled", p.mlbbDroneViewEnabled);
+            }
+            if (dsp != null && dsp.contains("drone_tier")) {
+                p.mlbbDroneTier = dsp.getInt("drone_tier", p.mlbbDroneTier);
+            }
+        } catch (Throwable ignored) {}
+
         p.mlbbFpsUnlock         = sp.getBoolean("mlbb_fps_en", false);
         p.mlbbTargetFps         = sp.getInt("mlbb_fps", 165);
         p.mlbbAntiBan           = sp.getBoolean("mlbb_antiban", true);
@@ -171,6 +183,16 @@ public class GameModProfile {
             .putBoolean("mlbb_fps_en",       mlbbFpsUnlock)
             .putInt("mlbb_fps",              mlbbTargetFps)
             .putBoolean("mlbb_antiban",      mlbbAntiBan)
+            .apply();
+
+        try {
+            ctx.getSharedPreferences("mlbb_drone_prefs", Context.MODE_PRIVATE).edit()
+                .putBoolean("drone_enabled", mlbbDroneViewEnabled)
+                .putInt("drone_tier", mlbbDroneTier)
+                .apply();
+        } catch (Throwable ignored) {}
+
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
             .putBoolean("codm_aim",          codmAimbot)
             .putBoolean("codm_allscope",     codmAllScopeLock)
             .putBoolean("codm_headshot",     codmAutoHeadshot)

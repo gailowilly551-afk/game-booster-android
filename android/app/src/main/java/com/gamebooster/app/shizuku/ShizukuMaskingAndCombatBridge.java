@@ -130,6 +130,47 @@ public final class ShizukuMaskingAndCombatBridge {
 
     /**
      * Purges obsolete / detectable mock props.
+     * Enforces real hardware display driver settings to 185Hz refresh rate & performance governors
+     * tailored for ASUS ROG Phone 9 Pro (Snapdragon 8 Elite / Adreno 830).
+     */
+    public boolean apply185HzPerformanceProfile(String targetPackage) {
+        List<String> commands = new ArrayList<>();
+
+        // Display refresh rate lock (185Hz target for ROG 9 Pro)
+        commands.add("settings put system min_refresh_rate 185.0");
+        commands.add("settings put system peak_refresh_rate 185.0");
+        commands.add("settings put system user_refresh_rate 185.0");
+        commands.add("settings put global min_refresh_rate 185.0");
+        commands.add("settings put global peak_refresh_rate 185.0");
+        commands.add("settings put secure refresh_rate_mode 2");
+        commands.add("setprop debug.sf.fps_limit 185");
+        commands.add("setprop persist.sys.NV_FPSLIMIT 185");
+
+        // Touch polling rate & frame synchronization boost
+        commands.add("settings put system touch_polling_rate 1000");
+        commands.add("settings put system game_turbo_mode 1");
+
+        // Target game Android Game Mode API optimization (Mode 2 = PERFORMANCE)
+        commands.add("cmd game mode performance " + targetPackage);
+        commands.add("cmd game set --fps 185 " + targetPackage + " 2>/dev/null");
+        commands.add("cmd window set-app-refresh-rate " + targetPackage + " 185 2>/dev/null");
+
+        // Force ART compiler AOT compilation for target binary (eliminates JIT latency spikes)
+        commands.add("cmd package compile -m speed -f " + targetPackage);
+
+        boolean success = true;
+        for (String cmd : commands) {
+            CommandResult res = execShell(cmd);
+            if (res.exitCode != 0) {
+                Log.w(TAG, "Performance config warning: " + cmd + " -> " + res.stderr);
+                success = false;
+            }
+        }
+        return success;
+    }
+
+    /**
+     * Purges obsolete / detectable mock props.
      * Enforces real hardware display driver settings to 165Hz refresh rate & performance governors.
      */
     public boolean apply165HzPerformanceProfile(String targetPackage) {

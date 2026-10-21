@@ -991,10 +991,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="🏷️ Brand Filter: ⚡ ASUS ROG (185Hz / 165Hz Gaming Flagships)"
+                    android:text="🏷️ Brand Filter: ⚡ ASUS ROG (185Hz Gaming Flagship)"
                     android:textColor="@color/accent_cyan"
                     android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:visibility="gone" />
 
                 <!-- Brand Filter Chips Horizontal Scroll -->
                 <HorizontalScrollView
@@ -1002,7 +1003,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:id="@+id/layout_settings_brand_chips"

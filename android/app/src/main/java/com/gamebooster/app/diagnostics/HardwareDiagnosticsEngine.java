@@ -135,18 +135,29 @@ public final class HardwareDiagnosticsEngine {
             }
         }
 
-        // 2. ARM Mali (Midgard / Bifrost / Valhall)
+        // 2. ARM Mali (Midgard / Bifrost / Valhall) & MediaTek devfreq
         if (clock == null) {
-            String maliClk = readFirstLine("/sys/class/misc/mali0/device/cur_freq");
-            if (maliClk == null) maliClk = readFirstLine("/sys/devices/platform/13040000.mali/devfreq/13040000.mali/cur_freq");
-            if (maliClk != null && !maliClk.trim().isEmpty()) {
-                try {
-                    long hz = Long.parseLong(maliClk.trim());
-                    long mhz = (hz > 1000000) ? (hz / 1000000) : (hz / 1000);
-                    clock = mhz + " MHz";
-                    vendor = "ARM Mali / Dimensity";
-                } catch (Throwable ignored) {
-                    clock = maliClk.trim();
+            String[] maliPaths = {
+                "/sys/class/misc/mali0/device/cur_freq",
+                "/sys/devices/platform/13040000.mali/devfreq/13040000.mali/cur_freq",
+                "/sys/devices/platform/gpu/cur_freq",
+                "/sys/kernel/ged/hal/current_freq",
+                "/sys/module/pvrsrvkm/parameters/gpu_freq"
+            };
+            for (String p : maliPaths) {
+                String maliClk = readFirstLine(p);
+                if (maliClk != null && !maliClk.trim().isEmpty()) {
+                    try {
+                        long hz = Long.parseLong(maliClk.trim());
+                        long mhz = (hz > 1000000) ? (hz / 1000000) : (hz > 1000 ? (hz / 1000) : hz);
+                        clock = mhz + " MHz";
+                        vendor = "ARM Mali / Dimensity";
+                        break;
+                    } catch (Throwable ignored) {
+                        clock = maliClk.trim();
+                        vendor = "ARM Mali / Dimensity";
+                        break;
+                    }
                 }
             }
         }
@@ -154,18 +165,27 @@ public final class HardwareDiagnosticsEngine {
         // 3. Shizuku elevated fallback
         if (clock == null && ShizukuExecutor.hasShizukuPermission()) {
             try {
-                String out = ShizukuExecutor.executeShizukuCommand("cat /sys/class/kgsl/kgsl-3d0/gpuclk 2>/dev/null");
+                String out = ShizukuExecutor.executeShizukuCommand("cat /sys/class/kgsl/kgsl-3d0/gpuclk 2>/dev/null || cat /sys/kernel/ged/hal/current_freq 2>/dev/null || cat /sys/class/misc/mali0/device/cur_freq 2>/dev/null");
                 if (out != null && !out.trim().isEmpty() && !out.startsWith("ERROR")) {
                     long hz = Long.parseLong(out.trim());
-                    long mhz = (hz > 1000000) ? (hz / 1000000) : (hz / 1000);
+                    long mhz = (hz > 1000000) ? (hz / 1000000) : (hz > 1000 ? (hz / 1000) : hz);
                     clock = mhz + " MHz (privileged)";
-                    vendor = "Qualcomm Adreno";
+                    vendor = out.contains("mali") || Build.HARDWARE.toLowerCase().contains("mt") ? "ARM Mali / Dimensity" : "Qualcomm Adreno";
                 }
             } catch (Throwable ignored) {}
         }
 
         if (clock == null) {
-            clock = "Dynamic Scaling Active";
+            String hw = Build.HARDWARE != null ? Build.HARDWARE.toLowerCase() : "";
+            if (hw.contains("mt") || hw.contains("mali")) {
+                vendor = "ARM Mali (MediaTek Dimensity)";
+                clock = "Adaptive Dynamic Scaling";
+            } else if (hw.contains("qcom") || hw.contains("qualcomm")) {
+                vendor = "Qualcomm Adreno";
+                clock = "Adreno Dynamic Frequency Scaling";
+            } else {
+                clock = "Dynamic Scaling Active";
+            }
         }
 
         return new GpuDiagnosticReport(vendor, clock, pipeline, true);
@@ -222,13 +242,36 @@ public final class HardwareDiagnosticsEngine {
 
         // Fallback: check sysfs thermal zone
         if (batteryTempC <= 0.0f) {
-            String tz0 = readFirstLine("/sys/class/thermal/thermal_zone0/temp");
-            if (tz0 != null && !tz0.trim().isEmpty()) {
-                try {
-                    long raw = Long.parseLong(tz0.trim());
-                    batteryTempC = (raw > 1000) ? (raw / 1000.0f) : (float) raw;
-                } catch (Throwable ignored) {}
+            String[] tzPaths = {
+                "/sys/class/thermal/thermal_zone0/temp",
+                "/sys/class/thermal/thermal_zone1/temp",
+                "/sys/class/power_supply/battery/temp"
+            };
+            for (String tz : tzPaths) {
+                String val = readFirstLine(tz);
+                if (val != null && !val.trim().isEmpty()) {
+                    try {
+                        long raw = Long.parseLong(val.trim());
+                        batteryTempC = (raw > 1000) ? (raw / 1000.0f) : (float) raw;
+                        if (batteryTempC > 0) break;
+                    } catch (Throwable ignored) {}
+                }
             }
+        }
+
+        // Privileged fallback via dumpsys battery or Shizuku
+        if (batteryTempC <= 0.0f && ShizukuExecutor.hasShizukuPermission()) {
+            try {
+                String out = ShizukuExecutor.executeShizukuCommand("dumpsys battery | grep -i temperature");
+                if (out != null && out.contains(":")) {
+                    String[] parts = out.split(":");
+                    if (parts.length > 1) {
+                        float t = Float.parseFloat(parts[1].trim());
+                        if (t > 100) batteryTempC = t / 10.0f;
+                        else if (t > 0) batteryTempC = t;
+                    }
+                }
+            } catch (Throwable ignored) {}
         }
 
         if (batteryTempC >= 48.0f) {

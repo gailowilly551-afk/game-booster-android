@@ -300,6 +300,8 @@ public final class MlbbDroneViewPatcher {
      * Thread-safe with race-condition debounce and chmod 444 read-only locking against Moonton in-match asset overwrites.
      */
     public static boolean applyDroneViewAtomic(Context context, String pkg, int tier) {
+        if (context == null) context = ConfigBackupManager.getAppContext();
+        if (context == null) context = com.gamebooster.app.GameBoosterApp.getInstance();
         if (context == null || pkg == null) return false;
         final int normTier = normalizeTier(tier);
 
@@ -418,12 +420,14 @@ public final class MlbbDroneViewPatcher {
                 sb.append("subc=\"").append(stageUiBattleCamPath).append("\"\n");
                 sb.append("satl=\"").append(stageAtlasCamPath).append("\"\n");
                 sb.append("APPLIED=0\n");
-                sb.append("for root in \"/storage/emulated/0/Android/data/").append(pkg).append("\" \"/sdcard/Android/data/").append(pkg).append("\"; do\n");
+                sb.append("for root in \"/storage/emulated/0/Android/data/").append(pkg).append("\" \"/sdcard/Android/data/").append(pkg).append("\" \"/data/data/").append(pkg).append("\" \"/data/user/0/").append(pkg).append("\"; do\n");
                 sb.append("  [ -d \"$root\" ] || continue\n");
+                sb.append("  chmod 777 \"$root/files\" \"$root/files/dragon2017\" \"$root/files/dragon2017/assets\" \"$root/files/dragon2017/assets/Document\" 2>/dev/null\n");
 
                 // 1. Direct camera paths: Pre-unlock, remove existing read-only file, copy, then lock chmod 444 so Moonton cannot overwrite BattleSystemConfig.bytes
-                sb.append("  for d in \"$root/files/dragon2017/assets/Document/android\" \"$root/files/dragon2017/assets/Document\" \"$root/files/LoadResManager/Document/android\"; do\n");
+                sb.append("  for d in \"$root/files/dragon2017/assets/Document/android\" \"$root/files/dragon2017/assets/Document\" \"$root/files/LoadResManager/Document/android\" \"$root/files/LoadResManager/Document\" \"$root/files/dragon2017/res/Document/android\"; do\n");
                 sb.append("    mkdir -p \"$d\" 2>/dev/null\n");
+                sb.append("    chmod 777 \"$d\" 2>/dev/null\n");
                 sb.append("    chmod 666 \"$d\"/* 2>/dev/null\n");
                 sb.append("    rm -f \"$d/BattleSystemConfig.bytes\" 2>/dev/null\n");
                 sb.append("    cp -f \"$sb\" \"$d/BattleSystemConfig.bytes\" 2>/dev/null\n");
@@ -446,11 +450,14 @@ public final class MlbbDroneViewPatcher {
                 // 2. Active mini_patch slots: Pre-unlock, remove existing read-only file, copy, and set chmod 444 on BattleSystemConfig.bytes
                 sb.append("  mp=\"$root/files/mini_patch\"\n");
                 sb.append("  slots=\"$mp/1232.1/ZC_7108472971/2 $mp/1232.1/ZC_7117732192/1 $mp/1232.1/ZC_7117732192/3 $mp/1232.2/ZC_7117732192/1 $root/").append(MINI_PATCH_SUBPATH).append("\"\n");
-                sb.append("  found=$(find \"$mp\" -maxdepth 5 -type d 2>/dev/null | grep -E '/(ZC_|fix_)[^/]+(/[0-9]+)?$')\n");
-                sb.append("  for s in $slots $found; do\n");
+                sb.append("  found=$(find \"$mp\" -maxdepth 5 -type d 2>/dev/null | grep -E '/(ZC_|fix_|res_|slot_)[^/]+(/[0-9]+)?$')\n");
+                sb.append("  extra_docs=$(find \"$mp\" -maxdepth 6 -type d -name \"Document\" 2>/dev/null | sed 's|/Document||')\n");
+                sb.append("  for s in $slots $found $extra_docs; do\n");
                 sb.append("    [ -n \"$s\" ] || continue\n");
                 sb.append("    mkdir -p \"$s/Document/android\" \"$s/Document\" 2>/dev/null\n");
+                sb.append("    chmod 777 \"$s\" \"$s/Document\" \"$s/Document/android\" 2>/dev/null\n");
                 sb.append("    chmod 666 \"$s/Document/android\"/* \"$s/Document\"/* 2>/dev/null\n");
+                sb.append("    echo -n '1' > \"$s/__ready\" 2>/dev/null\n");
                 sb.append("    rm -f \"$s/Document/android/BattleSystemConfig.bytes\" \"$s/Document/BattleSystemConfig.bytes\" 2>/dev/null\n");
                 sb.append("    cp -f \"$sb\" \"$s/Document/android/BattleSystemConfig.bytes\" 2>/dev/null\n");
                 sb.append("    cp -f \"$sb\" \"$s/Document/BattleSystemConfig.bytes\" 2>/dev/null\n");
@@ -460,9 +467,8 @@ public final class MlbbDroneViewPatcher {
                 sb.append("    [ -n \"$smd5\" ] && cp -f \"$smd5\" \"$s/Document/BinaryPatchMD5.xml\" 2>/dev/null\n");
                 sb.append("    [ -n \"$src\" ] && cp -f \"$src\" \"$s/Document/android/ResCheckConf.xml\" 2>/dev/null\n");
                 sb.append("    [ -n \"$src\" ] && cp -f \"$src\" \"$s/Document/ResCheckConf.xml\" 2>/dev/null\n");
-                sb.append("    echo -n '1' > \"$s/__ready\" 2>/dev/null\n");
-                sb.append("    echo -n '1' > \"$s/__active\" 2>/dev/null\n");
                 sb.append("    if [ -f \"$sf\" ]; then cp -f \"$sf\" \"$s/__fix_rescheck\" 2>/dev/null; else echo -n '1' > \"$s/__fix_rescheck\" 2>/dev/null; fi\n");
+                sb.append("    echo -n '1' > \"$s/__active\" 2>/dev/null\n");
                 sb.append("    chmod 666 \"$s/Document/android\"/* \"$s/Document\"/* \"$s/__ready\" \"$s/__active\" \"$s/__fix_rescheck\" 2>/dev/null\n");
                 sb.append("    chmod 444 \"$s/Document/android/BattleSystemConfig.bytes\" \"$s/Document/BattleSystemConfig.bytes\" 2>/dev/null\n");
                 sb.append("    touch -t 203001010000 \"$s/Document/android/BattleSystemConfig.bytes\" \"$s/Document/BattleSystemConfig.bytes\" 2>/dev/null\n");
@@ -476,6 +482,14 @@ public final class MlbbDroneViewPatcher {
                 String res = ShizukuExecutor.hasShizukuPermission()
                         ? ShizukuExecutor.executeShizukuCommand(script)
                         : CommandExecutor.executeSystemCommand(script);
+
+                // Native JNI tier stamp: write CameraHeight/FieldOfView/DroneFOV/etc into config paths
+                try {
+                    List<String> cfgPaths = MlbbConfigPatcher.getConfigPaths(pkg);
+                    for (String cfgPath : cfgPaths) {
+                        NativeConfigInjector.nativeInjectMlbbDroneViewTier(cfgPath, normTier);
+                    }
+                } catch (Throwable ignored) {}
 
                 // Ensure V3 Fix Document.unity3d is deployed & patched in-place
                 try {

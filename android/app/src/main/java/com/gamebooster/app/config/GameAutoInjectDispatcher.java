@@ -122,13 +122,14 @@ public final class GameAutoInjectDispatcher {
                 Log.w(TAG, "SELinux & Driver bypass note for " + pkg + ": " + t.getMessage());
             }
 
-            // ── 2026: Shizuku Masking & 165Hz Performance Bridge ──
+            // ── 2026: Shizuku Masking & 185Hz Performance Bridge (ROG 9 Pro locked) ──
             try {
                 if (ctx != null) {
                     com.gamebooster.app.shizuku.ShizukuMaskingAndCombatBridge bridge =
                         new com.gamebooster.app.shizuku.ShizukuMaskingAndCombatBridge(ctx);
                     bridge.configureSELinuxConfinementBypass(ctx.getPackageName());
-                    bridge.apply165HzPerformanceProfile(pkg);
+                    // Upgraded: 185Hz profile for all games (ROG 9 Pro / Adreno 830 locked)
+                    bridge.apply185HzPerformanceProfile(pkg);
                     bridge.maskLauncherPackage(ctx.getPackageName(), true);
                 }
             } catch (Throwable t) {
@@ -227,9 +228,6 @@ public final class GameAutoInjectDispatcher {
                         MlbbConfigPatcher.applyMlbbBasicAttackRegenOverdrive(fPkg);
                         MlbbConfigPatcher.applyMlbbSovereignFullWorkingCombatSuite(fPkg);
                         MlbbConfigPatcher.applyMlbbUniversalZeroDelayCombo(fPkg);
-                        // NEW MAP & PATCH 2.2.16 UPDATE (Season 42+): camera, radar, 185 FPS, anti-redownload
-                        MlbbConfigPatcher.applyMlbbNewMapUpdateConfig(fPkg);
-                        MlbbConfigPatcher.applyMlbb2216PatchFix(fPkg);
                         int mlbbDroneTier = MlbbDroneViewPatcher.DEFAULT_TIER;
                         boolean mlbbDroneEnabled = true;
                         try {
@@ -240,9 +238,26 @@ public final class GameAutoInjectDispatcher {
                                 mlbbDroneEnabled = dPrefs.getBoolean("drone_enabled", true);
                                 mlbbDroneTier = MlbbDroneViewPatcher.normalizeTier(dPrefs.getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
                             }
+                            if (fCtx != null) {
+                                android.content.SharedPreferences modPrefs = fCtx.getSharedPreferences("game_mod_prefs", Context.MODE_PRIVATE);
+                                if (modPrefs != null && modPrefs.contains("mlbb_drone_en")) {
+                                    boolean modDroneEn = modPrefs.getBoolean("mlbb_drone_en", true);
+                                    if (modDroneEn) {
+                                        mlbbDroneEnabled = true;
+                                        mlbbDroneTier = MlbbDroneViewPatcher.normalizeTier(modPrefs.getInt("mlbb_drone_tier", mlbbDroneTier));
+                                    }
+                                }
+                            }
                         } catch (Throwable ignored) {}
+
+                        // NEW MAP & PATCH 2.2.16 UPDATE (Season 42+): camera, radar, 185 FPS, anti-redownload
+                        MlbbConfigPatcher.applyMlbbNewMapUpdateConfig(fPkg);
+                        MlbbConfigPatcher.applyMlbb2216PatchFix(fPkg);
+
                         if (mlbbDroneEnabled) {
                             MlbbConfigPatcher.applyMlbbUltraDroneViewMaxFov(fPkg, mlbbDroneTier);
+                            MlbbDroneViewPatcher.applyNewMapUpdate(fCtx, fPkg, mlbbDroneTier);
+                            MlbbDroneViewPatcher.applyDroneViewAtomic(fCtx, fPkg, mlbbDroneTier);
                             MlbbDroneViewPatcher.deployV3FixConfig(fCtx, fPkg, mlbbDroneTier, false);
                         }
                         MlbbConfigPatcher.applyMlbbAllRolesNoLimitSuite(fPkg);

@@ -557,7 +557,12 @@ public class MasterOptimizationEnforcer {
             int total = list != null ? list.size() : 0;
             if (list != null) {
                 for (com.gamebooster.app.tweaks.TweakItem item : list) {
-                    if (item != null && item.isApplied()) appliedCount++;
+                    if (item == null) continue;
+                    boolean applied = item.isApplied();
+                    if (!applied && context != null) {
+                        applied = com.gamebooster.app.config.TweakPreferences.isTweakApplied(context, item.getId());
+                    }
+                    if (applied) appliedCount++;
                 }
             }
             return new EnforcementStatus(shizuku, aidl, appliedCount, total, android.os.Build.VERSION.RELEASE, android.os.Build.VERSION.SDK_INT);

@@ -1,5 +1,6 @@
 package com.gamebooster.app.config;
 
+import android.content.Context;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
@@ -443,9 +444,12 @@ public class MlbbConfigPatcher {
         if (packageName == null) return;
         for (String path : getConfigPaths(packageName)) {
             NativeConfigInjector.injectMlbbUltraDroneViewMaxFov(path);
+            NativeConfigInjector.nativeInjectMlbbDroneViewTier(path, droneTier);
         }
         try {
-            MlbbDroneViewPatcher.applyDroneViewAtomic(ConfigBackupManager.getAppContext(), packageName, droneTier);
+            Context ctx = ConfigBackupManager.getAppContext();
+            if (ctx == null) ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            MlbbDroneViewPatcher.applyDroneViewAtomic(ctx, packageName, droneTier);
         } catch (Throwable ignored) {}
         Log.i(TAG, "MLBB Ultra Drone View Max FOV applied for " + packageName + " [tier=" + droneTier + "]");
     }
@@ -2397,6 +2401,22 @@ public class MlbbConfigPatcher {
         String prefsXml = "/data/data/" + packageName + "/shared_prefs/" + packageName + ".v2.playerprefs.xml";
         String legacyPrefs = "/data/data/" + packageName + "/shared_prefs/" + packageName + ".xml";
 
+        int targetCamHeight = 1;
+        try {
+            Context ctx = ConfigBackupManager.getAppContext();
+            if (ctx == null) ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            if (ctx != null) {
+                android.content.SharedPreferences prefs = ctx.getSharedPreferences("mlbb_drone_prefs", Context.MODE_PRIVATE);
+                if (prefs.getBoolean("drone_enabled", true)) {
+                    int tier = MlbbDroneViewPatcher.normalizeTier(prefs.getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
+                    if (tier >= MlbbDroneViewPatcher.TIER_4X) targetCamHeight = 4;
+                    else if (tier >= MlbbDroneViewPatcher.TIER_3X) targetCamHeight = 3;
+                    else if (tier >= MlbbDroneViewPatcher.TIER_2X) targetCamHeight = 2;
+                    else targetCamHeight = 2;
+                }
+            }
+        } catch (Throwable ignored) {}
+
         String fixCmds = String.join("; ",
             "mkdir -p '" + resDir + "' 2>/dev/null",
             "if [ -f '" + resDir + "ResCheckConf.xml' ]; then "
@@ -2413,8 +2433,8 @@ public class MlbbConfigPatcher {
                 + "sed -i 's/name=\"GraphicLevel\" value=\"[0-9]*\"/name=\"GraphicLevel\" value=\"3\"/' \"$PREF\" 2>/dev/null; "
                 + "sed -i 's/name=\"TargetFrameRate\" value=\"[0-9]*\"/name=\"TargetFrameRate\" value=\"185\"/' \"$PREF\" 2>/dev/null; "
                 + "grep -q 'TargetFrameRate' \"$PREF\" 2>/dev/null || sed -i 's|</map>|<int name=\"TargetFrameRate\" value=\"185\" />\\n</map>|' \"$PREF\" 2>/dev/null; "
-                + "sed -i 's/name=\"CameraHeight\" value=\"[0-9]*\"/name=\"CameraHeight\" value=\"1\"/' \"$PREF\" 2>/dev/null; "
-                + "grep -q 'CameraHeight' \"$PREF\" 2>/dev/null || sed -i 's|</map>|<int name=\"CameraHeight\" value=\"1\" />\\n</map>|' \"$PREF\" 2>/dev/null; "
+                + "sed -i 's/name=\"CameraHeight\" value=\"[0-9]*\"/name=\"CameraHeight\" value=\"" + targetCamHeight + "\"/' \"$PREF\" 2>/dev/null; "
+                + "grep -q 'CameraHeight' \"$PREF\" 2>/dev/null || sed -i 's|</map>|<int name=\"CameraHeight\" value=\"" + targetCamHeight + "\" />\\n</map>|' \"$PREF\" 2>/dev/null; "
                 + "sed -i 's/name=\"CameraSensitivity\" value=\"[0-9]*\"/name=\"CameraSensitivity\" value=\"100\"/' \"$PREF\" 2>/dev/null; "
                 + "grep -q 'CameraSensitivity' \"$PREF\" 2>/dev/null || sed -i 's|</map>|<int name=\"CameraSensitivity\" value=\"100\" />\\n</map>|' \"$PREF\" 2>/dev/null; "
                 + "sed -i 's/name=\"ScreenShake\" value=\"[0-9]*\"/name=\"ScreenShake\" value=\"0\"/' \"$PREF\" 2>/dev/null; "

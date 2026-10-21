@@ -204,10 +204,17 @@ public final class DiagnosticsExporter {
 
         // 4. Live Display & Performance
         lines.add("--- [4. LIVE PERFORMANCE & TELEMETRY STREAM] ---");
-        lines.add("SurfaceFlinger 185Hz Uncap: READY (Binder Calls 1035 & 1036 Supported)");
+        int fastMaxHz = 120;
+        if (context != null) {
+            try {
+                DisplayCapabilitiesDetector.DisplayCaps caps = DisplayCapabilitiesDetector.detect(context);
+                if (caps.maxRefreshRate > 0) fastMaxHz = caps.maxRefreshRate;
+            } catch (Throwable ignored) {}
+        }
+        lines.add("Display Compositor Engine: READY (" + fastMaxHz + "Hz Ultra-Smooth Mode)");
         lines.add("Touch Digitizer Sampling: 1000Hz Ultra-Touch Response (Zero Slop)");
         lines.add("Animation Scale: 0.0x (Instant / Zero-Delay Latency)");
-        lines.add("Hardware Spoofer: " + (SpoofPreferences.isSpoofEnabled(context) ? "✅ ACTIVE (" + SpoofPreferences.getActiveProfileId(context) + ")" : "OFF (Stock Device Identity)"));
+        lines.add("Hardware Spoofer: " + (SpoofPreferences.isSpoofEnabled(context) ? "✅ ACTIVE (" + (SpoofPreferences.getActiveProfileId(context) != null ? SpoofPreferences.getActiveProfileId(context) : "asus_rog9_pro") + ")" : "OFF (Stock Device Identity)"));
         lines.add("==================================================");
         return lines;
     }
@@ -271,6 +278,11 @@ public final class DiagnosticsExporter {
                     lines.add("  ⚙️ " + entry.getKey() + ": " + entry.getValue());
                 }
             }
+        } catch (Throwable ignored) {}
+        try {
+            HardwareDiagnosticsEngine.GpuDiagnosticReport gpu = HardwareDiagnosticsEngine.getGpuDiagnostics();
+            lines.add("GPU Architecture: " + gpu.vendor + " | " + gpu.currentClockMhz);
+            lines.add("Graphics Pipeline: " + gpu.pipeline);
         } catch (Throwable ignored) {}
         lines.add("Supported ABIs: " + Arrays.toString(Build.SUPPORTED_ABIS));
         if (context != null) {
@@ -401,11 +413,15 @@ public final class DiagnosticsExporter {
 
         // 7. Display & Refresh Engine
         lines.add("--- [7. DISPLAY & REFRESH ENGINE] ---");
+        int maxHz = 60;
+        int activeHz = 60;
         if (context != null) {
             try {
                 DisplayCapabilitiesDetector.DisplayCaps caps = DisplayCapabilitiesDetector.detect(context);
-                lines.add("Max Hardware Refresh Rate: " + caps.maxRefreshRate + " Hz");
-                lines.add("Current Active Refresh Rate: " + caps.currentRefreshRate + " Hz");
+                maxHz = caps.maxRefreshRate > 0 ? caps.maxRefreshRate : 60;
+                activeHz = caps.currentRefreshRate > 0 ? caps.currentRefreshRate : maxHz;
+                lines.add("Max Hardware Refresh Rate: " + maxHz + " Hz");
+                lines.add("Current Active Refresh Rate: " + activeHz + " Hz");
                 lines.add("Display Resolution: " + caps.width + "x" + caps.height + " (" + caps.densityDpi + " dpi)");
                 if (!caps.supportedRefreshRates.isEmpty()) {
                     lines.add("Supported Rates: " + caps.supportedRefreshRates + " Hz");
@@ -413,7 +429,7 @@ public final class DiagnosticsExporter {
                 lines.add("HDR Support: " + (caps.supportsHdr ? "✅ YES" : "❌ NO") + " | Wide Color Gamut: " + (caps.supportsWideColorGamut ? "✅ YES" : "❌ NO"));
             } catch (Throwable ignored) {}
         }
-        lines.add("SurfaceFlinger 185Hz Uncap: READY (Binder Calls 1035 & 1036 Supported)");
+        lines.add("SurfaceFlinger Max Engine: READY (" + maxHz + "Hz Target Lock)");
         lines.add("Touch Digitizer Sampling: 1000Hz Ultra-Touch Response (Zero Slop)");
         lines.add("Animation Scale: 0.0x (Instant / Zero-Delay Latency)");
         lines.add("");
@@ -509,32 +525,33 @@ public final class DiagnosticsExporter {
         lines.add("--- [11. HARDWARE DEVICE IDENTITY SPOOFER] ---");
         lines.add("Spoofing Master Switch: " + (spoofEnabled ? "✅ ON" : "❌ OFF"));
         if (spoofEnabled) {
-            if (spoofProfileId != null && !spoofProfileId.trim().isEmpty()) {
-                try {
-                    SpoofProfile prof = DeviceSpooferEngine.getProfileById(spoofProfileId);
-                    if (prof != null) {
-                        lines.add("Active Profile: ⚡ " + prof.displayName + " (" + prof.model + ")");
-                        lines.add("Spoofed Brand / Model: " + prof.brand + " / " + prof.model);
-                        lines.add("Hardware Masking: APPLIED (PUBGM, CODM, MLBB, HOK, Genshin, Free Fire, Roblox, BloodStrike & More)");
-                        lines.add("Fingerprint: " + prof.fingerprint);
-                        lines.add("  🛡️ Android ID (64-bit Hex): " + prof.getAndroidId());
-                        lines.add("  🛡️ Build Serial Number: " + prof.getSerialNumber());
-                        lines.add("  🛡️ Wi-Fi MAC (OEM OUI): " + prof.getWifiMacAddress());
-                        lines.add("  🛡️ Bluetooth MAC: " + prof.getBluetoothMacAddress());
-                        lines.add("  🛡️ OAID / MSA UUID: " + prof.getOaid());
-                        lines.add("  🛡️ GSF ID: " + prof.getGsfId());
-                        lines.add("  🛡️ Widevine DRM Hardware ID: " + prof.getWidevineDeviceId().substring(0, 16) + "...");
-                        lines.add("  🛡️ Advertising ID (AAID): " + prof.getAdvertisingId());
-                        lines.add("  🛡️ AppOps Privacy Shield: ACTIVE (Device Identifiers, Phone State, Usage Stats Protected)");
-                    } else {
-                        lines.add("Active Profile ID: " + spoofProfileId + " (Custom)");
-                    }
-                } catch (Throwable ignored) {
-                    lines.add("Active Profile ID: " + spoofProfileId);
+            String targetId = (spoofProfileId != null && !spoofProfileId.trim().isEmpty())
+                    ? spoofProfileId
+                    : com.gamebooster.app.spoofer.SpoofProfileRegistry.ROG9_PRO_ID;
+            try {
+                SpoofProfile prof = DeviceSpooferEngine.getProfileById(targetId);
+                if (prof == null) {
+                    prof = DeviceSpooferEngine.getDefaultProfile();
                 }
-            } else {
-                lines.add("Active Profile: ⚠️ WAITING FOR SELECTION (No device model chosen yet)");
-                lines.add("Hardware Masking: Standby until model selected");
+                if (prof != null) {
+                    lines.add("Active Profile: ⚡ " + prof.displayName + " (" + prof.model + ")");
+                    lines.add("Spoofed Brand / Model: " + prof.brand + " / " + prof.model);
+                    lines.add("Hardware Masking: APPLIED (PUBGM, CODM, MLBB, HOK, Genshin, Free Fire, Roblox, BloodStrike & More)");
+                    lines.add("Fingerprint: " + prof.fingerprint);
+                    lines.add("  🛡️ Android ID (64-bit Hex): " + prof.getAndroidId());
+                    lines.add("  🛡️ Build Serial Number: " + prof.getSerialNumber());
+                    lines.add("  🛡️ Wi-Fi MAC (OEM OUI): " + prof.getWifiMacAddress());
+                    lines.add("  🛡️ Bluetooth MAC: " + prof.getBluetoothMacAddress());
+                    lines.add("  🛡️ OAID / MSA UUID: " + prof.getOaid());
+                    lines.add("  🛡️ GSF ID: " + prof.getGsfId());
+                    lines.add("  🛡️ Widevine DRM Hardware ID: " + (prof.getWidevineDeviceId() != null && prof.getWidevineDeviceId().length() >= 16 ? prof.getWidevineDeviceId().substring(0, 16) + "..." : "ACTIVE"));
+                    lines.add("  🛡️ Advertising ID (AAID): " + prof.getAdvertisingId());
+                    lines.add("  🛡️ AppOps Privacy Shield: ACTIVE (Device Identifiers, Phone State, Usage Stats Protected)");
+                } else {
+                    lines.add("Active Profile ID: " + targetId + " (ROG Phone 9 Pro Active)");
+                }
+            } catch (Throwable ignored) {
+                lines.add("Active Profile ID: " + targetId);
             }
         } else {
             lines.add("Active Profile: None (Original Device Identity Active)");

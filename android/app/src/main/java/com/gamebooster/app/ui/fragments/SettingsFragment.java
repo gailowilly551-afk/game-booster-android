@@ -1590,25 +1590,36 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        // Card Spoof: Hardware Device Spoofing
+        // Card Spoof: Hardware Device Spoofing — Locked to ASUS ROG Phone 9 Pro
         switchDeviceSpoof = view.findViewById(R.id.switch_device_spoof);
         tvSpoofActiveProfile = view.findViewById(R.id.tv_spoof_active_profile);
         tvSettingsSpoofBrandInfo = view.findViewById(R.id.tv_settings_spoof_brand_info);
         hsvSettingsSpoofBrands = view.findViewById(R.id.hsv_settings_spoof_brands);
         rvSpoofProfiles = view.findViewById(R.id.rv_spoof_profiles);
 
+        // ── ROG 9 Pro Lock: Hide brand scroll and brand info label permanently ──
+        if (hsvSettingsSpoofBrands != null) {
+            hsvSettingsSpoofBrands.setVisibility(View.GONE);
+        }
+        if (tvSettingsSpoofBrandInfo != null) {
+            tvSettingsSpoofBrandInfo.setVisibility(View.GONE);
+        }
+
+        // Retrieve the single locked profile
+        com.gamebooster.app.spoofer.SpoofProfile rog9Pro =
+                com.gamebooster.app.spoofer.SpoofProfileRegistry.getById(
+                        com.gamebooster.app.spoofer.SpoofProfileRegistry.ROG9_PRO_ID);
+
+        // Persist ROG 9 Pro as the only active profile on fragment creation
         boolean spoofEnabled = getContext() != null && SpoofPreferences.isSpoofEnabled(getContext());
+        if (getContext() != null && rog9Pro != null) {
+            SpoofPreferences.setActiveProfileId(getContext(), rog9Pro.id);
+        }
+
         if (switchDeviceSpoof != null) {
             isProgrammaticToggle = true;
             switchDeviceSpoof.setChecked(spoofEnabled);
             isProgrammaticToggle = false;
-        }
-
-        if (hsvSettingsSpoofBrands != null) {
-            hsvSettingsSpoofBrands.setVisibility(View.VISIBLE);
-        }
-        if (tvSettingsSpoofBrandInfo != null) {
-            tvSettingsSpoofBrandInfo.setVisibility(View.VISIBLE);
         }
 
         if (rvSpoofProfiles != null) {
@@ -1616,8 +1627,13 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             rvSpoofProfiles.setHasFixedSize(false);
             rvSpoofProfiles.setNestedScrollingEnabled(false);
             rvSpoofProfiles.setVisibility(View.VISIBLE);
-            List<SpoofProfile> initialProfiles = SpoofProfileRegistry.getByBrand("ASUS ROG");
-            spoofProfileAdapter = new SpoofProfileAdapter(getContext(), initialProfiles, profile -> {
+
+            // Single-item list: only ROG 9 Pro
+            List<SpoofProfile> singleProfile = rog9Pro != null
+                    ? java.util.Collections.singletonList(rog9Pro)
+                    : new ArrayList<>();
+
+            spoofProfileAdapter = new SpoofProfileAdapter(getContext(), singleProfile, profile -> {
                 if (getContext() == null || profile == null) return;
 
                 if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
@@ -1632,7 +1648,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     return;
                 }
 
-                // 1. Persist selected profile ID and enable spoofing
+                // Persist ROG 9 Pro and enable spoofing
                 SpoofPreferences.setSpoofEnabled(getContext(), true);
                 SpoofPreferences.setActiveProfileId(getContext(), profile.id);
                 if (switchDeviceSpoof != null) {
@@ -1643,61 +1659,31 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (spoofProfileAdapter != null) spoofProfileAdapter.setActiveProfileId(profile.id);
                 updateSpoofUiState();
 
-                Toast.makeText(getContext(), "⚡ Activating & Forcing: " + profile.displayName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "⚡ Activating ROG 9 Pro Full Mask: " + profile.displayName, Toast.LENGTH_SHORT).show();
 
-                // 2. Perform ultra-fast single-pass hardware & game file injection (<800ms)
+                // Ultra-fast single-pass hardware & game file injection (<800ms)
                 AppExecutors.getInstance().executeCommand(() -> {
                     int totalGames = DeviceSpooferEngine.applyFastHardwareSpoof(getContext(), profile.id);
                     AppExecutors.getInstance().postToMainThread(() -> {
                         if (!isAdded() || getContext() == null) return;
                         updateSpoofUiState();
-                        Toast.makeText(getContext(), "⚡ Spoofed as " + profile.displayName + " (" + totalGames + " games masked instantly)", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),
+                                "⚡ ROG 9 Pro Identity Active — " + totalGames + " games masked (185Hz · Adreno 830 · SM8750-AB)",
+                                Toast.LENGTH_SHORT).show();
                     });
                 });
             });
+
+            // Auto-select ROG 9 Pro card so it shows as active immediately
+            if (rog9Pro != null) {
+                spoofProfileAdapter.setActiveProfileId(rog9Pro.id);
+            }
+
             rvSpoofProfiles.setAdapter(spoofProfileAdapter);
         }
 
-        // Setup Brand Filter Buttons in Card Spoof
-        Button btnBrandRog = view.findViewById(R.id.btn_brand_rog);
-        Button btnBrandSamsung = view.findViewById(R.id.btn_brand_samsung);
-        Button btnBrandNubia = view.findViewById(R.id.btn_brand_nubia);
-        Button btnBrandXiaomi = view.findViewById(R.id.btn_brand_xiaomi);
-        Button btnBrandRealme = view.findViewById(R.id.btn_brand_realme);
-        Button btnBrandOneplus = view.findViewById(R.id.btn_brand_oneplus);
-        Button btnBrandBlackshark = view.findViewById(R.id.btn_brand_blackshark);
-        Button btnBrandApple = view.findViewById(R.id.btn_brand_apple);
-        Button btnBrandVivo = view.findViewById(R.id.btn_brand_vivo);
-        Button btnBrandOppo = view.findViewById(R.id.btn_brand_oppo);
-        Button btnBrandLenovo = view.findViewById(R.id.btn_brand_lenovo);
-
-        Button[] settingsBrandButtons = new Button[]{
-                btnBrandRog, btnBrandSamsung, btnBrandNubia,
-                btnBrandXiaomi, btnBrandRealme, btnBrandOneplus, btnBrandBlackshark,
-                btnBrandApple, btnBrandVivo, btnBrandOppo, btnBrandLenovo
-        };
-
-        Runnable resetBrandChips = () -> {
-            for (Button b : settingsBrandButtons) {
-                if (b != null && getContext() != null) {
-                    b.setBackgroundResource(R.drawable.btn_cyber_dark);
-                    b.setTextColor(androidx.core.content.ContextCompat.getColor(getContext(), R.color.accent_cyan));
-                }
-            }
-        };
-
-        setupSettingsBrandFilter(btnBrandRog, "ASUS ROG", "⚡ ASUS ROG (185Hz / 165Hz Gaming Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandSamsung, "Samsung", "📱 SAMSUNG Galaxy (Ultra Lineup)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandNubia, "Nubia", "🎮 NUBIA RedMagic (165Hz eSports Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandXiaomi, "Xiaomi", "🚀 XIAOMI & POCO (Snapdragon 8 Series)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandRealme, "Realme", "🔥 REALME GT (Extreme Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandOneplus, "OnePlus", "🏎️ ONEPLUS (Ultra Performance)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandBlackshark, "Black Shark", "🦈 BLACK SHARK (Gaming Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandApple, "Apple", "🍎 APPLE (120Hz Pro Lineup)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandVivo, "Vivo", "🎯 VIVO & iQOO (eSports Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandOppo, "Oppo", "💎 OPPO (Find & Reno Flagships)", settingsBrandButtons, resetBrandChips);
-        setupSettingsBrandFilter(btnBrandLenovo, "Lenovo Legion", "💻 LENOVO LEGION (Gaming Flagships)", settingsBrandButtons, resetBrandChips);
-
+        // Setup Brand Filter Buttons: Removed for Single-Profile Consolidation (ASUS ROG Phone 9 Pro locked)
+        // hsvSettingsSpoofBrands is permanently GONE.
         if (switchDeviceSpoof != null) {
             switchDeviceSpoof.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
@@ -1718,40 +1704,25 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         });
                     });
                 } else {
-                    String activeId = SpoofPreferences.getActiveProfileId(getContext());
-                    if (activeId == null || activeId.trim().isEmpty()) {
-                        // Auto-select first ASUS ROG profile as default on first enable
-                        java.util.List<com.gamebooster.app.spoofer.SpoofProfile> rogProfiles =
-                                com.gamebooster.app.spoofer.SpoofProfileRegistry.getByBrand("ASUS ROG");
-                        if (!rogProfiles.isEmpty()) {
-                            activeId = rogProfiles.get(0).id;
-                            SpoofPreferences.setActiveProfileId(getContext(), activeId);
-                        }
+                    // Always lock to ASUS ROG Phone 9 Pro on enable
+                    String activeId = SpoofProfileRegistry.ROG9_PRO_ID;
+                    SpoofPreferences.setActiveProfileId(getContext(), activeId);
+                    SpoofProfile finalProf = DeviceSpooferEngine.getProfileById(activeId);
+                    if (spoofProfileAdapter != null && finalProf != null) {
+                        spoofProfileAdapter.setActiveProfileId(finalProf.id);
                     }
-                    if (activeId == null || activeId.trim().isEmpty()) {
-                        if (spoofProfileAdapter != null) spoofProfileAdapter.setActiveProfileId(null);
-                        updateSpoofUiState();
-                        Toast.makeText(getContext(), "📱 Device Spoofing ON: Select a gaming device model below to activate spoofing.", Toast.LENGTH_LONG).show();
-                    } else {
-                        SpoofProfile prof = DeviceSpooferEngine.getProfileById(activeId);
-                        if (prof == null) {
-                            if (spoofProfileAdapter != null) spoofProfileAdapter.setActiveProfileId(null);
-                            updateSpoofUiState();
-                            Toast.makeText(getContext(), "📱 Please select a gaming device model below to activate spoofing.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            final SpoofProfile finalProf = prof;
-                            if (spoofProfileAdapter != null) spoofProfileAdapter.setActiveProfileId(finalProf.id);
-                            updateSpoofUiState();
-                            AppExecutors.getInstance().executeCommand(() -> {
-                                int maskedCount = DeviceSpooferEngine.applyFastHardwareSpoof(getContext(), finalProf.id);
-                                AppExecutors.getInstance().postToMainThread(() -> {
-                                    if (isAdded() && getContext() != null) {
-                                        updateSpoofUiState();
-                                        Toast.makeText(getContext(), "⚡ Fast Masked " + maskedCount + " Apps with " + finalProf.displayName + " (" + finalProf.model + ")", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
+                    updateSpoofUiState();
+
+                    if (finalProf != null) {
+                        AppExecutors.getInstance().executeCommand(() -> {
+                            int maskedCount = DeviceSpooferEngine.applyFastHardwareSpoof(getContext(), finalProf.id);
+                            AppExecutors.getInstance().postToMainThread(() -> {
+                                if (isAdded() && getContext() != null) {
+                                    updateSpoofUiState();
+                                    Toast.makeText(getContext(), "⚡ Fast Masked " + maskedCount + " Apps with " + finalProf.displayName + " (" + finalProf.model + ")", Toast.LENGTH_SHORT).show();
+                                }
                             });
-                        }
+                        });
                     }
                 }
             });
@@ -2238,6 +2209,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
         refreshAllStatuses();
+        renderDiagnostics(true);
         startLiveDiagnosticsTicker();
     }
 

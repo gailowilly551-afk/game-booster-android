@@ -71,6 +71,7 @@ public class SpoofProfileAdapter extends RecyclerView.Adapter<SpoofProfileAdapte
 
         String details = profile.model + " • " + profile.socModel + " • " + profile.glRenderer + " • " + ramGb + "GB RAM • " + maxHz + "Hz Ultra Mode";
         holder.tvDeviceDetails.setText(details);
+        holder.tvDeviceName.setText(profile.displayName != null ? profile.displayName : "ROG Phone 9 Pro");
 
         // Dynamic Brand Emoji
         String brandLower = profile.brandLabel != null ? profile.brandLabel.toLowerCase() : "";

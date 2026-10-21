@@ -51,7 +51,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="ROG Phone 8 Pro"
+                android:text="ROG Phone 9 Pro"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -62,7 +62,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="AI2401 • Snapdragon 8 Gen 3 • Adreno 750 • 24GB RAM • 165Hz"
+            android:text="ASUS_AI2501_Pro • Snapdragon 8 Elite • Adreno 830 • 16GB RAM • 185Hz"
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
     </LinearLayout>
