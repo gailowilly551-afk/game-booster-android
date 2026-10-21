@@ -122,6 +122,19 @@ public final class GameAutoInjectDispatcher {
                 Log.w(TAG, "SELinux & Driver bypass note for " + pkg + ": " + t.getMessage());
             }
 
+            // ── 2026: Shizuku Masking & 165Hz Performance Bridge ──
+            try {
+                if (ctx != null) {
+                    com.gamebooster.app.shizuku.ShizukuMaskingAndCombatBridge bridge =
+                        new com.gamebooster.app.shizuku.ShizukuMaskingAndCombatBridge(ctx);
+                    bridge.configureSELinuxConfinementBypass(ctx.getPackageName());
+                    bridge.apply165HzPerformanceProfile(pkg);
+                    bridge.maskLauncherPackage(ctx.getPackageName(), true);
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "ShizukuMaskingAndCombatBridge note for " + pkg + ": " + t.getMessage());
+            }
+
             try {
                 com.gamebooster.app.spoofer.DeviceSpooferEngine.autoApplyOptimalProfileForGame(ctx, pkg);
             } catch (Throwable t) {
