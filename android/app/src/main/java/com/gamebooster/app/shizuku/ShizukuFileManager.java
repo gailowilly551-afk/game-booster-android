@@ -437,6 +437,7 @@ public final class ShizukuFileManager {
     /**
      * Uploads raw bytes to a protected destination path via Base64 stream.
      */
+    @android.annotation.SuppressLint({"SetWorldReadable", "SetWorldWritable"})
     public static FileOpResult uploadBytes(String targetProtectedPath, byte[] data, String chmodMode) {
         if (targetProtectedPath == null || data == null) {
             return FileOpResult.fail(targetProtectedPath, "Path or data is null");

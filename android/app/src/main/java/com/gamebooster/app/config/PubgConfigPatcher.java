@@ -1421,6 +1421,7 @@ public class PubgConfigPatcher {
     /**
      * Writes byte data directly to target protected game file via Shizuku, POSIX File API, or SAF.
      */
+    @android.annotation.SuppressLint({"SetWorldReadable", "SetWorldWritable"})
     private static boolean writeDataToGamePath(Context ctx, String pkg, String absPath, byte[] data) {
         if (absPath == null || data == null || data.length == 0) return false;
         try {

@@ -46,6 +46,7 @@ public final class GameModEngine {
      * Deploys frida-server binary from assets/frida/frida-server-arm64 to /data/local/tmp/frida-server
      * with chmod 755 executable permissions.
      */
+    @android.annotation.SuppressLint("SetWorldReadable")
     public static boolean deployFridaServer(Context ctx) {
         if (ctx == null) return false;
         try {
@@ -291,6 +292,7 @@ public final class GameModEngine {
         }
     }
 
+    @android.annotation.SuppressLint("SetWorldReadable")
     public static void pushScriptAssetToDevice(Context ctx, String assetPath, String devicePath) {
         if (ctx == null || assetPath == null || devicePath == null) return;
         try {

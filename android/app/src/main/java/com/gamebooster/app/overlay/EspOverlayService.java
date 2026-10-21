@@ -56,11 +56,7 @@ public class EspOverlayService extends Service {
         if (context == null) return;
         Intent intent = new Intent(context, EspOverlayService.class);
         intent.setAction("ACTION_START");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent);
-        } else {
-            context.startService(intent);
-        }
+        context.startForegroundService(intent);
     }
 
     public static void stopOverlay(Context context) {
@@ -177,17 +173,15 @@ public class EspOverlayService extends Service {
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "ESP Overlay Display",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("Shows real-time entity visual overlay");
-            NotificationManager nm = getSystemService(NotificationManager.class);
-            if (nm != null) {
-                nm.createNotificationChannel(channel);
-            }
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "ESP Overlay Display",
+                NotificationManager.IMPORTANCE_LOW
+        );
+        channel.setDescription("Shows real-time entity visual overlay");
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) {
+            nm.createNotificationChannel(channel);
         }
     }
 
