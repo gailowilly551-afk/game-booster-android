@@ -136,7 +136,6 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
             try {
                 com.gamebooster.app.shizuku.ShizukuConnectionManager.getInstance().start();
                 TweakManagerRepository.initializeStates(getApplicationContext());
-                com.gamebooster.app.shizuku.RishManager.initialize(getApplicationContext());
 
                 // Zero-Touch Auto-Connect: Fast multi-pulse binder scan + foreground permission dispatch
                 com.gamebooster.app.shizuku.ShizukuAutoConnectEngine.pulseConnect(MainActivity.this);

@@ -124,7 +124,7 @@ dump.txt
 # Runtime Assets & Precompiled JNI Exceptions (MUST BE PRESERVED)
 !**/src/main/jniLibs/**/*.so
 !**/assets/shizuku/*.dex
-!*rish_shizuku.dex
+
 !**/src/main/assets/**
 !**/assets/pubgm/**
 !**/assets/frida/**

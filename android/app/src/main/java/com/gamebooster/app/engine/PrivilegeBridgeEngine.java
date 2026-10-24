@@ -2,7 +2,6 @@ package com.gamebooster.app.engine;
 
 import android.util.Log;
 
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuConnectionManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuManager;
@@ -60,7 +59,7 @@ public class PrivilegeBridgeEngine {
             binderAlive = rikka.shizuku.Shizuku.pingBinder();
         } catch (Throwable ignored) {}
 
-        return (binderAlive && (ShizukuExecutor.hasShizukuPermission() || RishManager.isRishAvailable()))
+        return (binderAlive && ShizukuExecutor.hasShizukuPermission())
                 || ShizukuManager.isShizukuRunningAndGranted()
                 || ShizukuUserServiceConnector.getInstance().isServiceConnected()
                 || (ShizukuConnectionManager.getInstance().getState() == ShizukuConnectionManager.State.READY);
@@ -165,19 +164,7 @@ public class PrivilegeBridgeEngine {
             }
         }
 
-        // 5. Rish standalone fallback
-        if (RishManager.isRishAvailable()) {
-            try {
-                String rishOut = RishManager.executeRishCommand(null, cleanCommand);
-                if (rishOut != null && !rishOut.startsWith("ERROR")) {
-                    return rishOut;
-                }
-            } catch (Throwable t) {
-                Log.w(TAG, "Rish execution failed: " + t.getMessage());
-            }
-        }
-
-        // 6. Local Shell fallback
+        // 5. Local Shell fallback
         ShellExecutor.CommandResult shellRes = ShellExecutor.executeCommand(cleanCommand);
         if (!shellRes.isSuccess()) {
             return "ERROR: " + (shellRes.stderr.isEmpty() ? "Command failed with code " + shellRes.exitCode : shellRes.stderr);

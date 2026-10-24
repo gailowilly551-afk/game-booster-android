@@ -5,7 +5,6 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuUserServiceConnector;
 
@@ -72,11 +71,6 @@ public final class ResolutionScalerEngine {
 
         if (ShizukuExecutor.hasShizukuPermission()) {
             String out = ShizukuExecutor.executeShizukuCommand(command);
-            if (out != null && !out.startsWith("ERROR")) return out;
-        }
-
-        if (RishManager.isRishAvailable()) {
-            String out = RishManager.executeRishCommand(null, command);
             if (out != null && !out.startsWith("ERROR")) return out;
         }
 

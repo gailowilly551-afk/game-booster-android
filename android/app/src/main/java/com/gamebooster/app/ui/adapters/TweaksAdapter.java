@@ -17,7 +17,6 @@ import com.gamebooster.app.R;
 import com.gamebooster.app.config.TweakPreferences;
 import com.gamebooster.app.core.AppExecutors;
 import com.gamebooster.app.engine.ShellExecutor;
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuManager;
 import com.gamebooster.app.tweaks.TweakCategory;
 import com.gamebooster.app.tweaks.TweakItem;
@@ -186,9 +185,8 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
         holder.tvDescription.setText(targetItem.getDescription());
 
         boolean isLive = ShizukuManager.isShizukuRunningAndGranted();
-        boolean hasRish = RishManager.isRishAvailable();
         boolean isEverGranted = (context != null && com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(context));
-        boolean hasElevatedAccess = isLive || hasRish || isEverGranted;
+        boolean hasElevatedAccess = isLive || isEverGranted;
 
         if (isLive) {
             holder.tvBadge.setText("[SHIZUKU ACTIVE / FULL NATIVE]");

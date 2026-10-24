@@ -30,7 +30,6 @@ import com.gamebooster.app.config.GameConfigPathResolver;
 import com.gamebooster.app.device.DisplayCapabilitiesDetector;
 import com.gamebooster.app.engine.MasterOptimizationEnforcer;
 import com.gamebooster.app.games.GamePackageRegistry;
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuConnectionManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuUserServiceConnector;
@@ -344,9 +343,8 @@ public final class DiagnosticsExporter {
             boolean pingGranted = pingAlive && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
             boolean aidlAlive = ShizukuUserServiceConnector.getInstance().isServiceConnected();
             boolean virtualRoot = com.gamebooster.app.engine.PrivilegeBridgeEngine.isShizukuVirtualRootReady();
-            boolean rish = RishManager.isRishAvailable();
 
-            shizukuAlive = pingAlive || aidlAlive || virtualRoot || rish;
+            shizukuAlive = pingAlive || aidlAlive || virtualRoot;
             shizukuGranted = pingGranted || aidlAlive || virtualRoot;
         } catch (Throwable ignored) {}
 
@@ -366,7 +364,6 @@ public final class DiagnosticsExporter {
             }
         } catch (Throwable ignored) {}
         lines.add("AIDL UserService Bound: " + (aidlConnected ? "🟢 BOUND & ACTIVE (Direct Root/Shell Binder)" : "🟡 RE-CONNECTING / STANDBY"));
-        lines.add("Rish Shell Executable: " + (RishManager.isRishAvailable() ? "🟢 READY (Interactive Shell Available)" : "🟡 STANDBY"));
         try {
             lines.add("Shizuku Connection Manager State: " + ShizukuConnectionManager.getInstance().getState());
         } catch (Throwable ignored) {}

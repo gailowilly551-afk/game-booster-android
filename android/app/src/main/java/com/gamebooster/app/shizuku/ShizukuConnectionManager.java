@@ -141,12 +141,9 @@ public class ShizukuConnectionManager {
                     boolean alive = Shizuku.pingBinder();
                     boolean granted = alive && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
 
-                    // If raw binder ping had a transient blip, check AIDL user service or stable rish before declaring dead
+                    // If raw binder ping had a transient blip, check AIDL user service before declaring dead
                     if (!alive) {
                         if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-                            alive = true;
-                            granted = true;
-                        } else if (RishManager.isRishAvailable() && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance())) {
                             alive = true;
                             granted = true;
                         }
@@ -264,8 +261,7 @@ public class ShizukuConnectionManager {
                 sleepQuietly(delay);
                 try {
                     boolean alive = Shizuku.pingBinder()
-                            || ShizukuUserServiceConnector.getInstance().isServiceConnected()
-                            || (RishManager.isRishAvailable() && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance()));
+                            || ShizukuUserServiceConnector.getInstance().isServiceConnected();
                     if (alive) {
                         confirmedDead = false;
                         break;
@@ -280,7 +276,7 @@ public class ShizukuConnectionManager {
                 com.gamebooster.app.booster.BackgroundLimitImmunityEngine.tryAutoResurrectShizukuDaemon();
                 scheduleReconnect();
             } else {
-                Log.i(TAG, "onBinderDead blip absorbed cleanly: Shizuku / Rish channel recovered. Preserving READY state.");
+                Log.i(TAG, "onBinderDead blip absorbed cleanly: Shizuku IPC recovered. Preserving READY state.");
                 if (state != State.READY) {
                     setState(State.READY);
                 }
@@ -376,12 +372,6 @@ public class ShizukuConnectionManager {
             if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
                 return true;
             }
-            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()
-                    && Shizuku.pingBinder()
-                    && RishManager.isRishAvailable()
-                    && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance())) {
-                return true;
-            }
             return false;
         } catch (Throwable t) {
             return false;
@@ -470,10 +460,6 @@ public class ShizukuConnectionManager {
 
                     boolean aidlConnected = ShizukuUserServiceConnector.getInstance().isServiceConnected();
                     if (!alive && aidlConnected) {
-                        alive = true;
-                        granted = true;
-                    }
-                    if (!alive && RishManager.isRishAvailable() && RishManager.testRishLiveness(com.gamebooster.app.GameBoosterApp.getInstance())) {
                         alive = true;
                         granted = true;
                     }

@@ -4,11 +4,11 @@ import android.content.Context;
 import android.util.Log;
 
 import com.gamebooster.app.config.CodmConfigPatcher;
+import com.gamebooster.app.config.GameFpsCoordinator;
 import com.gamebooster.app.core.AppExecutors;
 import com.gamebooster.app.mods.GameModEngine;
 import com.gamebooster.app.mods.GameModProfile;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
-import com.gamebooster.app.spoofer.HardwareMaskEngine;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,17 +63,9 @@ public final class CodmModManager {
                 Log.w(TAG, "CODM IL2CPP offset load warning: " + t.getMessage());
             }
 
-            // Layer 1: Display refresh rate & surface flinger unlock (adaptive up to 165Hz-185Hz)
-            int targetFps = profile.codmFpsUnlock ? (profile.codmTargetFps > 0 ? profile.codmTargetFps : 185) : 185;
-            if (profile.codmFpsUnlock) {
-                GameModEngine.enforceDisplayRefreshRate(targetFps);
-                try {
-                    CodmConfigPatcher.patch(pkg, targetFps);
-                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, targetFps);
-                } catch (Throwable t) {
-                    Log.w(TAG, "CODM static config patch note: " + t.getMessage());
-                }
-            }
+            // Layer 1: FPS/display is owned by GameFpsCoordinator. This manager only
+            // reads the per-game preference for its runtime hook property.
+            final int runtimeFps = GameFpsCoordinator.resolveRuntimeFps(ctx, pkg);
 
             // Layer 2: In-storage weapon and combat suites
             try {
@@ -129,7 +121,7 @@ public final class CodmModManager {
             setprop("gamebooster.codm.crit",    profile.codmCriticalEnabled ? String.valueOf(profile.codmCriticalMult) : "3.0");
             setprop("gamebooster.codm.recoil",  profile.codmNoRecoil ? "1" : "0");
             setprop("gamebooster.codm.spread",  profile.codmNoSpread ? "1" : "0");
-            setprop("gamebooster.codm.fps",     String.valueOf(targetFps));
+            setprop("gamebooster.codm.fps",     String.valueOf(runtimeFps));
             setprop("gamebooster.codm.antiban", profile.codmAntiBan ? "1" : "0");
 
             // Layer 5: Frida dynamic hooks injection

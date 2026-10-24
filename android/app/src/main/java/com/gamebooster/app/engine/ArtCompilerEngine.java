@@ -6,7 +6,6 @@ import android.util.Log;
 import com.gamebooster.app.core.AppExecutors;
 import com.gamebooster.app.games.GameAppInfo;
 import com.gamebooster.app.games.HomeGameScanner;
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 import com.gamebooster.app.shizuku.ShizukuUserServiceConnector;
 
@@ -55,8 +54,7 @@ public final class ArtCompilerEngine {
      */
     public static boolean isCompilerAvailable() {
         return ShizukuExecutor.hasShizukuPermission()
-                || ShizukuUserServiceConnector.getInstance().isServiceConnected()
-                || RishManager.isRishAvailable();
+                || ShizukuUserServiceConnector.getInstance().isServiceConnected();
     }
 
     /**
@@ -70,11 +68,6 @@ public final class ArtCompilerEngine {
 
         if (ShizukuExecutor.hasShizukuPermission()) {
             String out = ShizukuExecutor.executeShizukuCommand(command);
-            if (out != null && !out.startsWith("ERROR")) return out;
-        }
-
-        if (RishManager.isRishAvailable()) {
-            String out = RishManager.executeRishCommand(null, command);
             if (out != null && !out.startsWith("ERROR")) return out;
         }
 

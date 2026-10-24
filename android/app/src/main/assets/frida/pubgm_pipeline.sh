@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # pubgm_pipeline.sh — On-Device Shizuku / Local Root & ADB Pipeline for PUBG Mobile
-# Executes directly on Android device via Shizuku shell (rish), local terminal, or host ADB.
+# Executes directly on Android device via Shizuku shell, local terminal, or host ADB.
 # Usage: sh pubgm_pipeline.sh [frida|inject|config|status]
 
 PUBGM_PKGS="com.tencent.ig com.pubg.imobile com.pubg.krmobile com.vng.pubgmobile com.tencent.tmgp.pubgm com.tencent.iglite"

@@ -199,7 +199,7 @@ public class ShizukuManager {
             }
             Context ctx = com.gamebooster.app.GameBoosterApp.getInstance();
             if (ctx != null && com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(ctx)) {
-                if (RishManager.isRishAvailable() || ShizukuExecutor.hasShizukuPermission()) {
+                if (ShizukuExecutor.hasShizukuPermission()) {
                     return true;
                 }
             }
@@ -218,14 +218,14 @@ public class ShizukuManager {
 
     /**
      * Returns true if Shizuku is currently live OR was previously granted on this device
-     * and fallback mechanisms (Rish / direct system commands) are operational offline.
+     * and fallback mechanisms (direct system commands / root) are operational.
      */
     public static boolean isPrivilegedOrEverGranted(Context context) {
         if (isShizukuRunningAndGranted()) return true;
         if (context == null) context = com.gamebooster.app.GameBoosterApp.getInstance();
         if (context == null) return false;
         return com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(context)
-                && (RishManager.isAvailable(context) || com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable());
+                && (ShizukuExecutor.hasShizukuPermission() || com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable());
     }
 
     /**

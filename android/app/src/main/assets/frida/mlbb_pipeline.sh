@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # mlbb_pipeline.sh — On-Device Shizuku / Local Root & ADB Pipeline for Mobile Legends: Bang Bang
-# Executes directly on Android device via Shizuku shell (rish), local terminal, or host ADB.
+# Executes directly on Android device via Shizuku shell, local terminal, or host ADB.
 # Usage: sh mlbb_pipeline.sh [frida|inject|config|status]
 
 MLBB_PKGS="com.mobile.legends com.mobilelegends.hw"

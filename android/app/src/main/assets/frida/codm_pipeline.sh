@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # codm_pipeline.sh — On-Device Shizuku / Local Root & ADB Pipeline for Call of Duty: Mobile
-# Executes directly on Android device via Shizuku shell (rish), local terminal, or host ADB.
+# Executes directly on Android device via Shizuku shell, local terminal, or host ADB.
 # Usage: sh codm_pipeline.sh [frida|inject|config|status]
 
 CODM_PKGS="com.garena.game.codm com.activision.callofduty.shooter com.vng.codmvn com.tencent.tmgp.cod"

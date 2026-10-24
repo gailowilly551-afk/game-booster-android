@@ -17,10 +17,6 @@
 *.so
 
 # Runtime Assets & Precompiled JNI Exceptions (MUST BE PRESERVED)
-!**/shizuku/*.dex
-!**/assets/shizuku/*.dex
-!*rish_shizuku.dex
-!**/assets/shizuku/*
 !**/src/main/jniLibs/**/*.so
 !**/assets/paks/*.pak
 !**/assets/mlbb_drone/**

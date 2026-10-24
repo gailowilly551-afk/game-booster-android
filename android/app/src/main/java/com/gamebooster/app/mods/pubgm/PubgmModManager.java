@@ -4,12 +4,12 @@ import android.content.Context;
 import android.util.Log;
 
 import com.gamebooster.app.config.GameConfigPathResolver;
+import com.gamebooster.app.config.GameFpsCoordinator;
 import com.gamebooster.app.config.NativeConfigInjector;
 import com.gamebooster.app.config.PubgConfigPatcher;
 import com.gamebooster.app.core.AppExecutors;
 import com.gamebooster.app.mods.GameModEngine;
 import com.gamebooster.app.mods.GameModProfile;
-import com.gamebooster.app.spoofer.HardwareMaskEngine;
 
 import java.util.List;
 
@@ -63,24 +63,17 @@ public final class PubgmModManager {
                 Log.w(TAG, "PUBGM UE4 offset load warning: " + t.getMessage());
             }
 
-            // Layer 1: Display refresh rate & SurfaceFlinger unlock (hardware adaptive up to 165Hz-185Hz)
-            int targetFps = profile.pubgmFpsUnlock ? (profile.pubgmTargetFps > 0 ? profile.pubgmTargetFps : 185) : 185;
-            if (profile.pubgmFpsUnlock) {
-                GameModEngine.enforceDisplayRefreshRate(targetFps);
-                try {
-                    PubgConfigPatcher.patchCompetitive(pkg, targetFps);
-                    HardwareMaskEngine.maskAllAndroidVersions(ctx, pkg, targetFps);
-                } catch (Throwable t) {
-                    Log.w(TAG, "PUBGM static config patch note: " + t.getMessage());
-                }
-            }
+            // Layer 1: FPS/display is owned by GameFpsCoordinator. This manager only
+            // reads the per-game preference for its runtime hook property.
+            final int runtimeFps = GameFpsCoordinator.resolveRuntimeFps(ctx, pkg);
 
-            // Layer 2: Pre-tuned 4.6.0 assets deployment & Active.sav binary patch
+            // Layer 2: Pre-tuned 4.6.0 assets deployment.
+            // Active.sav FPS bytes are written once by the coordinator's patcher,
+            // never unconditionally from this manager.
             try {
                 if (ctx != null) {
                     PubgConfigPatcher.deployPubgmAssets(ctx, pkg);
                 }
-                PubgConfigPatcher.patchActiveSavBinary(pkg, targetFps, true, 4);
             } catch (Throwable t) {
                 Log.w(TAG, "PUBGM asset deploy error: " + t.getMessage());
             }
@@ -145,7 +138,7 @@ public final class PubgmModManager {
             setprop("gamebooster.pubgm.recoil",  profile.pubgmNoRecoil ? "1" : "0");
             setprop("gamebooster.pubgm.spread",  profile.pubgmNoSpread ? "1" : "0");
             setprop("gamebooster.pubgm.fov",     String.valueOf(profile.pubgmDroneFov));
-            setprop("gamebooster.pubgm.fps",     String.valueOf(targetFps));
+            setprop("gamebooster.pubgm.fps",     String.valueOf(runtimeFps));
             setprop("gamebooster.pubgm.antiban", profile.pubgmAntiBan ? "1" : "0");
 
             // Layer 5: Frida dynamic hooks injection

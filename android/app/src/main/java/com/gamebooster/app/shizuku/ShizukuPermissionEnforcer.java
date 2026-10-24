@@ -38,7 +38,7 @@ public class ShizukuPermissionEnforcer {
         boolean shizukuReady = ShizukuExecutor.hasShizukuPermission()
                 || ShizukuManager.isShizukuRunningAndGranted()
                 || com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive();
-        if (!shizukuReady && !RishManager.isAvailable(context)) {
+        if (!shizukuReady) {
             Log.w(TAG, "Cannot enforce permissions: Neither Root nor Shizuku is available.");
             return;
         }
@@ -185,7 +185,7 @@ public class ShizukuPermissionEnforcer {
      */
     public static void enforceAllPermissionsForAllApps(Context context) {
         if (context == null) return;
-        if (!ShizukuExecutor.hasShizukuPermission() && !RishManager.isAvailable(context)) {
+        if (!ShizukuExecutor.hasShizukuPermission()) {
             Log.w(TAG, "Cannot enforce permissions for all apps: Shizuku is not available or granted.");
             return;
         }
@@ -201,7 +201,7 @@ public class ShizukuPermissionEnforcer {
      */
     public static void enforceAllPermissionsForAllInstalledApps(Context context) {
         if (context == null) return;
-        if (!ShizukuExecutor.hasShizukuPermission() && !RishManager.isAvailable(context)) return;
+        if (!ShizukuExecutor.hasShizukuPermission()) return;
 
         AppExecutors.getInstance().executeCommand(() -> {
             try {

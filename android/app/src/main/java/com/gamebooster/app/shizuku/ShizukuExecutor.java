@@ -22,7 +22,6 @@ public class ShizukuExecutor {
             boolean ping = Shizuku.pingBinder();
             if (ping) return true;
             if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) return true;
-            if (RishManager.isRishAvailable()) return true;
             return false;
         } catch (Throwable t) {
             Log.d(TAG, "isShizukuAvailable exception: " + t.getMessage());
@@ -39,10 +38,6 @@ public class ShizukuExecutor {
                 return true;
             }
             if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-                return true;
-            }
-            Context ctx = com.gamebooster.app.GameBoosterApp.getInstance();
-            if (ctx != null && com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(ctx) && RishManager.isRishAvailable()) {
                 return true;
             }
             return false;
@@ -71,18 +66,17 @@ public class ShizukuExecutor {
             return "SUCCESS";
         }
 
-        // Circuit breaker: if Shizuku binder is dead AND rish is broken (Android 16 ART crash),
-        // skip all process spawning. Avoids the 30x sequential timeout loop that causes ANR.
+        // Circuit breaker: if Shizuku binder is dead, skip remote process spawning.
+        // Avoids sequential timeout loops that cause ANR.
         boolean binderAlive = isShizukuAvailable();
-        boolean rishBroken = !RishManager.isRishAvailable();
-        if (!binderAlive && rishBroken) {
+        if (!binderAlive) {
             // Silently try unprivileged shell only — at least something runs
             com.gamebooster.app.engine.ShellExecutor.CommandResult shellRes =
                     com.gamebooster.app.engine.ShellExecutor.executeCommand(command, false);
             if (shellRes.isSuccess()) {
                 return shellRes.stdout.isEmpty() ? "SUCCESS" : shellRes.stdout;
             }
-            return "ERROR: No elevated channel available (Shizuku binder dead, rish unavailable)";
+            return "ERROR: No elevated channel available (Shizuku binder dead)";
         }
 
         // Tier 1: IShizukuService AIDL direct remote process execution (v11/v12/v13/v13.6 compatible)
@@ -119,29 +113,9 @@ public class ShizukuExecutor {
                     return aidlRes;
                 }
             }
-
-            // Fallback: Stable Rish
-            try {
-                if (RishManager.isRishAvailable()) {
-                    String rishOut = RishManager.executeRishCommand(null, command);
-                    if (rishOut != null && !rishOut.startsWith("ERROR: rish binary not available")) {
-                        return rishOut;
-                    }
-                }
-            } catch (Throwable ignored) {}
         }
 
-        // Tier 2: Try rish directly if binder is in background or was ever authorized
-        try {
-            if (RishManager.isRishAvailable()) {
-                String rishOut = RishManager.executeRishCommand(null, command);
-                if (rishOut != null && !rishOut.startsWith("ERROR")) {
-                    return rishOut;
-                }
-            }
-        } catch (Throwable ignored) {}
-
-        // Tier 3: Local Shell unprivileged fallback
+        // Tier 2: Local Shell unprivileged fallback
         com.gamebooster.app.engine.ShellExecutor.CommandResult shellRes = com.gamebooster.app.engine.ShellExecutor.executeCommand(command, false);
         if (shellRes.isSuccess()) {
             return shellRes.stdout.isEmpty() ? "SUCCESS" : shellRes.stdout;
@@ -196,7 +170,7 @@ public class ShizukuExecutor {
      * Unlike the void {@link #executeShizukuCommands(List)} fire-and-forget
      * variant, this lets callers distinguish "commands really ran" from
      * "no elevated channel existed". Returns one entry per non-empty command;
-     * an empty list means no command was executed at all (no Shizuku, no rish,
+     * an empty list means no command was executed at all (no Shizuku,
      * no shell fallback), and each entry is the raw stdout/SUCCESS/ERROR string.
      */
     public static java.util.List<String> executeShizukuCommandsWithResults(java.util.List<String> commands) {

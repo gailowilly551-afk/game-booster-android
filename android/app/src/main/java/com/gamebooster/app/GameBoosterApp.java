@@ -22,7 +22,6 @@ import com.gamebooster.app.engine.ResolutionScalerEngine;
 import com.gamebooster.app.games.HomeGameScanner;
 import com.gamebooster.app.gamespace.AutoGameMonitorService;
 import com.gamebooster.app.services.GameUpdateMonitorService;
-import com.gamebooster.app.shizuku.RishManager;
 import com.gamebooster.app.shizuku.ShizukuAutoConnectEngine;
 import com.gamebooster.app.shizuku.ShizukuConnectionManager;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * GameBoosterApp — Central Application Class.
  *
  * Provides safe application-wide initialization, global uncaught exception handling
- * to prevent crashes and startup ANRs, background service pre-warming (Rish, Shizuku AIDL,
+ * to prevent crashes and startup ANRs, background service pre-warming (Shizuku AIDL,
  * Terminal Scripts, Game Library Scanner, Display Hz & Network Tuning), and cold-start
  * in-app identity spoofing restoration.
  */
@@ -174,21 +173,14 @@ public class GameBoosterApp extends Application {
                 Log.w(TAG, "TerminalFolderManager background warm-up error: " + t.getMessage());
             }
 
-            // D. Extract and prepare Rish executable & dex
-            try {
-                RishManager.initialize(appCtx);
-            } catch (Throwable t) {
-                Log.w(TAG, "RishManager background initialization error: " + t.getMessage());
-            }
-
-            // E. Pre-bind Shizuku AIDL UserService
+            // D. Pre-bind Shizuku AIDL UserService
             try {
                 ShizukuUserServiceConnector.getInstance().bindService();
             } catch (Throwable t) {
                 Log.w(TAG, "ShizukuUserServiceConnector pre-bind error: " + t.getMessage());
             }
 
-            // F. Enforce Shizuku Elevated Storage & System Permissions if granted
+            // E. Enforce Shizuku Elevated Storage & System Permissions if granted
             try {
                 if (ShizukuExecutor.hasShizukuPermission()) {
                     ShizukuPermissionEnforcer.enforceAllPermissions(appCtx);

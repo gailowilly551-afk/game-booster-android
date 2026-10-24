@@ -194,7 +194,7 @@ public final class BackgroundLimitImmunityEngine {
             // Query via pidof and pgrep to catch multi-process daemons (:service, shizuku_server, app_process)
             String cmd = "pidof " + packageName + " 2>/dev/null; pgrep -f " + packageName + " 2>/dev/null";
             if (SHIZUKU_PACKAGE.equals(packageName)) {
-                cmd += "; pgrep -f shizuku_server 2>/dev/null; pgrep -f rikka.shizuku 2>/dev/null; pgrep -f 'shizuku' 2>/dev/null; pgrep -f 'rish' 2>/dev/null";
+                cmd += "; pgrep -f shizuku_server 2>/dev/null; pgrep -f rikka.shizuku 2>/dev/null; pgrep -f 'shizuku' 2>/dev/null";
             }
 
             String pidOut = ShizukuExecutor.executeShizukuCommand(cmd);

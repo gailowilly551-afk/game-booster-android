@@ -289,7 +289,7 @@ public class TerminalCoreEngine {
             }
         }
 
-        // Try Elevated Shizuku Multi-Tier Execution (UserService / Shizuku.newProcess / rish)
+        // Try Elevated Shizuku Execution (UserService / Shizuku.newProcess)
         if (ShizukuExecutor.hasShizukuPermission()) {
             try {
                 String rawOutput = ShizukuExecutor.executeShizukuCommand(shellScript);

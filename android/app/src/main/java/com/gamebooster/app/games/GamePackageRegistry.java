@@ -215,6 +215,16 @@ public class GamePackageRegistry {
                 || pkg.endsWith(".games");
     }
 
+    /** Canonical family for any regional/vendor package alias. */
+    public static GameFamily getFamily(String packageName) {
+        return GameFamily.fromPackage(packageName);
+    }
+
+    /** Canonical install package for a family (empty for {@link GameFamily#OTHER}). */
+    public static String getPrimaryPackage(String packageName) {
+        return GameFamily.fromPackage(packageName).primaryPackage;
+    }
+
     public static GameInfoSpec getSpec(String packageName) {
         if (packageName == null) return null;
         String pkg = packageName.toLowerCase().trim();
