@@ -20,7 +20,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import com.gamebooster.app.ui.fragments.HomeFragment;
-import com.gamebooster.app.ui.fragments.GameModFragment;
 import com.gamebooster.app.ui.fragments.SettingsFragment;
 
 import com.gamebooster.app.R;
@@ -37,13 +36,11 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
 
     private static final String[] TAB_TITLES = {
             "HOME",
-            "MOD",
             "SETTINGS"
     };
 
     private static final String[] TAB_ICONS = {
             "🏠",
-            "⚡",
             "⚙️"
     };
 
@@ -286,7 +283,6 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
     }
 
     private static final String TAG_HOME     = "tab_home";
-    private static final String TAG_MOD      = "tab_mod";
     private static final String TAG_SETTINGS = "tab_settings";
 
     private void showFragmentForTab(int position) {
@@ -296,17 +292,19 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
             androidx.fragment.app.FragmentTransaction transaction = fm.beginTransaction();
 
             Fragment homeFrag     = fm.findFragmentByTag(TAG_HOME);
-            Fragment modFrag      = fm.findFragmentByTag(TAG_MOD);
             Fragment settingsFrag = fm.findFragmentByTag(TAG_SETTINGS);
 
-            // Clean up any legacy stats fragment if still attached
+            // Clean up any legacy mod or stats fragments if still attached
+            Fragment legacyModFrag = fm.findFragmentByTag("tab_mod");
+            if (legacyModFrag != null && legacyModFrag.isAdded()) {
+                transaction.remove(legacyModFrag);
+            }
             Fragment legacyStatsFrag = fm.findFragmentByTag("tab_stats");
             if (legacyStatsFrag != null && legacyStatsFrag.isAdded()) {
                 transaction.remove(legacyStatsFrag);
             }
 
             if (position == 0) {
-                if (modFrag      != null && modFrag.isAdded())      transaction.hide(modFrag);
                 if (settingsFrag != null && settingsFrag.isAdded()) transaction.hide(settingsFrag);
                 if (homeFrag == null) {
                     homeFrag = new HomeFragment();
@@ -315,17 +313,7 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
                     transaction.show(homeFrag);
                 }
             } else if (position == 1) {
-                if (homeFrag     != null && homeFrag.isAdded())     transaction.hide(homeFrag);
-                if (settingsFrag != null && settingsFrag.isAdded()) transaction.hide(settingsFrag);
-                if (modFrag == null) {
-                    modFrag = GameModFragment.newInstance();
-                    transaction.add(R.id.fragment_container, modFrag, TAG_MOD);
-                } else {
-                    transaction.show(modFrag);
-                }
-            } else if (position == 2) {
                 if (homeFrag != null && homeFrag.isAdded()) transaction.hide(homeFrag);
-                if (modFrag  != null && modFrag.isAdded())  transaction.hide(modFrag);
                 if (settingsFrag == null) {
                     settingsFrag = new SettingsFragment();
                     transaction.add(R.id.fragment_container, settingsFrag, TAG_SETTINGS);
