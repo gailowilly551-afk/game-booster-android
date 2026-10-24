@@ -174,10 +174,16 @@ public final class FpsForceUnlockEngine {
         String pkg = packageName.trim().toLowerCase();
 
         if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
+            if (targetFps >= 165) {
+                MlbbFpsUnlockEngine.unlock165Fps(null, pkg);
+            }
             applyMlbbConfigFpsPatch(pkg, targetFps);
         } else if (pkg.contains("callofduty") || pkg.contains("activision") || pkg.contains("codm")) {
             applyCodmConfigFpsPatch(pkg, targetFps);
         } else if (pkg.contains("tencent.ig") || pkg.contains("pubg")) {
+            if (targetFps >= 165) {
+                PubgmFpsUnlockEngine.unlock165Fps(null, pkg);
+            }
             applyPubgmConfigFpsPatch(pkg, targetFps);
         }
     }
@@ -203,27 +209,66 @@ public final class FpsForceUnlockEngine {
     }
 
     private static void applyCodmConfigFpsPatch(String pkg, int targetFps) {
-        // CODM — GraphicsSetting.xml: patch FPS field
+        // CODM — GraphicsSetting.xml & GameConfig.xml: patch FPS field
         String[] gfxPaths = {
             "/sdcard/Android/data/" + pkg + "/files/GraphicsSetting.xml",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/GraphicsSetting.xml"
+            "/storage/emulated/0/Android/data/" + pkg + "/files/GraphicsSetting.xml",
+            "/sdcard/Android/data/" + pkg + "/files/prefs/GraphicsSetting.xml",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/prefs/GraphicsSetting.xml",
+            "/sdcard/Android/data/" + pkg + "/files/Config/GameConfig.xml",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/Config/GameConfig.xml"
         };
-        // UserCustom.ini — UE4 console variables
+        // UserCustom.ini & GraphicsSettings.ini
         String[] iniPaths = {
             "/sdcard/Android/data/" + pkg + "/files/UserCustom.ini",
-            "/storage/emulated/0/Android/data/" + pkg + "/files/UserCustom.ini"
+            "/storage/emulated/0/Android/data/" + pkg + "/files/UserCustom.ini",
+            "/sdcard/Android/data/" + pkg + "/files/prefs/UserCustom.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/prefs/UserCustom.ini",
+            "/sdcard/Android/data/" + pkg + "/files/Config/GraphicsSettings.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/Config/GraphicsSettings.ini"
+        };
+        // boot.config
+        String[] bootPaths = {
+            "/sdcard/Android/data/" + pkg + "/files/boot.config",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/boot.config",
+            "/sdcard/Android/data/" + pkg + "/files/Unity/boot.config",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/Unity/boot.config"
         };
         StringBuilder sb = new StringBuilder();
         for (String gfx : gfxPaths) {
             sb.append("if [ -f '").append(gfx).append("' ]; then ")
               .append("sed -i 's/<FPS value=\"[0-9]*\" \\/>/<FPS value=\"").append(targetFps).append("\" \\/>/g' '").append(gfx).append("' 2>/dev/null; ")
+              .append("sed -i 's/name=\"FrameRateLevel\" value=\"[0-9]*\"/name=\"FrameRateLevel\" value=\"9\"/g' '").append(gfx).append("' 2>/dev/null; ")
+              .append("sed -i 's/name=\"MaxFrameRate\" value=\"[0-9]*\"/name=\"MaxFrameRate\" value=\"").append(targetFps).append("\"/g' '").append(gfx).append("' 2>/dev/null; ")
               .append("fi; ");
         }
         for (String ini : iniPaths) {
-            sb.append("printf '[ConsoleVariables]\\nt.MaxFPS=").append(targetFps).append("\\nt.UnacceptableFrameTime=0.005\\nr.VSync=0\\n' >> '").append(ini).append("' 2>/dev/null; ");
+            sb.append("if [ -f '").append(ini).append("' ]; then ")
+              .append("sed -i 's/t\\.MaxFPS=[0-9]*/t.MaxFPS=").append(targetFps).append("/g' '").append(ini).append("' 2>/dev/null; ")
+              .append("sed -i 's/MaxFrameRate=[0-9]*/MaxFrameRate=").append(targetFps).append("/g' '").append(ini).append("' 2>/dev/null; ")
+              .append("sed -i 's/TargetFPS=[0-9]*/TargetFPS=").append(targetFps).append("/g' '").append(ini).append("' 2>/dev/null; ")
+              .append("else ")
+              .append("printf '[ConsoleVariables]\\nt.MaxFPS=").append(targetFps).append("\\nt.UnacceptableFrameTime=0.005\\nr.VSync=0\\n' >> '").append(ini).append("' 2>/dev/null; ")
+              .append("fi; ");
+        }
+        for (String boot : bootPaths) {
+            sb.append("if [ -f '").append(boot).append("' ]; then ")
+              .append("grep -q 'target-frame-rate' '").append(boot).append("' && sed -i 's/target-frame-rate=[0-9]*/target-frame-rate=").append(targetFps).append("/g' '").append(boot).append("' 2>/dev/null || echo 'target-frame-rate=").append(targetFps).append("' >> '").append(boot).append("' 2>/dev/null; ")
+              .append("grep -q 'wait-for-native-debugger' '").append(boot).append("' || echo 'wait-for-native-debugger=0' >> '").append(boot).append("' 2>/dev/null; ")
+              .append("fi; ");
         }
         executePrivileged(sb.toString());
-        Log.d(TAG, "[PerGame-CODM] GraphicsSetting + UserCustom.ini FPS patched to " + targetFps);
+        // Also invoke CodmConfigPatcher specialized patch
+        try {
+            if (targetFps >= 185) {
+                com.gamebooster.app.config.CodmConfigPatcher.patchUltraExtreme185(pkg);
+            } else if (targetFps >= 165) {
+                com.gamebooster.app.config.CodmConfigPatcher.patchUltraExtreme165(pkg);
+            } else {
+                com.gamebooster.app.config.CodmConfigPatcher.patch(pkg, targetFps);
+            }
+        } catch (Throwable ignored) {}
+        Log.d(TAG, "[PerGame-CODM] GraphicsSetting, boot.config & INI FPS patched to " + targetFps);
     }
 
     private static void applyPubgmConfigFpsPatch(String pkg, int targetFps) {

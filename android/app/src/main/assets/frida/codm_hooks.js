@@ -306,29 +306,50 @@ function safeHookCodm(name, rva, patterns, onEnterHandler, onLeaveHandler) {
 waitForModule(['libunity.so', 'libil2cpp.so'], (unityMod) => {
   console.log(`[GameBoosterPRO] Engine module active: ${unityMod.name} @ ${unityMod.base} (size: ${unityMod.size})`);
 
-  // 1. Universal FPS Unlocker (120/144/165)
+  // 1. Universal FPS Unlocker (120/144/165/185 FPS)
   if (CFG.fpsUnlock > 60) {
     const fpsExports = [
       '_ZN5Unity12Application16SetTargetFrameRateEi',
       'Application_set_targetFrameRate',
       '_ZN5Unity15QualitySettings12SetVSyncCountEi',
       'QualitySettings_set_vSyncCount',
-      '_ZN12UnityPlayer18setTargetFrameRateEi'
+      '_ZN12UnityPlayer18setTargetFrameRateEi',
+      'tapmNativeSetTargetFramerate',
+      '_ZN4tapm25SetTargetFrameRateInternalEi'
     ];
     fpsExports.forEach(fn => {
-      const addr = Module.findExportByName('libunity.so', fn);
+      const addr = Module.findExportByName(null, fn) || Module.findExportByName('libunity.so', fn);
       if (addr) {
-        Interceptor.attach(addr, {
-          onEnter(args) {
-            if (fn.includes('VSync')) {
-              args[0] = ptr(0);
-            } else {
-              args[0] = ptr(CFG.fpsUnlock);
+        try {
+          Interceptor.attach(addr, {
+            onEnter(args) {
+              if (fn.includes('VSync')) {
+                args[0] = ptr(0);
+              } else {
+                args[0] = ptr(CFG.fpsUnlock);
+              }
             }
-          }
-        });
+          });
+          console.log(`[GameBoosterPRO] Frame rate method ${fn} hooked @ ${addr} -> ${CFG.fpsUnlock} FPS ✓`);
+        } catch (e) {}
       }
     });
+
+    // Also scan for tapmNativeSetTargetFramerate dynamically across all loaded modules
+    try {
+      const pTapm = Module.findExportByName('libApmBacktrace.so', 'tapmNativeSetTargetFramerate')
+                 || Module.findExportByName('libGPM.so', 'tapmNativeSetTargetFramerate')
+                 || Module.findExportByName('libtgpa.so', 'tapmNativeSetTargetFramerate');
+      if (pTapm) {
+        Interceptor.attach(pTapm, {
+          onEnter(args) {
+            args[0] = ptr(CFG.fpsUnlock);
+          }
+        });
+        console.log(`[GameBoosterPRO] Tencent APM tapmNativeSetTargetFramerate hooked @ ${pTapm} -> ${CFG.fpsUnlock} FPS ✓`);
+      }
+    } catch (e) {}
+
     console.log(`[GameBoosterPRO] CODM Frame Target Unlocked to ${CFG.fpsUnlock} FPS ✓`);
   }
 
