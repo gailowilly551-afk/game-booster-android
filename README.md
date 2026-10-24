@@ -5,12 +5,12 @@
 ### **Next-Generation Android Performance Engine & Competitive MOBA / Battle Royale Hardware Accelerator**
 
 [![Android](https://img.shields.io/badge/Android-14%20|%2015%20|%2016%20(API%2034--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/Version-20.2.0-blueviolet?style=for-the-badge)](https://github.com/willygailo/Game-Launcher)
+[![Version](https://img.shields.io/badge/Version-20.6.0-blueviolet?style=for-the-badge)](https://github.com/gailowilly551-afk/game-booster-android)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Arch-arm64--v8a%20|%20armeabi--v7a%20|%20x86__64-red?style=for-the-badge)](https://developer.android.com/ndk)
-[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/willygailo/Game-Launcher)
+[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/gailowilly551-afk/game-booster-android)
 [![Privilege](https://img.shields.io/badge/Privilege-Root%20|%20Shizuku%20|%20Non--Root-yellow?style=for-the-badge)](https://shizuku.rikka.app)
-[![GitHub](https://img.shields.io/badge/GitHub-willygailo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/willygailo)
+[![GitHub](https://img.shields.io/badge/GitHub-gailowilly551--afk-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/gailowilly551-afk)
 [![Facebook](https://img.shields.io/badge/Facebook-Connect-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/share/14tdhV1h92S/)
 
 <p align="center">
@@ -32,8 +32,8 @@
 * 🏎️ **Per-Cluster CPU Governor Pinning:** Isolates Cortex Prime/Big cores into pure `performance` governors, clamps `scaling_min_freq` to hardware ceilings, suppresses C-states, and maximizes `uclamp.min` to 1024.
 * 🎮 **GPU Clocks & Driver Tuning:** Locks GPU devfreq frequencies across Adreno, Mali, Xclipse (Exynos/RDNA), Tensor, Kirin, and UNISOC architectures with Game Driver opt-in.
 * 🎯 **Zero-Latency 1000 Hz Touch Digitizer:** Bypasses Android `InputFlinger` resampling, locks touch thread real-time priority, and activates OEM low-latency game touch drivers.
-* 🛡️ **Safe & Ban-Resistant System Architecture:** Runs as an external kernel/system optimizer without intrusive memory manipulation, maintaining full integrity with strict anti-ban and anti-log safeguards.
-* 💎 **Sovereign Game Configurations:** Dedicated, hardware-synchronized tuning suites for **MLBB** (Ranked Draft Pick & Classic), **CODM** (Multiplayer & Battle Royale), **PUBG Mobile**, and **Free Fire**.
+* 🛡️ **Streamlined 2-Tab Cyberpunk UI:** Modernized interface featuring pure **HOME** and **SETTINGS** navigation tabs, eliminating legacy mod clutter in favor of automatic, zero-overhead background injection.
+* 💎 **Dedicated Non-Overlapping Game Isolation:** Strict separation of hardware masking and native C++ memory injection suites for **MLBB** (Unity IL2CPP), **CODM** (Unity IW8 + ACE), and **PUBGM** (Unreal Engine 4) with zero file or target collision.
 
 ---
 
@@ -294,13 +294,10 @@ If your device is **not rooted**, you can unlock privileged hardware acceleratio
   1. Return to the Shizuku app.
   2. Tap the **Start** button under *"Start via Wireless debugging"*.
   3. A terminal window will briefly run and Shizuku will display **"Shizuku is running (Version xx, UID 2000)"**.
-* **Pro-Tip: Re-Start Shizuku After Starting ("Start again after starting")**
+* **Pro-Tip: Direct Shizuku Binder IPC Integration**
   > [!TIP]
-  > On many Android OEM skins (HyperOS/MIUI, One UI, ColorOS, OxygenOS, RealmeUI), the wireless ADB socket may pause or stall during the initial handshake.
-  > **To ensure maximum stability for Game Space:**
-  > 1. After Shizuku shows "running", tap **Stop** (or toggle Wireless Debugging off and back on).
-  > 2. Tap **Start** once again.
-  > 3. This fresh restart fully primes the `rish` privileged IPC daemon and prevents connection dropouts during gaming sessions.
+  > Game Launcher PRO connects directly to Shizuku via high-speed native Binder IPC and UserService transactions.
+  > Legacy `rish` binaries and dex hooks have been completely removed to prevent socket contention or permission collisions with official Shizuku builds.
 
 #### 3️⃣ Step 3: Authorize Game Space in Shizuku
 1. In the Shizuku app main menu, tap **Authorized applications** (or *"Use Shizuku in authorized apps"*).
@@ -353,8 +350,8 @@ adb shell dumpsys gfxinfo <package_name> framestats
 
 ```bash
 # Clone the repository
-git clone https://github.com/willygailo/Game-Launcher.git
-cd Game-Launcher/android
+git clone https://github.com/gailowilly551-afk/game-booster-android.git
+cd game-booster-android/android
 
 # Full Pre-Build Verification & Automated APK Build (Compile + Lint + Tests + Assemble)
 ./tools/full_check_and_build.sh
@@ -363,7 +360,7 @@ cd Game-Launcher/android
 ./gradlew check assembleDebug
 
 # Output APK path:
-# Game_Space_v20.2.0-PRO_debug.apk (project root)
+# Game_Space_v20.6.0-PRO_debug.apk (project root)
 # android/app/build/outputs/apk/debug/Game_Space_Debug.apk
 ```
 
@@ -373,9 +370,9 @@ To create signed production releases, define `keystore.properties` inside `andro
 
 ## 👤 Developer & Socials
 
-Developed and maintained by **willygailo**. Connect, follow, or contribute:
+Developed and maintained by **gailowilly551-afk**. Connect, follow, or contribute:
 
-* 🐙 **GitHub:** [https://github.com/willygailo](https://github.com/willygailo)
+* 🐙 **GitHub:** [https://github.com/gailowilly551-afk](https://github.com/gailowilly551-afk)
 * 📘 **Facebook:** [Connect on Facebook](https://www.facebook.com/share/14tdhV1h92S/)
 
 ---
