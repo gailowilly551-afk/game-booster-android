@@ -98,13 +98,57 @@ public class SpoofPreferences {
         getPrefs(context).edit().remove(PREFIX_PKG_PROFILE + packageName).apply();
     }
 
+    // ── Dedicated Per-Game Family Spoof Profile Storage ──
+
+    public static final String PKG_FAMILY_MLBB  = "com.mobile.legends";
+    public static final String PKG_FAMILY_CODM  = "com.garena.game.codm";
+    public static final String PKG_FAMILY_PUBGM = "com.tencent.ig";
+
+    public static String getMlbbSpoofProfile(Context context) {
+        return getProfileIdForPackage(context, PKG_FAMILY_MLBB);
+    }
+
+    public static void setMlbbSpoofProfile(Context context, String profileId) {
+        setProfileIdForPackage(context, PKG_FAMILY_MLBB, profileId);
+    }
+
+    public static String getCodmSpoofProfile(Context context) {
+        return getProfileIdForPackage(context, PKG_FAMILY_CODM);
+    }
+
+    public static void setCodmSpoofProfile(Context context, String profileId) {
+        setProfileIdForPackage(context, PKG_FAMILY_CODM, profileId);
+    }
+
+    public static String getPubgmSpoofProfile(Context context) {
+        return getProfileIdForPackage(context, PKG_FAMILY_PUBGM);
+    }
+
+    public static void setPubgmSpoofProfile(Context context, String profileId) {
+        setProfileIdForPackage(context, PKG_FAMILY_PUBGM, profileId);
+    }
+
     /**
      * Resolves the effective profile ID for a package:
-     * per-package override → global active profile → null.
+     * per-package override → per-family override → global active profile → null.
      */
     public static String resolveProfileId(Context context, String packageName) {
         String pkgProfile = getProfileIdForPackage(context, packageName);
         if (pkgProfile != null && !pkgProfile.isEmpty()) return pkgProfile;
+
+        // Fallback to family-level override
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(packageName);
+        if (family == com.gamebooster.app.games.GameFamily.MLBB) {
+            String familyProfile = getMlbbSpoofProfile(context);
+            if (familyProfile != null && !familyProfile.isEmpty()) return familyProfile;
+        } else if (family == com.gamebooster.app.games.GameFamily.CODM) {
+            String familyProfile = getCodmSpoofProfile(context);
+            if (familyProfile != null && !familyProfile.isEmpty()) return familyProfile;
+        } else if (family == com.gamebooster.app.games.GameFamily.PUBGM) {
+            String familyProfile = getPubgmSpoofProfile(context);
+            if (familyProfile != null && !familyProfile.isEmpty()) return familyProfile;
+        }
+
         return getActiveProfileId(context);
     }
 

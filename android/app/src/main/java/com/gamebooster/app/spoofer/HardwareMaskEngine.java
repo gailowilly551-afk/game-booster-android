@@ -530,6 +530,12 @@ public class HardwareMaskEngine {
      */
     public static void injectTailoredGameHardwareConfigs(String packageName, SpoofProfile profile) {
         if (packageName == null || profile == null) return;
+
+        // Dedicated, isolated game maskers for MLBB, CODM, and PUBGM (Zero conflict / zero crossover)
+        if (com.gamebooster.app.spoofer.games.GameHardwareMaskCoordinator.injectGameHardware(packageName, profile)) {
+            return;
+        }
+
         String pkg = packageName.toLowerCase().trim();
         int targetFps = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
 
