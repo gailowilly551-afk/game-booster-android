@@ -18,9 +18,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# ── Project override: pin JAVA_HOME to JDK 17 (ignores stale system env) ──
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-export JAVA_HOME
+# ── Project override: fallback to local JDK 17 only if JAVA_HOME not already set/valid ──
+if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
+    if [ -d "/usr/lib/jvm/java-17-openjdk-amd64" ]; then
+        JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export JAVA_HOME
+    fi
+fi
 if [ -z "$ANDROID_USER_HOME" ]; then
     export ANDROID_USER_HOME="$(dirname "$0")/../.android"
     mkdir -p "$ANDROID_USER_HOME" 2>/dev/null || true
