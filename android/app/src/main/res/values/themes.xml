@@ -19,6 +19,11 @@
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
 
+        <!-- Android 12+ System Splash Screen (Displayed on App Launch) -->
+        <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+
         <!-- Component Styles -->
         <item name="materialButtonStyle">@style/Widget.GameBooster.Button</item>
         <item name="switchStyle">@style/Widget.GameBooster.Switch</item>

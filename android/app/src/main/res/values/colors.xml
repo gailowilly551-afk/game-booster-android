@@ -33,4 +33,7 @@
 
     <!-- Interactive & State Lists -->
     <color name="switch_track_on">#4000F0FF</color>
+    <!-- Application Launcher Icon & Splash Backgrounds -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="splash_bg">#080B11</color>
 </resources>
