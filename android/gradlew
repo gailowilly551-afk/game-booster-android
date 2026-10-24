@@ -19,9 +19,12 @@
 #
 
 # ── Project override: fallback to local JDK 17 only if JAVA_HOME not already set/valid ──
-if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
-    if [ -d "/usr/lib/jvm/java-17-openjdk-amd64" ]; then
+if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
+    if [ -x "/usr/lib/jvm/java-17-openjdk-amd64/bin/java" ]; then
         JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export JAVA_HOME
+    elif [ -x "/usr/lib/jvm/default-java/bin/java" ]; then
+        JAVA_HOME=/usr/lib/jvm/default-java
         export JAVA_HOME
     fi
 fi

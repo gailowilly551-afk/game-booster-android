@@ -50,7 +50,7 @@ jobs:
       - name: Manual Build for CodeQL
         run: |
           cd android
-          ./gradlew compileDebugJavaWithJavac
+          ./gradlew assembleDebug
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
