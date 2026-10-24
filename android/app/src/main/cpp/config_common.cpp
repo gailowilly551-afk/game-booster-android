@@ -270,9 +270,9 @@ static inline std::string detect_xml_tag(const std::string& val) {
 
 bool patch_cvar(std::string& content, const std::string& cvar, const std::string& value) {
     if (content.empty()) {
-        content = "[UserCustom]\n";
+        content = "[UserCustom DeviceProfile]\n";
     } else if (content.find("[") == std::string::npos) {
-        content = "[UserCustom]\n" + content;
+        content = "[UserCustom DeviceProfile]\n" + content;
     }
 
     std::string prefix = "+CVars=" + cvar + "=";

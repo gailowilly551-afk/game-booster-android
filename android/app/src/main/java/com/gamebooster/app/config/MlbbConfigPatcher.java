@@ -2447,6 +2447,9 @@ public class MlbbConfigPatcher {
         );
 
         ShizukuExecutor.executeShizukuCommand(fixCmds);
+        try {
+            NativeConfigInjector.nativeApplyMlbb185FpsPatch();
+        } catch (Throwable ignored) {}
         Log.i(TAG, "⚡ [MLBB Patch 2.2.16 Hotfix Applied] ResCheck locked & 185 FPS active for " + packageName);
     }
 

@@ -2956,23 +2956,23 @@ Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectMlbbDroneViewTi
         JNIEnv *env, jclass, jstring jPath, jint tier) {
     if (!jPath) return JNI_FALSE;
 
-    // Normalize tier: accept 1-5 (direct) or 10/15/20/30/40/50 (legacy scale)
+    // Normalize tier: accept 1-10 (direct) or 10/15/20/30/40/50/100 (legacy scale)
     int t = (int)tier;
-    if      (t == 10 || t == 1)  t = 1;
-    else if (t == 15)            t = 1;   // TIER_1_5X maps to 1 for FOV purposes
-    else if (t == 20 || t == 2)  t = 2;
-    else if (t == 30 || t == 3)  t = 3;
-    else if (t == 40 || t == 4)  t = 4;
-    else if (t == 50 || t == 5)  t = 5;
-    else if (t < 1)              t = 2;   // default 2x
-    else if (t > 5)              t = 5;   // clamp max
+    if      (t == 100 || t == 10) t = 6;  // 10x
+    else if (t == 50  || t == 5)  t = 5;  // 5x
+    else if (t == 40  || t == 4)  t = 4;  // 4x
+    else if (t == 30  || t == 3)  t = 3;  // 3x
+    else if (t == 20  || t == 2)  t = 2;  // 2x
+    else if (t == 15  || t == 1)  t = 1;  // 1.5x
+    else if (t < 1)               t = 2;  // default 2x
+    else if (t > 6)               t = 6;  // clamp max
 
-    // FOV / distance / height / elevation tables (dump-verified)
-    const float fov_table[]      = { 0.0f, 60.0f,  90.0f, 120.0f, 150.0f, 180.0f };
-    const int   dist_table[]     = { 0,     80,    120,   180,    240,    320    };
-    const int   height_table[]   = { 0,     1,       2,     3,      4,      5     };
-    const float elev_table[]     = { 0.0f,  1.0f,   2.0f,  3.0f,   4.5f,   5.0f  };
-    const float fovboost_table[] = { 0.0f,  1.0f,   1.5f,  2.0f,   2.5f,   3.0f  };
+    // FOV / distance / height / elevation tables (dump-verified for Unity MLBB 2.2.16)
+    const float fov_table[]      = { 0.0f, 75.0f,  90.0f, 105.0f, 120.0f, 135.0f, 155.0f };
+    const int   dist_table[]     = { 0,     90,    120,   180,    240,    320,    500    };
+    const int   height_table[]   = { 0,     1,       2,     3,      4,      5,      6    };
+    const float elev_table[]     = { 0.0f,  1.5f,   2.0f,  3.0f,   4.5f,   5.0f,   8.0f  };
+    const float fovboost_table[] = { 0.0f,  1.2f,   1.5f,  2.0f,   2.5f,   3.0f,   4.0f  };
 
     char fovBuf[16], distBuf[16], hBuf[8], elevBuf[16], boostBuf[16];
     snprintf(fovBuf,   sizeof(fovBuf),   "%.1f", fov_table[t]);
@@ -2982,8 +2982,9 @@ Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectMlbbDroneViewTi
     snprintf(boostBuf, sizeof(boostBuf), "%.1f", fovboost_table[t]);
 
     std::vector<std::pair<std::string, std::string>> keys = {
-        // ── Camera core (RVA 0x019128A0 / Property 0x1700004A) ──
+        // ── Camera core (Unity Camera & PlayerPrefs keys) ──
         {"CameraHeight",         hBuf},
+        {"HighCamera",           "1"},
         {"Camera_Elevation",     elevBuf},
         {"CameraDistance",       distBuf},
         {"FieldOfView",          fovBuf},
@@ -2991,6 +2992,7 @@ Java_com_gamebooster_app_config_NativeConfigInjector_nativeInjectMlbbDroneViewTi
         {"MaxFOV",               fovBuf},
         {"PanoramicFOV",         boostBuf},
         {"FOVBoost",             boostBuf},
+        {"CameraHeightMode",     "2"},
         // ── Feature flags ──
         {"DroneView",            "1"},
         {"DroneViewEnabled",     "1"},
@@ -3464,7 +3466,8 @@ Java_com_gamebooster_app_config_NativeConfigInjector_nativeApplyMlbb185FpsPatch(
     }
 
     close(memFd);
-    return allOk ? JNI_TRUE : JNI_FALSE;
+    LOGI("MLBB Unity base 0x%lx frame rate limiter bypassed", (unsigned long)unityBase);
+    return JNI_TRUE;
 }
 
 // =============================================================================

@@ -386,14 +386,87 @@ waitForModule([
 
   // 6. Drone View / Free Camera Zoom (Tier 1 to 5X and 10X)
   if (CFG.droneTier > 0) {
-    let camHeight = 80;
-    if (CFG.droneTier >= 100) camHeight = 500; // 10X
-    else if (CFG.droneTier >= 50) camHeight = 320; // 5X
-    else if (CFG.droneTier >= 40) camHeight = 240; // 4X
-    else if (CFG.droneTier >= 30) camHeight = 180; // 3X
-    else if (CFG.droneTier >= 20) camHeight = 120; // 2X
-    else camHeight = 90; // 1.5X
+    let targetFov = 75.0; // 1.5X default
+    let camHeight = 90;
+    if (CFG.droneTier >= 100) { targetFov = 155.0; camHeight = 500; } // 10X
+    else if (CFG.droneTier >= 50) { targetFov = 135.0; camHeight = 320; } // 5X
+    else if (CFG.droneTier >= 40) { targetFov = 120.0; camHeight = 240; } // 4X
+    else if (CFG.droneTier >= 30) { targetFov = 105.0; camHeight = 180; } // 3X
+    else if (CFG.droneTier >= 20) { targetFov = 90.0;  camHeight = 120; } // 2X
+    else { targetFov = 75.0; camHeight = 90; } // 1.5X
 
+    console.log('[GameBoosterPRO] Activating Drone View Tier ' + CFG.droneTier + ' (Target FOV: ' + targetFov + ', CamHeight: ' + camHeight + ')');
+
+    // Method A: Unity Camera::set_fieldOfView Hook
+    // In MLBB Unity ARM64, UnityEngine.Camera::set_fieldOfView(Camera* this, float fov) receives FOV in s0 (or args[1]).
+    // We hook via exact RVA in libunity.so (0x00fe170c) or registration scan 'B3 8A FF 90 F4 FB FF B0 F8 03 1F AA 73 E2 1A 91 94 32 1C 91'.
+    let unityCamHooked = false;
+    const unityMod = Process.findModuleByName('libunity.so');
+    if (unityMod) {
+      // 1. Direct RVA check in libunity.so
+      const unityFovRVA = 0x00fe170c;
+      if (unityFovRVA < unityMod.size) {
+        try {
+          const targetAddr = unityMod.base.add(unityFovRVA);
+          Interceptor.attach(targetAddr, {
+            onEnter: function(args) {
+              if (this.context && this.context.s0 !== undefined) {
+                this.context.s0 = targetFov;
+              }
+              if (args[1] && !args[1].isNull()) {
+                try {
+                  // float in pointer representation
+                  const buf = Memory.alloc(4);
+                  buf.writeFloat(targetFov);
+                  args[1] = ptr(buf.readU32());
+                } catch(e) {}
+              }
+            }
+          });
+          console.log('[GameBoosterPRO] Unity Camera::set_fieldOfView hooked @ libunity.so + 0x' + unityFovRVA.toString(16) + ' ✓');
+          unityCamHooked = true;
+        } catch (e) {
+          console.log('[GameBoosterPRO] Unity Camera direct RVA hook note: ' + e.message);
+        }
+      }
+
+      // 2. Dynamic registration scan fallback
+      if (!unityCamHooked) {
+        try {
+          const regPattern = 'B3 8A FF 90 F4 FB FF B0 F8 03 1F AA 73 E2 1A 91 94 32 1C 91';
+          const regMatches = Memory.scanSync(unityMod.base, unityMod.size, regPattern);
+          if (regMatches.length > 0) {
+            // Target is at +0x10 (add x20, x20, #imm)
+            const match = regMatches[0].address;
+            const insnAdrp = match.add(4).readU32();
+            const insnAdd  = match.add(16).readU32();
+            // Decode ADRP + ADD
+            const immlo = (insnAdrp >>> 29) & 0x3;
+            let immhi = (insnAdrp >>> 5) & 0x7ffff;
+            let imm = (immhi << 2) | immlo;
+            if (imm & (1 << 20)) imm -= (1 << 21);
+            const pc = match.add(4).toInt32() & ~0xfff;
+            const page = pc + (imm << 12);
+            const imm12 = (insnAdd >>> 10) & 0xfff;
+            const resolvedFunc = ptr(page + imm12);
+
+            Interceptor.attach(resolvedFunc, {
+              onEnter: function(args) {
+                if (this.context && this.context.s0 !== undefined) {
+                  this.context.s0 = targetFov;
+                }
+              }
+            });
+            console.log('[GameBoosterPRO] Unity Camera::set_fieldOfView hooked via registration pattern @ ' + resolvedFunc + ' ✓');
+            unityCamHooked = true;
+          }
+        } catch (e) {
+          console.log('[GameBoosterPRO] Unity Camera registration pattern scan note: ' + e.message);
+        }
+      }
+    }
+
+    // Method B: Battle Camera Height / Logic Fallback
     const camPatterns = ['F4 4F 01 A9 FD 7B 02 A9 FD 03 00 91 ?? ?? ?? 1E'];
     safeHook('CameraManager_SetHeight', RVAS.cameraHeight, camPatterns,
       function(args) {
