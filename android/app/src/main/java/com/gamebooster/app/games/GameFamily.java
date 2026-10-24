@@ -37,11 +37,13 @@ public enum GameFamily {
             return MLBB;
         }
         if (pkg.contains("callofduty") || pkg.contains("garena.game.codm")
-                || pkg.contains("tencent.tmgp.cod") || pkg.contains("vng.codmvn")) {
+                || pkg.contains("tencent.tmgp.cod") || pkg.contains("vng.codmvn")
+                || pkg.contains("codm") || pkg.contains("warzone")) {
             return CODM;
         }
         if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("pubgm")
-                || pkg.contains("imobile") || pkg.contains("rekoo.pubgm")) {
+                || pkg.contains("imobile") || pkg.contains("rekoo.pubgm")
+                || pkg.contains("bgmi") || pkg.contains("iglite")) {
             return PUBGM;
         }
         return OTHER;

@@ -371,14 +371,12 @@ public final class GameLaunchShellExecutor {
      */
     private static void applyGameModInjection(Context ctx, String pkg) {
         if (pkg == null) return;
-        boolean isMlbb = pkg.contains("mobile.legends") || pkg.contains("mobilelegends") || GameModEngine.PKG_MLBB.equals(pkg);
-        boolean isCodm = pkg.contains("cod") || pkg.contains("callofduty") || pkg.contains("warzone") || GameModEngine.PKG_CODM.equals(pkg);
-        boolean isPubgm = pkg.contains("tencent.ig") || pkg.contains("pubg") || GameModEngine.PKG_PUBGM.equals(pkg);
-        if (!isMlbb && !isCodm && !isPubgm) return;
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(pkg);
+        if (family == com.gamebooster.app.games.GameFamily.OTHER) return;
 
         GameModProfile profile = GameModProfile.load(ctx);
 
-        boolean mlbbModsEnabled = isMlbb
+        boolean mlbbModsEnabled = (family == com.gamebooster.app.games.GameFamily.MLBB)
             && (profile.mlbbDamageEnabled || profile.mlbbAttackSpeedEnabled
                 || profile.mlbbDefenseEnabled || profile.mlbbCooldownReductionEnabled
                 || profile.mlbbManaEnabled || profile.mlbbEnergyEnabled
@@ -386,7 +384,7 @@ public final class GameLaunchShellExecutor {
                 || profile.mlbbNoCooldown  || profile.mlbbMapHack
                 || profile.mlbbFpsUnlock   || profile.mlbbAntiBan);
 
-        boolean codmModsEnabled = isCodm
+        boolean codmModsEnabled = (family == com.gamebooster.app.games.GameFamily.CODM)
             && (profile.codmAimbot       || profile.codmDamageEnabled
                 || profile.codmSpeedEnabled || profile.codmAttackEnabled
                 || profile.codmDefenseEnabled || profile.codmHealthEnabled
@@ -395,17 +393,17 @@ public final class GameLaunchShellExecutor {
                 || profile.codmAutoHeadshot || profile.codmFpsUnlock
                 || profile.codmAntiBan);
 
-        boolean pubgmModsEnabled = isPubgm
+        boolean pubgmModsEnabled = (family == com.gamebooster.app.games.GameFamily.PUBGM)
             && (profile.pubgmAimbot || profile.pubgmNoRecoil || profile.pubgmNoSpread
                 || profile.pubgmMagicBullet || profile.pubgmUltraDroneView
                 || profile.pubgmDamageLockMax);
 
         if (!mlbbModsEnabled && !codmModsEnabled && !pubgmModsEnabled) {
-            Log.d(TAG, "[Phase5] No dynamic hook mods enabled for " + pkg + " — skipping Frida injection");
+            Log.d(TAG, "[Phase5] No dynamic hook mods enabled for " + pkg + " (" + family + ") — skipping Frida injection");
             return;
         }
 
-        Log.i(TAG, "💉 [Phase5] Scheduling safe post-login Frida injection for " + pkg);
+        Log.i(TAG, "💉 [Phase5] Scheduling safe post-login Frida injection for " + pkg + " via dedicated " + family + " executor");
 
         // Run Frida injection with sufficient delay (12s) so the game passes splash screen & login
         AppExecutors.getInstance().executeCommand(() -> {
@@ -413,8 +411,22 @@ public final class GameLaunchShellExecutor {
                 Thread.sleep(12000);
                 GameModEngine.startFridaServer(ctx);
                 Thread.sleep(1000);
-                GameModEngine.applyMods(ctx, pkg, profile);
-                Log.i(TAG, "💉 [Phase5] Delayed Frida injection complete for " + pkg);
+                
+                // Dispatch directly to the dedicated executor for this family
+                switch (family) {
+                    case MLBB:
+                        com.gamebooster.app.mods.mlbb.MlbbModManager.injectMlbbModSuite(ctx, pkg, profile);
+                        break;
+                    case CODM:
+                        com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, pkg, profile);
+                        break;
+                    case PUBGM:
+                        com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(ctx, pkg, profile);
+                        break;
+                    default:
+                        break;
+                }
+                Log.i(TAG, "💉 [Phase5] Dedicated " + family + " injection complete for " + pkg);
             } catch (Throwable t) {
                 Log.w(TAG, "Delayed Frida injection error: " + t.getMessage());
             }

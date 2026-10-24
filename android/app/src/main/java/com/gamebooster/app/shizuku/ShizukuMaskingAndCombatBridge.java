@@ -210,21 +210,22 @@ public final class ShizukuMaskingAndCombatBridge {
             return false;
         }
 
-        Log.i(TAG, "Dispatching combat config injection for target: " + targetPackage);
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(targetPackage);
+        Log.i(TAG, "Dispatching combat config injection for target: " + targetPackage + " (" + family + ")");
 
         // Read named holes for target
-        switch (targetPackage) {
-            case PKG_MLBB:
+        switch (family) {
+            case MLBB:
                 Log.d(TAG, "MLBB Target [Unity IL2CPP] -> Base RVA: " + getOffset(NamedOffsets.RVA_MLBB_HERO_ATTR_BASE));
                 break;
-            case PKG_CODM:
+            case CODM:
                 Log.d(TAG, "CODM Target [Unity IL2CPP] -> Trajectory RVA: " + getOffset(NamedOffsets.RVA_CODM_BULLET_TRAJECTORY));
                 break;
-            case PKG_PUBGM:
+            case PUBGM:
                 Log.d(TAG, "PUBGM Target [Unreal Engine 4] -> Damage RVA: " + getOffset(NamedOffsets.RVA_PUBGM_WEAPON_DAMAGE));
                 break;
             default:
-                Log.w(TAG, "Unknown combat target: " + targetPackage);
+                Log.w(TAG, "Unknown combat target family: " + targetPackage);
                 break;
         }
 

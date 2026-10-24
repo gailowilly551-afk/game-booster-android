@@ -3,10 +3,10 @@
 # Executes directly on Android device via Shizuku shell, local terminal, or host ADB.
 # Usage: sh mlbb_pipeline.sh [frida|inject|config|status]
 
-MLBB_PKGS="com.mobile.legends com.mobilelegends.hw"
-HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/mlbb_hooks.js"
+MLBB_PKGS="com.mobile.legends com.mobilelegends.hw com.vng.mlbbvn"
+HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/mlbb/mlbb_hooks.js"
 FRIDA_SERVER="/data/local/tmp/frida-server"
-REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks"
+REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks/mlbb"
 
 # Intelligent shell wrapper (detects if running inside device shell or host ADB)
 run_cmd() {

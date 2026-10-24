@@ -4,9 +4,9 @@
 # Usage: sh codm_pipeline.sh [frida|inject|config|status]
 
 CODM_PKGS="com.garena.game.codm com.activision.callofduty.shooter com.vng.codmvn com.tencent.tmgp.cod"
-HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/codm_hooks.js"
+HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/codm/codm_hooks.js"
 FRIDA_SERVER="/data/local/tmp/frida-server"
-REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks"
+REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks/codm"
 
 # Intelligent shell wrapper (detects if running inside device shell or host ADB)
 run_cmd() {

@@ -28,7 +28,7 @@ public final class PubgmModManager {
     public static final String PKG_PUBGM = "com.tencent.ig";
     public static final int TARGET_VERSION_CODE = 21525;
     public static final String TARGET_VERSION_NAME = "4.6.0";
-    private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
+    public static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/pubgm/";
 
     private static volatile boolean sPubgmInjected = false;
 

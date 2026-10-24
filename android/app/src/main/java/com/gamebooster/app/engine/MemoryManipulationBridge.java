@@ -143,40 +143,51 @@ public final class MemoryManipulationBridge {
         }
 
         long baseModule = 0L;
-        if (packageName.contains("mobile.legends") || packageName.contains("codm") || packageName.contains("callofduty")) {
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(packageName);
+        if (family == com.gamebooster.app.games.GameFamily.MLBB || family == com.gamebooster.app.games.GameFamily.CODM) {
             baseModule = getModuleBase(pid, "libil2cpp.so");
-        } else if (packageName.contains("tencent.ig") || packageName.contains("pubg")) {
+        } else if (family == com.gamebooster.app.games.GameFamily.PUBGM) {
             baseModule = getModuleBase(pid, "libUE4.so");
             if (baseModule == 0L) baseModule = getModuleBase(pid, "libShadowTrackerExtra.so");
         }
 
         if (baseModule == 0L) {
-            Log.w(TAG, "Unable to resolve base module for " + packageName);
+            Log.w(TAG, "Unable to resolve base module for " + packageName + " (" + family + ")");
             return false;
         }
 
-        Log.i(TAG, "Resolved base module 0x" + Long.toHexString(baseModule) + " for PID " + pid);
+        Log.i(TAG, "Resolved base module 0x" + Long.toHexString(baseModule) + " for PID " + pid + " (" + family + ")");
 
         // Apply attribute overrides
-        // Configurable offsets per package
-        if (packageName.contains("mobile.legends")) {
-            long logicOffset = baseModule + 0x04C189A0L;
-            writeFloatAttribute(pid, logicOffset + 0x0118L, attrs.damage);
-            writeFloatAttribute(pid, logicOffset + 0x011CL, attrs.attackSpeed);
-            writeFloatAttribute(pid, logicOffset + 0x0120L, attrs.moveSpeed);
-            writeFloatAttribute(pid, logicOffset + 0x0124L, attrs.mana);
-            writeFloatAttribute(pid, logicOffset + 0x0128L, attrs.energy);
-            writeFloatAttribute(pid, logicOffset + 0x0130L, attrs.defense);
-        } else if (packageName.contains("tencent.ig") || packageName.contains("pubg")) {
-            long playerOffset = baseModule + 0x078E2040L;
-            writeFloatAttribute(pid, playerOffset + 0x0188L, attrs.moveSpeed * 300.0f);
-            writeFloatAttribute(pid, playerOffset + 0x0190L, attrs.damage);
-        } else if (packageName.contains("codm") || packageName.contains("callofduty")) {
-            long codmOffset = baseModule + 0x0512D100L;
-            writeFloatAttribute(pid, codmOffset + 0x00D0L, attrs.damage);
-            writeFloatAttribute(pid, codmOffset + 0x00E4L, attrs.attackSpeed);
-            writeFloatAttribute(pid, codmOffset + 0x0120L, attrs.moveSpeed);
-            writeFloatAttribute(pid, codmOffset + 0x0130L, attrs.defense);
+        // Configurable offsets per package family
+        switch (family) {
+            case MLBB: {
+                long logicOffset = baseModule + 0x04C189A0L;
+                writeFloatAttribute(pid, logicOffset + 0x0118L, attrs.damage);
+                writeFloatAttribute(pid, logicOffset + 0x011CL, attrs.attackSpeed);
+                writeFloatAttribute(pid, logicOffset + 0x0120L, attrs.moveSpeed);
+                writeFloatAttribute(pid, logicOffset + 0x0124L, attrs.mana);
+                writeFloatAttribute(pid, logicOffset + 0x0128L, attrs.energy);
+                writeFloatAttribute(pid, logicOffset + 0x0130L, attrs.defense);
+                break;
+            }
+            case PUBGM: {
+                long playerOffset = baseModule + 0x078E2040L;
+                writeFloatAttribute(pid, playerOffset + 0x0188L, attrs.moveSpeed * 300.0f);
+                writeFloatAttribute(pid, playerOffset + 0x0190L, attrs.damage);
+                break;
+            }
+            case CODM: {
+                long codmOffset = baseModule + 0x0512D100L;
+                writeFloatAttribute(pid, codmOffset + 0x00D0L, attrs.damage);
+                writeFloatAttribute(pid, codmOffset + 0x00E4L, attrs.attackSpeed);
+                writeFloatAttribute(pid, codmOffset + 0x0120L, attrs.moveSpeed);
+                writeFloatAttribute(pid, codmOffset + 0x0130L, attrs.defense);
+                break;
+            }
+            default:
+                Log.w(TAG, "No memory attributes profile for family: " + family);
+                return false;
         }
 
         Log.i(TAG, "⚡ Attribute overrides applied successfully for " + packageName);
@@ -232,19 +243,26 @@ public final class MemoryManipulationBridge {
         long now = SystemClock.uptimeMillis();
         float t = (now % 10000) / 10000.0f * 2.0f * (float) Math.PI;
 
-        if (pkg.contains("mobile.legends")) {
-            detected.add(new EspEntity("Enemy Ling", 4200.0f, 5500.0f, 18.0f,
-                    540.0f + (float) Math.sin(t) * 120.0f, 850.0f, 90.0f, 130.0f, true, Color.RED));
-            detected.add(new EspEntity("Enemy Fanny", 2100.0f, 4800.0f, 24.0f,
-                    800.0f + (float) Math.cos(t) * 80.0f, 600.0f, 90.0f, 130.0f, true, Color.RED));
-        } else if (pkg.contains("tencent.ig") || pkg.contains("pubg")) {
-            detected.add(new EspEntity("Player_Sniper", 100.0f, 100.0f, 85.0f,
-                    650.0f + (float) Math.sin(t) * 60.0f, 520.0f, 75.0f, 140.0f, true, Color.CYAN));
-            detected.add(new EspEntity("Bot_Target", 65.0f, 100.0f, 142.0f,
-                    420.0f + (float) Math.cos(t) * 40.0f, 480.0f, 50.0f, 90.0f, true, Color.YELLOW));
-        } else if (pkg.contains("codm") || pkg.contains("callofduty")) {
-            detected.add(new EspEntity("Ghost", 150.0f, 150.0f, 32.0f,
-                    580.0f + (float) Math.sin(t) * 90.0f, 700.0f, 80.0f, 150.0f, true, Color.RED));
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(pkg);
+        switch (family) {
+            case MLBB:
+                detected.add(new EspEntity("Enemy Ling", 4200.0f, 5500.0f, 18.0f,
+                        540.0f + (float) Math.sin(t) * 120.0f, 850.0f, 90.0f, 130.0f, true, Color.RED));
+                detected.add(new EspEntity("Enemy Fanny", 2100.0f, 4800.0f, 24.0f,
+                        800.0f + (float) Math.cos(t) * 80.0f, 600.0f, 90.0f, 130.0f, true, Color.RED));
+                break;
+            case PUBGM:
+                detected.add(new EspEntity("Player_Sniper", 100.0f, 100.0f, 85.0f,
+                        650.0f + (float) Math.sin(t) * 60.0f, 520.0f, 75.0f, 140.0f, true, Color.CYAN));
+                detected.add(new EspEntity("Bot_Target", 65.0f, 100.0f, 142.0f,
+                        420.0f + (float) Math.cos(t) * 40.0f, 480.0f, 50.0f, 90.0f, true, Color.YELLOW));
+                break;
+            case CODM:
+                detected.add(new EspEntity("Ghost", 150.0f, 150.0f, 32.0f,
+                        580.0f + (float) Math.sin(t) * 90.0f, 700.0f, 80.0f, 150.0f, true, Color.RED));
+                break;
+            default:
+                break;
         }
 
         sTrackedEntities.clear();

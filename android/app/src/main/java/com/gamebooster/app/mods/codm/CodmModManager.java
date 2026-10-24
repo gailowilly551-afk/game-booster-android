@@ -26,7 +26,7 @@ public final class CodmModManager {
     public static final int TARGET_UID = 10656;
     public static final String DIR_USER_0 = "/data/user/0/com.garena.game.codm";
     public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.garena.game.codm";
-    private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
+    public static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/codm/";
 
     private static volatile boolean sCodmInjected = false;
 

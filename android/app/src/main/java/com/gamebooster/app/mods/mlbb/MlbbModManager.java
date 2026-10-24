@@ -28,7 +28,7 @@ public final class MlbbModManager {
     public static final int TARGET_UID = 10677;
     public static final String DIR_USER_0 = "/data/user/0/com.mobile.legends";
     public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.mobile.legends";
-    private static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/";
+    public static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/mlbb/";
 
     private static volatile boolean sMlbbInjected = false;
 

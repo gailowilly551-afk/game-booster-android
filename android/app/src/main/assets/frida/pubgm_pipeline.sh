@@ -4,9 +4,9 @@
 # Usage: sh pubgm_pipeline.sh [frida|inject|config|status]
 
 PUBGM_PKGS="com.tencent.ig com.pubg.imobile com.pubg.krmobile com.vng.pubgmobile com.tencent.tmgp.pubgm com.tencent.iglite"
-HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/pubgm_hooks.js"
+HOOKS_DEVICE_PATH="/data/local/tmp/gb_hooks/pubgm/pubgm_hooks.js"
 FRIDA_SERVER="/data/local/tmp/frida-server"
-REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks"
+REMOTE_HOOK_DIR="/data/local/tmp/gb_hooks/pubgm"
 
 run_cmd() {
     if command -v adb >/dev/null 2>&1 && [ -n "$DEVICE_HOST_MODE" ]; then

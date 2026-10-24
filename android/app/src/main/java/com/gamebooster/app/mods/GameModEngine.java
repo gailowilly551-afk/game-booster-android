@@ -36,7 +36,9 @@ public final class GameModEngine {
     public static final String PKG_PUBGM = "com.tencent.ig";
 
     private static final String FRIDA_SERVER_DEVICE_PATH = "/data/local/tmp/frida-server";
-    private static final String FRIDA_HOOK_DEVICE_DIR    = "/data/local/tmp/gb_hooks/";
+    public static final String FRIDA_HOOK_MLBB_DIR      = "/data/local/tmp/gb_hooks/mlbb/";
+    public static final String FRIDA_HOOK_CODM_DIR      = "/data/local/tmp/gb_hooks/codm/";
+    public static final String FRIDA_HOOK_PUBGM_DIR     = "/data/local/tmp/gb_hooks/pubgm/";
 
     private GameModEngine() {}
 
@@ -174,12 +176,20 @@ public final class GameModEngine {
      */
     public static void applyMods(Context ctx, String packageName, GameModProfile profile) {
         if (packageName == null) return;
-        if (packageName.contains("mobile.legends") || packageName.contains("mobilelegends")) {
-            com.gamebooster.app.mods.mlbb.MlbbModManager.applyProfile(ctx, packageName, profile);
-        } else if (packageName.contains("codm") || packageName.contains("callofduty")) {
-            com.gamebooster.app.mods.codm.CodmModManager.applyProfile(ctx, packageName, profile);
-        } else if (packageName.contains("tencent.ig") || packageName.contains("pubg")) {
-            com.gamebooster.app.mods.pubgm.PubgmModManager.applyProfile(ctx, packageName, profile);
+        com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(packageName);
+        switch (family) {
+            case MLBB:
+                com.gamebooster.app.mods.mlbb.MlbbModManager.applyProfile(ctx, packageName, profile);
+                break;
+            case CODM:
+                com.gamebooster.app.mods.codm.CodmModManager.applyProfile(ctx, packageName, profile);
+                break;
+            case PUBGM:
+                com.gamebooster.app.mods.pubgm.PubgmModManager.applyProfile(ctx, packageName, profile);
+                break;
+            default:
+                Log.d(TAG, "No dedicated mod executor for package family: " + packageName);
+                break;
         }
     }
 
@@ -296,7 +306,9 @@ public final class GameModEngine {
     public static void pushScriptAssetToDevice(Context ctx, String assetPath, String devicePath) {
         if (ctx == null || assetPath == null || devicePath == null) return;
         try {
-            exec("mkdir -p " + FRIDA_HOOK_DEVICE_DIR);
+            int lastSlash = devicePath.lastIndexOf('/');
+            String parentDir = (lastSlash > 0) ? devicePath.substring(0, lastSlash) : "/data/local/tmp";
+            exec("mkdir -p '" + parentDir + "'");
             File temp = new File(ctx.getCacheDir(), "hook_stage_" + System.currentTimeMillis() + ".js");
             try (InputStream is = ctx.getAssets().open(assetPath);
                  FileOutputStream fos = new FileOutputStream(temp)) {
@@ -318,7 +330,9 @@ public final class GameModEngine {
 
     private static void pushScriptToDevice(String content, String devicePath) {
         if (content == null || content.isEmpty()) return;
-        exec("mkdir -p " + FRIDA_HOOK_DEVICE_DIR);
+        int lastSlash = devicePath.lastIndexOf('/');
+        String parentDir = (lastSlash > 0) ? devicePath.substring(0, lastSlash) : "/data/local/tmp";
+        exec("mkdir -p '" + parentDir + "'");
         try {
             Context ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
             if (ctx == null) ctx = com.gamebooster.app.GameBoosterApp.getInstance();
