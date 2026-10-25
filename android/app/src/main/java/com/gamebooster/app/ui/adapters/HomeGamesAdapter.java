@@ -132,7 +132,7 @@ public class HomeGamesAdapter extends RecyclerView.Adapter<HomeGamesAdapter.Game
             holder.layoutCardBg.setBackgroundResource(game.getCardBgRes());
         }
 
-        // Tap anywhere on card = instant game launch
+        // Tap anywhere on card = instant game launch with full optimizations & overdrive
         View.OnClickListener launchListener = v -> {
             Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
             if (actionListener != null) {
@@ -141,41 +141,30 @@ public class HomeGamesAdapter extends RecyclerView.Adapter<HomeGamesAdapter.Game
                 com.gamebooster.app.games.GameLauncherHelper.autoLaunchGame(ctx, game);
             }
         };
-        // Long press anywhere on card = Pre-Launch tuning dialog (FPS picker, config)
-        View.OnLongClickListener tuneListener = v -> {
-            Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
+        // Long press anywhere on card or PLAY button = Game options menu (Tune, CFG Mod Studio, App Info, etc.)
+        View.OnLongClickListener optionsListener = v -> {
             if (actionListener != null) {
-                actionListener.onTune(game);
+                actionListener.onMoreOptions(game, v);
             } else {
+                Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
                 PreLaunchGameDialog.show(ctx, game);
             }
             return true;
         };
 
-        // Launch button: tap = launch, long press = tune dialog
+        // Launch button: tap = launch, long press = options menu
         holder.btnLaunch.setOnClickListener(launchListener);
-        holder.btnLaunch.setOnLongClickListener(tuneListener);
+        holder.btnLaunch.setOnLongClickListener(optionsListener);
 
-        // Overflow / More Options button (⋮)
-        if (holder.btnMore != null) {
-            holder.btnMore.setOnClickListener(v -> {
-                if (actionListener != null) {
-                    actionListener.onMoreOptions(game, v);
-                } else {
-                    PreLaunchGameDialog.show(context, game);
-                }
-            });
-        }
-
-        // Card background: tap = launch, long press = tune dialog
+        // Card background: tap = launch, long press = options menu
         if (holder.layoutCardBg != null) {
             holder.layoutCardBg.setOnClickListener(launchListener);
-            holder.layoutCardBg.setOnLongClickListener(tuneListener);
+            holder.layoutCardBg.setOnLongClickListener(optionsListener);
             holder.itemView.setOnClickListener(null);
             holder.itemView.setOnLongClickListener(null);
         } else {
             holder.itemView.setOnClickListener(launchListener);
-            holder.itemView.setOnLongClickListener(tuneListener);
+            holder.itemView.setOnLongClickListener(optionsListener);
         }
     }
 
@@ -192,7 +181,6 @@ public class HomeGamesAdapter extends RecyclerView.Adapter<HomeGamesAdapter.Game
         TextView tvBadge;
         TextView tvProfile;
         Button btnLaunch;
-        Button btnMore;
 
         public GameViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -203,7 +191,6 @@ public class HomeGamesAdapter extends RecyclerView.Adapter<HomeGamesAdapter.Game
             tvBadge = itemView.findViewById(R.id.tv_game_badge);
             tvProfile = itemView.findViewById(R.id.tv_game_profile);
             btnLaunch = itemView.findViewById(R.id.btn_launch_game);
-            btnMore = itemView.findViewById(R.id.btn_game_more);
         }
     }
 }

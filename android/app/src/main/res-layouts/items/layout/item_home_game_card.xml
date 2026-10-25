@@ -97,7 +97,7 @@
                 android:ellipsize="end" />
         </LinearLayout>
 
-        <!-- Actions Row: Play + More Options -->
+        <!-- Actions Row: Play -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -110,22 +110,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="38dp"
                 android:background="@drawable/btn_cyber_green"
-                android:paddingHorizontal="12dp"
+                android:paddingHorizontal="14dp"
                 android:text="⚡ PLAY"
                 android:textColor="#0B0E14"
                 android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btn_game_more"
-                android:layout_width="34dp"
-                android:layout_height="38dp"
-                android:layout_marginStart="5dp"
-                android:background="@drawable/btn_cyber_dark"
-                android:padding="0dp"
-                android:text="⋮"
-                android:textColor="@color/accent_cyan"
-                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
