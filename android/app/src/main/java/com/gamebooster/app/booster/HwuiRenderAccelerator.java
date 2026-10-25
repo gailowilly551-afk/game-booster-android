@@ -231,9 +231,14 @@ public final class HwuiRenderAccelerator {
         CommandExecutor.setSystemProperty("pm.dexopt.bg-dexopt", "speed-profile");
         CommandExecutor.setSystemProperty("pm.dexopt.install", "speed-profile");
 
-        // 2. Dispatch heavy dex2oat AOT compilation asynchronously so it NEVER blocks game startup!
+        // 2. Dispatch heavy dex2oat AOT compilation asynchronously only if game is not actively executing
+        // (Android OS will SIGKILL running processes if cmd package compile is triggered on them)
         com.gamebooster.app.core.AppExecutors.getInstance().getScanIO().execute(() -> {
             try {
+                if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(gamePackage)) {
+                    Log.d(TAG, "Skipping runtime ART compile for " + gamePackage + " (process already active)");
+                    return;
+                }
                 if (ShizukuExecutor.hasShizukuPermission()) {
                     ShizukuExecutor.executeShizukuCommands(
                             "cmd package compile -m speed-profile " + gamePackage + " 2>/dev/null",

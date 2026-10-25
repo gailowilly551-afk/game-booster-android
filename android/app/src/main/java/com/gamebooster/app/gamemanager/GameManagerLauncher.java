@@ -137,13 +137,7 @@ public final class GameManagerLauncher {
                 Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());
             }
 
-            // Ensure hardware profile & mock files are committed to disk before game initializes
-            try {
-                com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(appContext, pkg, targetHz);
-            } catch (Throwable spoofErr) {
-                Log.w(TAG, "Pre-launch hardware spoof note: " + spoofErr.getMessage());
-            }
-
+            // Framework launch must happen immediately with zero blocking or UI stalls
             boolean launched = launchWithFrameworkIntent(context, appContext, pkg, finalTargetIntent);
             if (launched) {
                 Toast.makeText(appContext, "Launching " + gameTitle + "\nDisplay preference: " + displayHz + "Hz", Toast.LENGTH_SHORT).show();
@@ -158,6 +152,12 @@ public final class GameManagerLauncher {
         Runnable postLaunchPipeline = () -> {
             AppExecutors.getInstance().executeCommand(() -> {
                 try {
+                    // Pre-launch hardware spoof & profile commit runs in background concurrently with game launch
+                    try {
+                        com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(appContext, pkg, targetHz);
+                    } catch (Throwable spoofErr) {
+                        Log.w(TAG, "Post-launch hardware spoof note: " + spoofErr.getMessage());
+                    }
                     // If MLBB, inject Drone View concurrently while game splash screen is initializing
                     if (isMlbb) {
                         try {

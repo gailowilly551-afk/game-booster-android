@@ -94,7 +94,8 @@ public final class ShizukuMaskingAndCombatBridge {
         bypassOps.add("cmd appops set " + myPackageName + " GET_USAGE_STATS allow");
         bypassOps.add("cmd appops set " + myPackageName + " SYSTEM_ALERT_WINDOW allow");
         bypassOps.add("cmd appops set " + myPackageName + " WRITE_SETTINGS allow");
-        bypassOps.add("cmd package compile -m speed-profile " + myPackageName);
+        // Ensure our own launcher is NEVER suspended or hidden
+        bypassOps.add("pm unhide " + myPackageName + " 2>/dev/null; pm unsuspend " + myPackageName + " 2>/dev/null");
 
         boolean allPassed = true;
         for (String cmd : bypassOps) {
@@ -115,6 +116,11 @@ public final class ShizukuMaskingAndCombatBridge {
      * by leveraging hidden user-space package manager isolation.
      */
     public boolean maskLauncherPackage(String myPackageName, boolean enableMasking) {
+        if (myPackageName != null && myPackageName.contains("gamebooster")) {
+            // NEVER hide or suspend the booster itself — Android OS will SIGKILL or freeze the booster!
+            execShell("pm unhide " + myPackageName + " 2>/dev/null; pm unsuspend " + myPackageName + " 2>/dev/null");
+            return true;
+        }
         String action = enableMasking ? "hide" : "unhide";
         CommandResult res = execShell("pm " + action + " " + myPackageName);
         if (res.exitCode != 0) {
@@ -155,9 +161,6 @@ public final class ShizukuMaskingAndCombatBridge {
         commands.add("cmd game set --fps 185 " + targetPackage + " 2>/dev/null");
         commands.add("cmd window set-app-refresh-rate " + targetPackage + " 185 2>/dev/null");
 
-        // Force ART compiler AOT compilation for target binary (eliminates JIT latency spikes)
-        commands.add("cmd package compile -m speed -f " + targetPackage);
-
         boolean success = true;
         for (String cmd : commands) {
             CommandResult res = execShell(cmd);
@@ -188,9 +191,6 @@ public final class ShizukuMaskingAndCombatBridge {
 
         // Target game Android Game Mode API optimization (Mode 2 = PERFORMANCE)
         commands.add("cmd game mode performance " + targetPackage);
-
-        // Force ART compiler AOT compilation for target binary (eliminates JIT latency spikes)
-        commands.add("cmd package compile -m speed -f " + targetPackage);
 
         boolean success = true;
         for (String cmd : commands) {

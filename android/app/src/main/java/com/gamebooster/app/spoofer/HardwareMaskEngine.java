@@ -399,12 +399,9 @@ public class HardwareMaskEngine {
             setStaticField(android.os.Build.class, "TAGS", "release-keys");
             setStaticField(android.os.Build.class, "TYPE", "user");
 
-            try {
-                setStaticField(android.os.Build.VERSION.class, "RELEASE", profile.androidVersion);
-                setStaticField(android.os.Build.VERSION.class, "SDK_INT", profile.sdkInt);
-                setStaticField(android.os.Build.VERSION.class, "SECURITY_PATCH", profile.securityPatch);
-                setStaticField(android.os.Build.VERSION.class, "INCREMENTAL", profile.displayId);
-            } catch (Throwable ignored) {}
+            // NOTE: Never reflectively modify android.os.Build.VERSION (RELEASE, SDK_INT, SECURITY_PATCH)
+            // in the booster process. AndroidX and OS framework rely on real SDK_INT; overriding it to 35
+            // triggers NoSuchMethodError on Android 10-14 ROMs and crashes the app!
 
             try {
                 setStaticField(android.os.Build.class, "SOC_MODEL", profile.socModel);
@@ -439,12 +436,8 @@ public class HardwareMaskEngine {
             setStaticField(android.os.Build.class, "DISPLAY", snap.display);
             setStaticField(android.os.Build.class, "SERIAL", snap.serial);
 
-            try {
-                setStaticField(android.os.Build.VERSION.class, "RELEASE", snap.release);
-                setStaticField(android.os.Build.VERSION.class, "SDK_INT", snap.sdkInt);
-                setStaticField(android.os.Build.VERSION.class, "SECURITY_PATCH", snap.securityPatch);
-                setStaticField(android.os.Build.VERSION.class, "INCREMENTAL", snap.incremental);
-            } catch (Throwable ignored) {}
+            // Do not tamper with Build.VERSION fields
+            // (real OS version is preserved intact)
 
             try {
                 if (snap.socModel != null && !snap.socModel.isEmpty()) {
