@@ -211,6 +211,9 @@ public final class GameAutoInjectDispatcher {
                             MlbbConfigPatcher.patchUltraExtreme185(fPkg);
                         } else if (mlbbTargetFps >= 165) {
                             MlbbConfigPatcher.patchUltraExtreme165(fPkg);
+                            try {
+                                com.gamebooster.app.engine.MlbbFpsUnlockEngine.unlock165Fps(fCtx, fPkg);
+                            } catch (Throwable ignored) {}
                         } else if (mlbbTargetFps >= 144) {
                             MlbbConfigPatcher.patchUltraExtreme144(fPkg);
                         }

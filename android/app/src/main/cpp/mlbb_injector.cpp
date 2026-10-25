@@ -1939,7 +1939,8 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
 
     // XML PlayerPrefs keys for MLBB
     std::vector<std::pair<std::string, std::string>> intKeys = {
-        {"HighFPSMode", "3"},
+        {"HighFPSMode", "6"},
+        {"HighFPSEnable", "1"},
         {"FrameRateLevel", "6"},
         {"QualityLevel", qStr},
         {"GraphicsQuality", qStr},
@@ -2014,7 +2015,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     // Handle JSON Document files safely: NEVER write XML into .json files!
     if (pathStr.rfind(".json") != std::string::npos) {
         if (content.empty() || content.find('{') == std::string::npos || content.find("<map>") != std::string::npos) {
-            content = "{\n  \"HighFPSMode\": 3,\n  \"FrameRateLevel\": 6,\n  \"QualityLevel\": 3\n}\n";
+            content = "{\n  \"HighFPSMode\": 6,\n  \"HighFPSEnable\": 1,\n  \"FrameRateLevel\": 6,\n  \"QualityLevel\": 3\n}\n";
         }
         for (const auto &kv : intKeys) {
             patch_json_node(content, kv.first, kv.second, true);
@@ -2104,7 +2105,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         // Frame delivery
         {"bFramePacingEnabled","True"},{"AllowOcclusionQueries","1"},{"PreloadShaders","1"},
         {"r.OneFrameThreadLag","0"},{"r.FinishCurrentFrame","0"},{"r.VSync","0"},
-        {"HighFPSMode","3"},{"FrameRateLevel","5"},
+        {"HighFPSMode","6"},{"HighFPSEnable","1"},{"FrameRateLevel","6"},
         // Stealth
         {"ScreenShake","0"},{"Vibrate","0"},{"DamageText","1"},
     };

@@ -1295,6 +1295,7 @@ public class MlbbConfigPatcher {
         String[] keys = {
             // ── 165fps SuperSmooth Unlock ──
             "HighFPSMode=6",
+            "HighFPSEnable=1",
             "FrameRateLevel=6",          // MLBB internal: 6 = 165fps tier
             "FPS=165",
             "MaxFPS=165",
@@ -1409,11 +1410,12 @@ public class MlbbConfigPatcher {
         if (packageName == null) return false;
         repairAndRestoreMlbbGame(null, packageName);
         final int forcedFps = FpsUnlockTier.resolveTargetFps(targetFps);
-        final int frameRateLevel = (forcedFps >= 185) ? 5 : (forcedFps >= 144 ? 4 : 3);
-        final int highFpsMode = (forcedFps >= 120) ? 3 : 1; // 2026: 3 = enable 90Hz+ modes
+        final int frameRateLevel = (forcedFps >= 165) ? 6 : ((forcedFps >= 144) ? 5 : ((forcedFps >= 120) ? 4 : 3));
+        final int highFpsMode = (forcedFps >= 120) ? 6 : 1; // 2026: 6 = Ultra Max / 165fps+
 
         String[] keys = {
             "HighFPSMode=" + highFpsMode,
+            "HighFPSEnable=1",
             "FrameRateLevel=" + frameRateLevel,
             "QualityLevel=3",
             "HDMode=1",
@@ -1755,7 +1757,7 @@ public class MlbbConfigPatcher {
             "AllowOcclusionQueries=1"
         };
         boolean b1 = ConfigFileHelper.patchKeys(path, keys, "<map>");
-        boolean b2 = NativeConfigInjector.injectMlbb165FpsGraphics(path, forcedFps, 3);
+        boolean b2 = NativeConfigInjector.injectMlbb165FpsGraphics(path, forcedFps, highFpsMode);
         return b1 || b2;
     }
 

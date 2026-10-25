@@ -70,8 +70,11 @@ public final class MlbbFpsUnlockEngine {
             String p1 = dir + "/" + pkg + ".v4.playerprefs.xml";
             String p2 = dir + "/" + pkg + ".v3.playerprefs.xml";
             String p3 = dir + "/" + pkg + ".v2.playerprefs.xml";
-            String p4 = dir + "/" + pkg + "_preferences.xml";
-            String[] xmlFiles = {p1, p2, p3, p4};
+            String p4 = dir + "/" + pkg + ".v1.playerprefs.xml";
+            String p5 = dir + "/" + pkg + ".playerprefs.xml";
+            String p6 = dir + "/" + pkg + "_playerprefs.xml";
+            String p7 = dir + "/" + pkg + "_preferences.xml";
+            String[] xmlFiles = {p1, p2, p3, p4, p5, p6, p7};
             for (String prefs : xmlFiles) {
                 sb.append("if [ -f '").append(prefs).append("' ]; then ")
                   .append("sed -i 's/name=\"HighFPSMode\" value=\"[0-9]*\"/name=\"HighFPSMode\" value=\"6\"/g' '").append(prefs).append("' 2>/dev/null; ")
@@ -81,6 +84,9 @@ public final class MlbbFpsUnlockEngine {
                   .append("sed -i 's/name=\"FrameRateLimit\" value=\"[0-9]*\"/name=\"FrameRateLimit\" value=\"165\"/g' '").append(prefs).append("' 2>/dev/null; ")
                   .append("sed -i 's/name=\"Unlock165Hz\" value=\"[0-9]*\"/name=\"Unlock165Hz\" value=\"1\"/g' '").append(prefs).append("' 2>/dev/null; ")
                   .append("sed -i 's/name=\"Unlock165FPS\" value=\"[0-9]*\"/name=\"Unlock165FPS\" value=\"1\"/g' '").append(prefs).append("' 2>/dev/null; ")
+                  .append("grep -q 'HighFPSMode' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"HighFPSMode\" value=\"6\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
+                  .append("grep -q 'HighFPSEnable' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"HighFPSEnable\" value=\"1\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
+                  .append("grep -q 'FrameRateLevel' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"FrameRateLevel\" value=\"6\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
                   .append("grep -q 'Unlock165Hz' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"Unlock165Hz\" value=\"1\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
                   .append("grep -q 'Unlock165FPS' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"Unlock165FPS\" value=\"1\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
                   .append("grep -q 'targetFrameRate' '").append(prefs).append("' || sed -i 's|</map>|<int name=\"targetFrameRate\" value=\"165\" /></map>|' '").append(prefs).append("' 2>/dev/null; ")
@@ -89,7 +95,14 @@ public final class MlbbFpsUnlockEngine {
         }
         executeShell(sb.toString());
 
-        // 4. Native MLBB Unity 185/165 FPS patch trigger
+        // 4. Injects unlocked MLBB graphics & frame rate directly into prefs_int
+        try {
+            MlbbConfigPatcher.applyMlbbPrefsIntAndBootConfig(pkg, targetFps);
+        } catch (Throwable t) {
+            Log.w(TAG, "MlbbConfigPatcher.applyMlbbPrefsIntAndBootConfig note: " + t.getMessage());
+        }
+
+        // 5. Native MLBB Unity 185/165 FPS patch trigger
         try {
             NativeConfigInjector.nativeApplyMlbb185FpsPatch();
         } catch (Throwable ignored) {}

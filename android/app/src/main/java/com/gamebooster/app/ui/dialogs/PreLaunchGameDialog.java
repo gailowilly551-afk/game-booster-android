@@ -35,6 +35,7 @@ import com.gamebooster.app.config.CommonConfigTuningInjector;
 import com.gamebooster.app.config.FreeFireConfigPatcher;
 import com.gamebooster.app.config.GameConfigPathResolver;
 import com.gamebooster.app.config.GameProfilePreferences;
+import com.gamebooster.app.config.MlbbConfigPatcher;
 import com.gamebooster.app.config.MlbbDroneViewPatcher;
 import com.gamebooster.app.config.MlbbHeroScriptDispatcher;
 import com.gamebooster.app.config.MlbbHeroScriptRegistry;
@@ -46,6 +47,7 @@ import com.gamebooster.app.device.DevicePerformanceCapabilities;
 import com.gamebooster.app.engine.CodmCombatOverdriveEngine;
 import com.gamebooster.app.engine.FpsForceUnlockEngine;
 import com.gamebooster.app.engine.MlbbCombatOverdriveEngine;
+import com.gamebooster.app.engine.MlbbFpsUnlockEngine;
 import com.gamebooster.app.engine.PubgmCombatOverdriveEngine;
 import com.gamebooster.app.engine.PubgmFpsUnlockEngine;
 import com.gamebooster.app.gamemanager.GameManagerLauncher;
@@ -401,6 +403,14 @@ public final class PreLaunchGameDialog {
 
                     final int finalDroneTier = droneTier;
                     AppExecutors.getInstance().executeCommand(() -> {
+                        if (finalRequestedRate >= 165) {
+                            MlbbFpsUnlockEngine.unlock165Fps(context, packageName);
+                            MlbbConfigPatcher.patchUltraExtreme165(packageName);
+                            MlbbConfigPatcher.apply165FpsGraphicsUnlock(packageName);
+                        } else {
+                            MlbbConfigPatcher.patch(packageName, finalRequestedRate);
+                        }
+
                         if (godOn) {
                             MlbbCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         }
