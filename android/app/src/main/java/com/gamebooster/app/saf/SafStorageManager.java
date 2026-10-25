@@ -457,17 +457,18 @@ public final class SafStorageManager {
                 | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
 
         String pkg = (packageName != null) ? packageName.trim() : "";
-        if (!pkg.isEmpty() && !"all".equalsIgnoreCase(pkg)) {
-            String docPath = "primary:Android/data/" + pkg;
-            Uri initialUri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", docPath);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                Uri initialUri;
+                if (!pkg.isEmpty() && !"all".equalsIgnoreCase(pkg)) {
+                    String docPath = "primary:Android/data/" + pkg;
+                    initialUri = DocumentsContract.buildTreeDocumentUri("com.android.externalstorage.documents", docPath);
+                } else {
+                    initialUri = DocumentsContract.buildTreeDocumentUri("com.android.externalstorage.documents", "primary:Android/data");
+                }
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
-            }
-        } else {
-            String docPath = "primary:Android/data";
-            Uri initialUri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", docPath);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+            } catch (Throwable t) {
+                Log.w(TAG, "buildTreeDocumentUri note: " + t.getMessage());
             }
         }
         return intent;
@@ -509,11 +510,18 @@ public final class SafStorageManager {
                 | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
 
         String pkg = (packageName != null) ? packageName.trim() : "";
-        if (!pkg.isEmpty() && !"all".equalsIgnoreCase(pkg)) {
-            String docPath = "primary:Android/data/" + pkg + "/files";
-            Uri initialUri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", docPath);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                Uri initialUri;
+                if (!pkg.isEmpty() && !"all".equalsIgnoreCase(pkg)) {
+                    String docPath = "primary:Android/data/" + pkg + "/files";
+                    initialUri = DocumentsContract.buildTreeDocumentUri("com.android.externalstorage.documents", docPath);
+                } else {
+                    initialUri = DocumentsContract.buildTreeDocumentUri("com.android.externalstorage.documents", "primary:Android/data");
+                }
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+            } catch (Throwable t) {
+                Log.w(TAG, "buildTreeDocumentUri note: " + t.getMessage());
             }
         }
         return intent;
@@ -960,9 +968,13 @@ public final class SafStorageManager {
                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                 | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
-        Uri initialUri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+            try {
+                Uri initialUri = DocumentsContract.buildTreeDocumentUri("com.android.externalstorage.documents", "primary:");
+                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+            } catch (Throwable t) {
+                Log.w(TAG, "buildTreeDocumentUri note: " + t.getMessage());
+            }
         }
         return intent;
     }

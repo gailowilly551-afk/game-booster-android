@@ -3097,9 +3097,18 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                                 "Piliin ang 'Use this folder' sa mismong folder ng " + selected.displayName,
                                 Toast.LENGTH_LONG).show();
                     } catch (Throwable t) {
-                        Toast.makeText(ctx,
-                                "Hindi mabuksan ang system folder picker: " + t.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        try {
+                            Intent fallback = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                            fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+                            safTreeLauncher.launch(fallback);
+                        } catch (Throwable fallbackErr) {
+                            Toast.makeText(ctx,
+                                    "Hindi mabuksan ang system folder picker: " + t.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
             })
