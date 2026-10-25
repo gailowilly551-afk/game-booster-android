@@ -82,8 +82,9 @@ public final class CodmHardwareMasker {
                     CodmConfigPatcher.patchUltraExtreme165(pkg);
                 } else if (targetFps >= 144) {
                     CodmConfigPatcher.patchUltraExtreme144(pkg);
+                } else {
+                    CodmConfigPatcher.patch(pkg, targetFps);
                 }
-                CodmConfigPatcher.patch(pkg, targetFps);
                 CodmAceBypassPatcher.applyBypass(pkg);
             } catch (Throwable t) {
                 Log.w(TAG, "CodmConfigPatcher sync error: " + t.getMessage());

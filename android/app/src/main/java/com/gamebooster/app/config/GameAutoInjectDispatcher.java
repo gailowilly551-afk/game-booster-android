@@ -372,8 +372,10 @@ public final class GameAutoInjectDispatcher {
                     CodmConfigPatcher.patchUltraExtreme165(pkg);
                 } else if (codmTargetFps >= 144) {
                     CodmConfigPatcher.patchUltraExtreme144(pkg);
+                } else {
+                    CodmConfigPatcher.patch(pkg, codmTargetFps);
                 }
-                CodmConfigPatcher.patch(pkg, codmTargetFps);
+                CodmConfigPatcher.apply165FpsGraphicsUnlock(pkg);
                 CodmConfigPatcher.applyVulkanPipelinePrime(pkg);
                 CodmConfigPatcher.applyAntiTelemetrySafe(pkg);
                 CodmConfigPatcher.applyDamage10000AttackSpeedMax(pkg);

@@ -1,12 +1,13 @@
 <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
     <int name="GraphicQuality" value="4" />
-    <int name="FrameRate" value="9" />
-    <int name="TargetFPS" value="185" />
-    <int name="MaxFrameRate" value="185" />
-    <int name="FPSLimit" value="185" />
-    <int name="FrameRateLimit" value="185" />
-    <int name="MobileFPSLimit" value="185" />
+    <int name="FrameRate" value="5" />
+    <int name="FrameRateLevel" value="5" />
+    <int name="TargetFPS" value="165" />
+    <int name="MaxFrameRate" value="165" />
+    <int name="FPSLimit" value="165" />
+    <int name="FrameRateLimit" value="165" />
+    <int name="MobileFPSLimit" value="165" />
     <int name="Unlock90Hz" value="1" />
     <int name="Unlock120Hz" value="1" />
     <int name="Unlock144Hz" value="1" />

@@ -470,7 +470,16 @@ public final class PreLaunchGameDialog {
 
                     AppExecutors.getInstance().executeCommand(() -> {
                         CodmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
-                        CodmConfigPatcher.patch(packageName, finalRequestedRate);
+                        if (finalRequestedRate >= 185) {
+                            CodmConfigPatcher.patchUltraExtreme185(packageName);
+                        } else if (finalRequestedRate >= 165) {
+                            CodmConfigPatcher.patchUltraExtreme165(packageName);
+                        } else if (finalRequestedRate >= 144) {
+                            CodmConfigPatcher.patchUltraExtreme144(packageName);
+                        } else {
+                            CodmConfigPatcher.patch(packageName, finalRequestedRate);
+                        }
+                        CodmConfigPatcher.apply165FpsGraphicsUnlock(packageName);
 
                         if (recoilOn) {
                             CodmConfigPatcher.applyNoRecoilNoSpread(packageName);

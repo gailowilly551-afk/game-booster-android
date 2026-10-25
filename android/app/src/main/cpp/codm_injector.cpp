@@ -531,13 +531,15 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
 
     if (isHwJson) {
         std::vector<std::pair<std::string, std::string>> hwKeys = {
-            {"DeviceModel", "SM-S948B"}, {"DeviceBrand", "samsung"}, {"Manufacturer", "samsung"},
-            {"GPURenderer", "Adreno (TM) 840"}, {"GPUVendor", "Qualcomm"}, {"SoCModel", "SM8850-AB"},
+            {"DeviceModel", "ASUS_AI2401_A"}, {"DeviceBrand", "asus"}, {"Manufacturer", "asus"},
+            {"GPURenderer", "Adreno (TM) 840"}, {"GPUVendor", "Qualcomm"}, {"SoCModel", "Snapdragon 8 Gen 3"},
             {"SoCManufacturer", "Qualcomm"}, {"CPUCores", "8"}, {"RAMTotalMB", "16384"},
             {"MaxFrameRate", fpsStr}, {"TargetFPS", fpsStr}, {"FPSLimit", fpsStr},
-            {"FrameRateLimit", fpsStr}, {"MobileFPSLimit", fpsStr}, {"FrameRateLevel", "9"},
+            {"FrameRateLimit", fpsStr}, {"MobileFPSLimit", fpsStr}, {"FrameRateLevel", "5"},
+            {"FrameRate", "5"},
             {"GraphicQuality", qStr}, {"UnlockUltraHighFPS", "true"}, {"Unlock185Hz", "true"},
             {"Unlock165Hz", "true"}, {"Unlock144Hz", "true"}, {"Unlock120Hz", "true"},
+            {"Unlock165FPS", "1"}, {"Ultra165FPS", "1"},
             {"VulkanSupport", "true"}
         };
         for (const auto& kv : hwKeys) {
@@ -557,6 +559,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         }
     } else {
         std::vector<std::pair<std::string, std::string>> keys = {
+            {"FrameRate", "5"}, {"FrameRateLevel", "5"},
             {"MaxFrameRate", fpsStr}, {"TargetFPS", fpsStr}, {"FPSLimit", fpsStr},
             {"FrameRateLimit", fpsStr}, {"MobileFPSLimit", fpsStr}, {"FrameRateLevel", "9"},
             {"GraphicQuality", qStr}, {"TextureQuality", qStr}, {"ShadowQuality", "2"},

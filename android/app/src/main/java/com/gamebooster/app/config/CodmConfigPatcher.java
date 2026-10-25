@@ -853,16 +853,16 @@ public class CodmConfigPatcher {
             String content;
             if (path.contains("HardwareProfile.json")) {
                 content = "{\n"
-                    + "  \"DeviceModel\": \"SM-S948B\",\n"
-                    + "  \"DeviceBrand\": \"samsung\",\n"
-                    + "  \"Manufacturer\": \"samsung\",\n"
+                    + "  \"DeviceModel\": \"ASUS_AI2401_A\",\n"
+                    + "  \"DeviceBrand\": \"asus\",\n"
+                    + "  \"Manufacturer\": \"asus\",\n"
                     + "  \"AndroidID\": \"7e5c8a196d8e7a4f\",\n"
                     + "  \"SerialNumber\": \"R58MFB94F1A\",\n"
                     + "  \"OAID\": \"bc9f2fa5-486f-33fe-8119-27e22ca088af\",\n"
                     + "  \"MacAddress\": \"00:16:32:05:91:AD\",\n"
                     + "  \"GPURenderer\": \"Adreno (TM) 840\",\n"
                     + "  \"GPUVendor\": \"Qualcomm\",\n"
-                    + "  \"SoCModel\": \"SM8850-AB\",\n"
+                    + "  \"SoCModel\": \"Snapdragon 8 Gen 3\",\n"
                     + "  \"SoCManufacturer\": \"Qualcomm\",\n"
                     + "  \"CPUCores\": 8,\n"
                     + "  \"RAMTotalMB\": 16384,\n"
@@ -871,13 +871,16 @@ public class CodmConfigPatcher {
                     + "  \"FPSLimit\": 165,\n"
                     + "  \"FrameRateLimit\": 165,\n"
                     + "  \"MobileFPSLimit\": 165,\n"
-                    + "  \"FrameRateLevel\": 9,\n"
+                    + "  \"FrameRateLevel\": 5,\n"
+                    + "  \"FrameRate\": 5,\n"
                     + "  \"GraphicQuality\": 4,\n"
                     + "  \"UnlockUltraHighFPS\": true,\n"
                     + "  \"Unlock185Hz\": true,\n"
                     + "  \"Unlock165Hz\": true,\n"
                     + "  \"Unlock144Hz\": true,\n"
                     + "  \"Unlock120Hz\": true,\n"
+                    + "  \"Unlock165FPS\": 1,\n"
+                    + "  \"Ultra165FPS\": 1,\n"
                     + "  \"VulkanSupport\": true\n"
                     + "}\n";
             } else if (path.contains("ControlsSettings.ini")) {
@@ -904,7 +907,8 @@ public class CodmConfigPatcher {
                     + "  \"FPSLimit\": 165,\n"
                     + "  \"FrameRateLimit\": 165,\n"
                     + "  \"MobileFPSLimit\": 165,\n"
-                    + "  \"FrameRateLevel\": 9,\n"
+                    + "  \"FrameRateLevel\": 5,\n"
+                    + "  \"FrameRate\": 5,\n"
                     + "  \"GraphicQuality\": 4,\n"
                     + "  \"TextureQuality\": 4,\n"
                     + "  \"ShadowQuality\": 2,\n"
@@ -951,12 +955,13 @@ public class CodmConfigPatcher {
             } else if (path.endsWith(".xml")) {
                 content = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
                     + "<map>\n"
+                    + "  <int name=\"FrameRate\" value=\"5\" />\n"
+                    + "  <int name=\"FrameRateLevel\" value=\"5\" />\n"
                     + "  <int name=\"MaxFrameRate\" value=\"165\" />\n"
                     + "  <int name=\"TargetFPS\" value=\"165\" />\n"
                     + "  <int name=\"FPSLimit\" value=\"165\" />\n"
                     + "  <int name=\"FrameRateLimit\" value=\"165\" />\n"
                     + "  <int name=\"MobileFPSLimit\" value=\"165\" />\n"
-                    + "  <int name=\"FrameRateLevel\" value=\"9\" />\n"
                     + "  <int name=\"GraphicQuality\" value=\"4\" />\n"
                     + "  <int name=\"TextureQuality\" value=\"4\" />\n"
                     + "  <int name=\"ShadowQuality\" value=\"2\" />\n"
@@ -1407,16 +1412,16 @@ public class CodmConfigPatcher {
 
         if (path.contains("HardwareProfile.json")) {
             String[] hwKeys = {
-                "DeviceModel=SM-S948B",
-                "DeviceBrand=samsung",
-                "Manufacturer=samsung",
+                "DeviceModel=ASUS_AI2401_A",
+                "DeviceBrand=asus",
+                "Manufacturer=asus",
                 "AndroidID=7e5c8a196d8e7a4f",
                 "SerialNumber=R58MFB94F1A",
                 "OAID=bc9f2fa5-486f-33fe-8119-27e22ca088af",
                 "MacAddress=00:16:32:05:91:AD",
                 "GPURenderer=Adreno (TM) 840",
                 "GPUVendor=Qualcomm",
-                "SoCModel=SM8850-AB",
+                "SoCModel=Snapdragon 8 Gen 3",
                 "SoCManufacturer=Qualcomm",
                 "CPUCores=8",
                 "RAMTotalMB=16384",
@@ -1425,7 +1430,8 @@ public class CodmConfigPatcher {
                 "FPSLimit=" + targetFps,
                 "FrameRateLimit=" + targetFps,
                 "MobileFPSLimit=" + targetFps,
-                "FrameRateLevel=" + level,
+                "FrameRateLevel=" + (targetFps >= 120 ? 5 : level),
+                "FrameRate=" + (targetFps >= 120 ? 5 : level),
                 "GraphicQuality=4",
                 "UnlockUltraHighFPS=true",
                 "Unlock185Hz=true",
@@ -1455,12 +1461,13 @@ public class CodmConfigPatcher {
         }
 
         String[] keys = {
+            "FrameRate=" + (targetFps >= 120 ? 5 : level),
+            "FrameRateLevel=" + (targetFps >= 120 ? 5 : level),
             "MaxFrameRate=" + targetFps,
             "TargetFPS=" + targetFps,
             "FPSLimit=" + targetFps,
             "FrameRateLimit=" + targetFps,
             "MobileFPSLimit=" + targetFps,
-            "FrameRateLevel=" + level,
             "GraphicQuality=4",
             "TextureQuality=4",
             "ShadowQuality=2",
