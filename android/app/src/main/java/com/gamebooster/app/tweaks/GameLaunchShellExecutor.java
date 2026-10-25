@@ -374,6 +374,25 @@ public final class GameLaunchShellExecutor {
         com.gamebooster.app.games.GameFamily family = com.gamebooster.app.games.GameFamily.fromPackage(pkg);
         if (family == com.gamebooster.app.games.GameFamily.OTHER) return;
 
+        // Apply dedicated synchronous combat overdrive configuration & system properties first
+        try {
+            switch (family) {
+                case MLBB:
+                    com.gamebooster.app.engine.MlbbCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                    break;
+                case CODM:
+                    com.gamebooster.app.engine.CodmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                    break;
+                case PUBGM:
+                    com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                    break;
+                default:
+                    break;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Dedicated combat overdrive initial apply note: " + t.getMessage());
+        }
+
         GameModProfile profile = GameModProfile.load(ctx);
 
         boolean mlbbModsEnabled = (family == com.gamebooster.app.games.GameFamily.MLBB)

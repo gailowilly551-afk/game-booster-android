@@ -113,6 +113,68 @@ public class GameModProfile {
             }
         } catch (Throwable ignored) {}
 
+        // Cross-sync from game_cheat_prefs (God Mode & Combat Overdrive Master Switch)
+        try {
+            android.content.SharedPreferences cp = ctx.getSharedPreferences("game_cheat_prefs", Context.MODE_PRIVATE);
+            if (cp != null) {
+                // MLBB God Mode sync
+                boolean mlbbGodMode = cp.getBoolean("god_mode_com.mobile.legends", true);
+                if (mlbbGodMode) {
+                    p.mlbbDamageEnabled = true;
+                    p.mlbbDamageMult = Math.max(p.mlbbDamageMult, 10000.0f);
+                    p.mlbbAttackSpeedEnabled = true;
+                    p.mlbbAttackSpeedMult = Math.max(p.mlbbAttackSpeedMult, 10.0f);
+                    p.mlbbDefenseEnabled = true;
+                    p.mlbbDefenseMult = Math.max(p.mlbbDefenseMult, 5.0f);
+                    p.mlbbNoCooldown = true;
+                    p.mlbbCooldownReductionEnabled = true;
+                    p.mlbbCooldownReductionPct = 100;
+                    p.mlbbManaEnabled = true;
+                    p.mlbbInfiniteMana = true;
+                    p.mlbbEnergyEnabled = true;
+                    p.mlbbInfiniteEnergy = true;
+                    p.mlbbMapHack = true;
+                    p.mlbbNoSpread = true;
+                    p.mlbbDroneViewEnabled = true;
+                }
+
+                // CODM God Mode sync
+                boolean codmGodMode = cp.getBoolean("god_mode_com.garena.game.codm", true)
+                                   || cp.getBoolean("god_mode_com.activision.callofduty.shooter", true);
+                if (codmGodMode) {
+                    p.codmDamageEnabled = true;
+                    p.codmDamageMult = Math.max(p.codmDamageMult, 10000.0f);
+                    p.codmSpeedEnabled = true;
+                    p.codmSpeedMult = Math.max(p.codmSpeedMult, 2.5f);
+                    p.codmAttackEnabled = true;
+                    p.codmAttackMult = Math.max(p.codmAttackMult, 10.0f);
+                    p.codmDefenseEnabled = true;
+                    p.codmHealthEnabled = true;
+                    p.codmCriticalEnabled = true;
+                    p.codmCriticalMult = Math.max(p.codmCriticalMult, 10.0f);
+                    p.codmNoRecoil = true;
+                    p.codmNoSpread = true;
+                    p.codmAimbot = true;
+                    p.codmAllScopeLock = true;
+                    p.codmAutoHeadshot = true;
+                }
+
+                // PUBGM God Mode sync
+                boolean pubgmGodMode = cp.getBoolean("god_mode_com.tencent.ig", true)
+                                    || cp.getBoolean("god_mode_com.pubg.imobile", true);
+                if (pubgmGodMode) {
+                    p.pubgmDamageLockMax = true;
+                    p.pubgmNoRecoil = true;
+                    p.pubgmNoSpread = true;
+                    p.pubgmMagicBullet = true;
+                    p.pubgmAimbot = true;
+                    p.pubgmAllScopeLock = true;
+                    p.pubgmUltraDroneView = true;
+                    p.pubgmCombatOverdrive = true;
+                }
+            }
+        } catch (Throwable ignored) {}
+
         p.mlbbFpsUnlock         = sp.getBoolean("mlbb_fps_en", false);
         p.mlbbTargetFps         = sp.getInt("mlbb_fps", 165);
         p.mlbbAntiBan           = sp.getBoolean("mlbb_antiban", true);

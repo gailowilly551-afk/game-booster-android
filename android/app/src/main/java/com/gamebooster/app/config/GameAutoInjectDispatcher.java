@@ -228,6 +228,11 @@ public final class GameAutoInjectDispatcher {
                         MlbbConfigPatcher.applyMlbbBasicAttackRegenOverdrive(fPkg);
                         MlbbConfigPatcher.applyMlbbSovereignFullWorkingCombatSuite(fPkg);
                         MlbbConfigPatcher.applyMlbbUniversalZeroDelayCombo(fPkg);
+                        try {
+                            com.gamebooster.app.engine.MlbbCombatOverdriveEngine.applyCombatOverdrive(fCtx, fPkg);
+                        } catch (Throwable t) {
+                            Log.w(TAG, "MlbbCombatOverdriveEngine dispatch note: " + t.getMessage());
+                        }
                         int mlbbDroneTier = MlbbDroneViewPatcher.DEFAULT_TIER;
                         boolean mlbbDroneEnabled = true;
                         try {
@@ -321,6 +326,11 @@ public final class GameAutoInjectDispatcher {
                     PubgConfigPatcher.applyPubgm460MasterUpdate(ctx, pkg);
                 }
                 try {
+                    com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                } catch (Throwable t) {
+                    Log.w(TAG, "PubgmCombatOverdriveEngine dispatch note: " + t.getMessage());
+                }
+                try {
                     boolean pubgmInjected = com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
                     Log.i(TAG, "PUBGM 4.6.0 Mod Profile injection result: " + pubgmInjected + " (isPubgmInjected=" + com.gamebooster.app.mods.pubgm.PubgmModManager.isPubgmInjected() + ")");
                 } catch (Throwable modErr) {
@@ -360,6 +370,11 @@ public final class GameAutoInjectDispatcher {
                 CodmConfigPatcher.applyCodmSlideCancelMobility(pkg);
                 CodmConfigPatcher.applyCodmUltraDroneViewMaxFov(pkg);
                 CodmConfigPatcher.applyCodmLatest2026Patch(pkg);
+                try {
+                    com.gamebooster.app.engine.CodmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                } catch (Throwable t) {
+                    Log.w(TAG, "CodmCombatOverdriveEngine dispatch note: " + t.getMessage());
+                }
                 try {
                     boolean codmInjected = com.gamebooster.app.mods.codm.CodmModManager.injectCodmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
                     Log.i(TAG, "CODM Mod Profile injection result: " + codmInjected + " (isCodmInjected=" + com.gamebooster.app.mods.codm.CodmModManager.isCodmInjected() + ")");

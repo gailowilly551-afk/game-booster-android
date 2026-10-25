@@ -244,11 +244,11 @@ public final class PreLaunchGameDialog {
                 if (godModeEnabled) {
                     com.gamebooster.app.core.AppExecutors.getInstance().executeCommand(() -> {
                         if (isMlbb) {
-                            com.gamebooster.app.config.MlbbConfigPatcher.applyMlbbGodModeFullOverdrive(packageName);
+                            com.gamebooster.app.engine.MlbbCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         } else if (packageName.contains("pubg") || packageName.contains("tencent.ig")) {
-                            com.gamebooster.app.config.PubgConfigPatcher.applyPubgmGodModeFullOverdrive(packageName);
+                            com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         } else if (packageName.contains("callofduty") || packageName.contains("cod")) {
-                            com.gamebooster.app.config.CodmConfigPatcher.applyCodmGodModeFullOverdrive(packageName);
+                            com.gamebooster.app.engine.CodmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         } else if (packageName.contains("genshin") || packageName.contains("mihoyo") || packageName.contains("starrail")) {
                             com.gamebooster.app.config.GenshinConfigPatcher.applyDamage10000ElementalBurstMax(packageName);
                         } else if (packageName.contains("bloodstrike")) {

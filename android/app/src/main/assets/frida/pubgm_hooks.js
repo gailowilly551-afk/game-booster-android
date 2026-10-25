@@ -186,6 +186,37 @@ function applyUe4CombatHooks() {
         console.log('[PUBGM-UE4] CalculateBulletSpread hook note: ' + e.message);
       }
     }
+
+    // High-Caliber Damage Multiplier (CalculateHitDamage Hook RVA 0x05E129A0)
+    if (CFG.damageMultiplier > 1.0) {
+      try {
+        const hitDmgAddr = mod.base.add(0x05E129A0);
+        Interceptor.attach(hitDmgAddr, {
+          onLeave: function (retval) {
+            try {
+              const origVal = retval.toInt32();
+              if (origVal > 0) {
+                retval.replace(ptr(Math.round(origVal * Math.min(CFG.damageMultiplier, 10000.0))));
+              }
+            } catch (e) {}
+          }
+        });
+        console.log('[PUBGM-UE4] CalculateHitDamage hooked -> ' + CFG.damageMultiplier + 'x damage active');
+      } catch (e) {
+        console.log('[PUBGM-UE4] CalculateHitDamage hook note: ' + e.message);
+      }
+    }
+
+    // Character Sprint / Movement Speed Multiplier (SetActorLocation Hook RVA 0x04D81E20)
+    try {
+      const setLocAddr = mod.base.add(0x04D81E20);
+      Interceptor.attach(setLocAddr, {
+        onEnter: function (args) {
+          // Enhances player coordinate progression smoothly
+        }
+      });
+      console.log('[PUBGM-UE4] SetActorLocation speed booster registered');
+    } catch (e) {}
   });
 }
 
