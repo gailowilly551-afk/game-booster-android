@@ -9,6 +9,7 @@ import com.gamebooster.app.config.GameSecurityBypassEngine;
 import com.gamebooster.app.config.NativeConfigInjector;
 import com.gamebooster.app.config.PubgConfigPatcher;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
+import com.gamebooster.app.shizuku.ShizukuFileManager;
 import com.gamebooster.app.spoofer.SpoofProfile;
 
 import java.nio.charset.StandardCharsets;
@@ -44,26 +45,34 @@ public final class PubgmHardwareMasker {
             List<String> paths = GameConfigPathResolver.getPathsForGame(pkg);
             for (String p : paths) {
                 if (p.endsWith("UserCustom.ini") || p.endsWith("ChineseUserCustom.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[UserCustom DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[Android DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[Android_Vulkan DeviceProfile]");
                 } else if (p.endsWith("EnjoyCJZC.ini") || p.endsWith("EnjoyCJ.ini") || p.endsWith("BGMIEnjoyCJZC.ini") ||
                            p.endsWith("KREnjoyCJZC.ini") || p.endsWith("VNGEnjoyCJZC.ini") || p.endsWith("TWEnjoyCJZC.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[EnjoyCJZC DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
                 } else if (p.endsWith("DeviceProfile.ini") || p.endsWith("BaseDeviceProfile.ini") || p.endsWith("CompatibilityProfile.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[Android DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[Android_Vulkan DeviceProfile]");
                 } else if (p.endsWith("GameUserSettings.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
                 } else if (p.endsWith("SettingInfo.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[SettingInfo]");
                 } else if (p.endsWith("Quality.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[Quality]");
                 } else if (p.endsWith("Engine.ini")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[SystemSettings]");
                 } else if (p.endsWith(".xml")) {
+                    ShizukuFileManager.ensureParentDirectory(p);
                     NativeConfigInjector.injectHardwareMaskProfile(p, profile, targetFps);
                 }
             }

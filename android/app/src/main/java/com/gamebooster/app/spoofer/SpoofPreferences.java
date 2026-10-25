@@ -28,8 +28,8 @@ public class SpoofPreferences {
     // ── Global Spoof Toggle ──
 
     public static boolean isSpoofEnabled(Context context) {
-        if (context == null) return false;
-        return getPrefs(context).getBoolean(KEY_SPOOF_ENABLED, false);
+        if (context == null) return true;
+        return getPrefs(context).getBoolean(KEY_SPOOF_ENABLED, true);
     }
 
     public static void setSpoofEnabled(Context context, boolean enabled) {

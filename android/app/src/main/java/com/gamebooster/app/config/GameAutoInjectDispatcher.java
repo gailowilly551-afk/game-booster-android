@@ -138,7 +138,7 @@ public final class GameAutoInjectDispatcher {
                     bridge.configureSELinuxConfinementBypass(ctx.getPackageName());
                     // Upgraded: 185Hz profile for all games (ROG 9 Pro / Adreno 830 locked)
                     bridge.apply185HzPerformanceProfile(pkg);
-                    bridge.maskLauncherPackage(ctx.getPackageName(), true);
+                    // NEVER call maskLauncherPackage with true: pm hide/suspend freezes the game booster itself!
                 }
             } catch (Throwable t) {
                 Log.w(TAG, "ShizukuMaskingAndCombatBridge note for " + pkg + ": " + t.getMessage());

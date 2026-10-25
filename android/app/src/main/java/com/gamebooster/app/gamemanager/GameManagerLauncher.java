@@ -137,6 +137,13 @@ public final class GameManagerLauncher {
                 Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());
             }
 
+            // Ensure hardware profile & mock files are committed to disk before game initializes
+            try {
+                com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(appContext, pkg, targetHz);
+            } catch (Throwable spoofErr) {
+                Log.w(TAG, "Pre-launch hardware spoof note: " + spoofErr.getMessage());
+            }
+
             boolean launched = launchWithFrameworkIntent(context, appContext, pkg, finalTargetIntent);
             if (launched) {
                 Toast.makeText(appContext, "Launching " + gameTitle + "\nDisplay preference: " + displayHz + "Hz", Toast.LENGTH_SHORT).show();

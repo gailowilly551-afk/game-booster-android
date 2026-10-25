@@ -403,6 +403,8 @@ public final class PreLaunchGameDialog {
 
                     final int finalDroneTier = droneTier;
                     AppExecutors.getInstance().executeCommand(() -> {
+                        DeviceSpooferEngine.applyWorkingSpoofForGame(context, packageName, finalRequestedRate);
+
                         if (finalRequestedRate >= 165) {
                             MlbbFpsUnlockEngine.unlock165Fps(context, packageName);
                             MlbbConfigPatcher.patchUltraExtreme165(packageName);
@@ -445,6 +447,7 @@ public final class PreLaunchGameDialog {
                     editor.putBoolean("pubgm_magic_bullet_" + packageName, bulletOn);
 
                     AppExecutors.getInstance().executeCommand(() -> {
+                        DeviceSpooferEngine.applyWorkingSpoofForGame(context, packageName, finalRequestedRate);
                         PubgmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         if (finalRequestedRate >= 165) {
                             PubgmFpsUnlockEngine.unlock165Fps(context, packageName);
@@ -479,6 +482,7 @@ public final class PreLaunchGameDialog {
                     editor.putBoolean("codm_ace_cloak_" + packageName, aceOn);
 
                     AppExecutors.getInstance().executeCommand(() -> {
+                        DeviceSpooferEngine.applyWorkingSpoofForGame(context, packageName, finalRequestedRate);
                         CodmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
                         if (finalRequestedRate >= 185) {
                             CodmConfigPatcher.patchUltraExtreme185(packageName);
@@ -515,6 +519,7 @@ public final class PreLaunchGameDialog {
                     editor.putBoolean("ff_fast_gloo_" + packageName, glooOn);
 
                     AppExecutors.getInstance().executeCommand(() -> {
+                        DeviceSpooferEngine.applyWorkingSpoofForGame(context, packageName, finalRequestedRate);
                         FreeFireConfigPatcher.applyFreeFireMasterSuite(packageName);
                         FreeFireConfigPatcher.patch(packageName, finalRequestedRate);
 
