@@ -134,6 +134,7 @@ public final class CodmModManager {
                 try {
                     GameModEngine.startFridaServer(ctx);
                     GameModEngine.pushScriptAssetToDevice(ctx, "frida/codm_hooks.js", FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
+                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/codm_pipeline.sh", FRIDA_HOOK_DEVICE_DIR + "pipeline.sh");
                     GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "codm_hooks.js");
                 } catch (Throwable t) {
                     Log.w(TAG, "Frida injection note: " + t.getMessage());

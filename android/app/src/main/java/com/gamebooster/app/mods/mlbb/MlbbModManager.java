@@ -149,6 +149,7 @@ public final class MlbbModManager {
             if (anyModActive) {
                 GameModEngine.startFridaServer(ctx);
                 GameModEngine.pushScriptAssetToDevice(ctx, "frida/mlbb_hooks.js", FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
+                GameModEngine.pushScriptAssetToDevice(ctx, "frida/mlbb_pipeline.sh", FRIDA_HOOK_DEVICE_DIR + "pipeline.sh");
                 GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "mlbb_hooks.js");
             }
 

@@ -150,6 +150,7 @@ public final class PubgmModManager {
                 try {
                     GameModEngine.startFridaServer(ctx);
                     GameModEngine.pushScriptAssetToDevice(ctx, "frida/pubgm_hooks.js", FRIDA_HOOK_DEVICE_DIR + "pubgm_hooks.js");
+                    GameModEngine.pushScriptAssetToDevice(ctx, "frida/pubgm_pipeline.sh", FRIDA_HOOK_DEVICE_DIR + "pipeline.sh");
                     GameModEngine.injectFrida(pkg, FRIDA_HOOK_DEVICE_DIR + "pubgm_hooks.js");
                 } catch (Throwable t) {
                     Log.w(TAG, "PUBGM Frida injection note: " + t.getMessage());

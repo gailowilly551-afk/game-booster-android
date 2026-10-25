@@ -173,6 +173,19 @@ public final class LobbyInjectionEngine {
                 // Dispatch full game-specific 2026 Overdrive suite with force=true to bypass previous cache
                 GameAutoInjectDispatcher.dispatchForPackage(context, pkg, true);
 
+                // Re-assert dedicated Combat Overdrive engines in-lobby
+                try {
+                    if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
+                        com.gamebooster.app.engine.MlbbCombatOverdriveEngine.applyCombatOverdrive(context, pkg);
+                    } else if (pkg.contains("cod") || pkg.contains("callofduty")) {
+                        com.gamebooster.app.engine.CodmCombatOverdriveEngine.applyCombatOverdrive(context, pkg);
+                    } else if (pkg.contains("pubg") || pkg.contains("tencent.ig")) {
+                        com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(context, pkg);
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Dedicated combat overdrive in-lobby re-assert note: " + t.getMessage());
+                }
+
                 // Re-apply anti-tamper permissions, timestamp cloaking, and SELinux contexts right after in-lobby injection
                 GameSecurityBypassEngine.postInjectionBypassAndLock(pkg);
 

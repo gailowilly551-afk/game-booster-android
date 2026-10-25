@@ -295,6 +295,10 @@ public final class GameModEngine {
                     }
                 }
             } else {
+                // Pipeline shell executor fallback (executes staged pipeline script)
+                String dir = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
+                String pipeSh = dir + "pipeline.sh";
+                exec("if [ -f " + pipeSh + " ]; then sh " + pipeSh + " frida & fi");
                 Log.i(TAG, "ℹ️ Frida server running @ /data/local/tmp/frida-server; script ready @ " + scriptPath);
             }
         } catch (Throwable t) {
