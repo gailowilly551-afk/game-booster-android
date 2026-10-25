@@ -30,9 +30,8 @@ public final class CodmSecurityCloak {
         try {
             Log.i(TAG, "🛡️ Engaging CODM Security Cloak...");
 
-            // 1. Anticheat reporting properties spoofing
-            setprop("debug.tencent.ace.disabled", "1");
-            setprop("ro.tencent.anogs.disable", "1");
+            // 1. Anticheat reporting properties spoofing (Network-safe)
+            setprop("debug.tencent.ace.disabled", "0");
             setprop("persist.sys.crashsight.disable", "1");
             setprop("gamebooster.codm.antiban", "1");
 

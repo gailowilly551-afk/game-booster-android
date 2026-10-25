@@ -317,10 +317,7 @@ public class CodmConfigPatcher {
                     }
                 } else if (assetName.equals("GameConfig.xml") || assetName.equals("GraphicsSetting.xml") || assetName.equals("UserProfile.xml")) {
                     writeAssetWithFallback(prefsDir + "/" + assetName, data);
-                    writeAssetWithFallback(sharedPrefsDir + "/" + assetName, data);
                     writeAssetWithFallback(filesDir + "/" + assetName, data);
-                    writeAssetWithFallback(configDir + "/" + assetName, data);
-                    writeAssetWithFallback(configDirLower + "/" + assetName, data);
                     anyDeployed = true;
                 } else {
                     writeAssetWithFallback(filesDir + "/" + assetName, data);
@@ -390,16 +387,21 @@ public class CodmConfigPatcher {
     public static boolean repairAndRestoreCodmGame(android.content.Context context, String packageName) {
         if (packageName == null) return false;
         try {
+            // First heal network sockets and restore non-zero permissions
+            CodmAceBypassPatcher.restoreNetworkAndUnlockDirectories(packageName);
+
             List<String> roots = resolveRootDirs(packageName);
             for (String root : roots) {
                 String filesDir = root + "/files";
                 String configDir = root + "/files/Config";
                 String configDirLower = root + "/files/config";
+                String sharedPrefsDir = root + "/shared_prefs";
 
                 // Remove stale AC token files and corrupting temp files (NEVER delete MSDKConfig.ini, config.json, settings.xml or ConfigCache)
                 String[] toxicFiles = {
                     filesDir + "/acginf.dat",
                     filesDir + "/verifier",
+                    filesDir + "/res_skip_patch",
                     filesDir + "/__accfinfo.tsb",
                     filesDir + "/__acinfo.tsb",
                     configDir + "/acginf.dat",
@@ -407,6 +409,9 @@ public class CodmConfigPatcher {
                     configDir + "/__accfinfo.tsb",
                     configDir + "/__acinfo.tsb",
                     filesDir + "/app_pref.xml",
+                    sharedPrefsDir + "/GameConfig.xml",
+                    sharedPrefsDir + "/UserProfile.xml",
+                    sharedPrefsDir + "/GraphicsSetting.xml",
                     // Clean up dummy/legacy assets that cause CDN hash mismatch
                     configDir + "/.W6JBf0B",
                     configDirLower + "/.W6JBf0B",
@@ -421,8 +426,9 @@ public class CodmConfigPatcher {
                 }
 
                 // Unlock any immutable locks and ensure full read/write permissions
-                String shellCleanup = "chattr -R -i '" + root + "/files' 2>/dev/null; "
-                                    + "chmod -R 775 '" + root + "/files' 2>/dev/null; ";
+                String shellCleanup = "chattr -R -i '" + root + "/files' '" + root + "/shared_prefs' 2>/dev/null; "
+                                    + "chmod -R 775 '" + root + "/files' 2>/dev/null; "
+                                    + "chmod -R 770 '" + root + "/shared_prefs' 2>/dev/null; ";
                 try {
                     if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
                         com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(shellCleanup);

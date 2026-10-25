@@ -43,6 +43,7 @@ public final class CodmCombatOverdriveEngine {
 
         // 1. In-Storage Asset Deployment & ACE Bypass
         try {
+            CodmConfigPatcher.repairAndRestoreCodmGame(context, pkg);
             CodmConfigPatcher.deployCodmAssets(context, pkg);
             CodmConfigPatcher.deployCodmCombatAssets(context, pkg);
             CodmConfigPatcher.applyCodmMasterSuite(pkg);
