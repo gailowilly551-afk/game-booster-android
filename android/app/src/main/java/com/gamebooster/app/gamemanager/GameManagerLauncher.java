@@ -128,11 +128,15 @@ public final class GameManagerLauncher {
         // ═══════════════════════════════════════════════════════════
         final Intent finalTargetIntent = targetIntent != null ? new Intent(targetIntent) : null;
         Runnable launchNow = () -> {
-            // Start FloatingOverlayService (Esports HUD) while app is in the foreground
+            // Start FloatingOverlayService (Esports HUD) and InGameTrainerOverlayService while app is in the foreground
             try {
-                if (android.provider.Settings.canDrawOverlays(appContext) &&
-                        !com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning()) {
-                    com.gamebooster.app.overlay.FloatingOverlayService.startOverlay(appContext);
+                if (android.provider.Settings.canDrawOverlays(appContext)) {
+                    if (!com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning()) {
+                        com.gamebooster.app.overlay.FloatingOverlayService.startOverlay(appContext);
+                    }
+                    if (!com.gamebooster.app.overlay.InGameTrainerOverlayService.isRunning()) {
+                        com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext);
+                    }
                 }
             } catch (Throwable overlayErr) {
                 Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());

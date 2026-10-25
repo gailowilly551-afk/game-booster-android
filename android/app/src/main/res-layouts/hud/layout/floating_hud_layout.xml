@@ -535,6 +535,19 @@
                     android:padding="0dp" />
             </LinearLayout>
 
+            <!-- In-Game Trainer / Cheat Overdrive Launcher -->
+            <Button
+                android:id="@+id/btn_hud_trainer_menu"
+                android:layout_width="match_parent"
+                android:layout_height="27dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/hud_btn_cyber_dark"
+                android:text="⚡ IN-GAME TRAINER / CHEATS"
+                android:textColor="@color/accent_cyan"
+                android:textSize="8.5sp"
+                android:textStyle="bold"
+                android:padding="0dp" />
+
             <!-- Smart Room Detector & Match Balancer (Esports Network & Ranked Optimizer) -->
             <Button
                 android:id="@+id/btn_hud_room_optimizer"

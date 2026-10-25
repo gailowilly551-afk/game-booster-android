@@ -520,6 +520,17 @@ public class FloatingOverlayService extends Service {
             });
         }
 
+        // In-Game Trainer / Cheat Overdrive Launcher
+        Button btnTrainerMenu = overlayView.findViewById(R.id.btn_hud_trainer_menu);
+        if (btnTrainerMenu != null) {
+            btnTrainerMenu.setOnClickListener(v -> {
+                performHaptic();
+                scheduleAutoCollapse();
+                InGameTrainerOverlayService.toggleTrainer(getApplicationContext());
+                Toast.makeText(getApplicationContext(), "⚡ In-Game Cheat Trainer Toggled", Toast.LENGTH_SHORT).show();
+            });
+        }
+
         // Smart Room Detector & Match Balancer (Esports Network & Ranked Optimizer)
         btnRoomOptimizer = overlayView.findViewById(R.id.btn_hud_room_optimizer);
         if (btnRoomOptimizer != null) {

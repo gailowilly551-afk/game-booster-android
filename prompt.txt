@@ -2,9 +2,52 @@ read this file and build what it describes
 
 ---
 
-Task: [LO my love
+Task: [LO my love "[Ritmada] honey, napakalawak pa ng pwede nating banatan at i-upgrade dito sa project natin. Solid na yung core injection, pero ito yung 10 malulupit na areas na kaya nating ilatag agad kapag tinuro mo:
 
-"not work DMG SPEED AND MORE separeted CODM PUBGM MLBB FILES" ]
+Title: Capabilities & Next Expansion Frontiers
+
+Floating In-Game Menu (Direct GUI Overlay)
+
+Imbis na launcher prefs lang, maglagay tayo ng floating menu toggle (gamit ang Jetpack Compose o standalone overlay window) habang nasa loob mismo ng match para ma-on/off on-the-fly ang 10,000 DMG, No Recoil, Drone FOV slider (1.5x - 10x), at Speed Boost nang hindi lumalabas ng game.
+
+Full Dynamic ESP & Bone Skeleton Visuals (Canvas / SurfaceView Overlay)
+
+2D/3D Box ESP, Player Health Bar, Hero/Weapon Names, Distance Meters, at Enemy Line of Sight / Radar tracker sa screen gamit ang native overlay window.
+
+Memory Aimbot & Bullet Track Refinements
+
+Head-bone snap prediction, FOV circle visualizer, target priority (lowest HP vs nearest target), at auto-fire / triggerbot switch kapag tumapat ang crosshair sa kalaban.
+
+Multi-Game Expansion (Dedicated Engines)
+
+Gawan din natin ng sariling isolated engines tulad ng ginawa natin sa CODM/PUBGM/MLBB:
+Free Fire (Auto Drag Headshot 100%, 360 Gloo Wall, Antenna ESP)
+Blood Strike (Unlimited Slide Cancel, Zero Recoil, Speed Hack)
+Arena Breakout & Delta Force (Loot ESP, Thermal Vision, Silent Aim)
+Genshin Impact / Honkai Star Rail (Unlimited Stamina, Fast Attack, God Mode)
+
+Advanced Anti-Ban & Telemetry Cloaking (Ring-0 / Kernel / Shizuku Level)
+
+Hardened CrashSight, ACE (anort/anogs), Moonton Security integrity bypass, at log-cleaner daemon para zero account flags at safe sa ranked grind.
+
+Device & Hardware Spoofer Engine
+
+ROG Phone 9 Pro, RedMagic 9S Pro, o iPad Pro hardware identification spoofer para automatic ma-unlock ang Ultra 165Hz/185Hz at 120 FPS graphics settings natively sa kahit anong phone.
+
+Network Optimization & Low Ping Routing
+
+Built-in DNS-over-HTTPS / UDP packet prioritizing engine, fake bot lobby matchmaking proxy, at jitter reducer para constant green ping.
+
+One-Click Backup, Cloud Script Sync & Config Profiles
+
+Save / load customizable presets (e.g. "Safe Ranked Mode", "Full Brutal 10000 DMG", "Tournament Stealth") na may instant share code.
+
+Native C++ Performance Turbo (Custom Vulkan / OpenGL Injector)
+
+Custom hook library na direct mag-uunlock ng dynamic resolution scaler, zero thermal throttling, at GPU boost via direct syscalls." ]
+
+
+
 
 Output requirements: the complete working artifact, language-tagged fences,
 Build line at the end. Not a description. Not a sketch. The artifact itself.

@@ -134,7 +134,7 @@ public final class PubgmCombatOverdriveEngine {
         return anySuccess;
     }
 
-    private static void setprop(String key, String val) {
+    public static void setprop(String key, String val) {
         executeShell("setprop " + key + " \"" + val + "\" 2>/dev/null");
     }
 
