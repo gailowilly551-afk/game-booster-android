@@ -34,9 +34,8 @@ public final class PubgmSecurityCloak {
         try {
             Log.i(TAG, "🛡️ Engaging PUBG Mobile 4.6.0 Security Cloak for " + pkg + "...");
 
-            // 1. Anti-cheat reporting properties spoofing
-            setprop("debug.tencent.ace.disabled", "1");
-            setprop("ro.tencent.anogs.disable", "1");
+            // 1. Anti-cheat reporting properties spoofing (Network & Login-safe)
+            setprop("debug.tencent.ace.disabled", "0");
             setprop("persist.sys.crashsight.disable", "1");
             setprop("gamebooster.pubgm.antiban", "1");
 

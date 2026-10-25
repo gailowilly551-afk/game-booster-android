@@ -296,6 +296,9 @@ public final class GameAutoInjectDispatcher {
                 });
 
             } else if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("imobile") || pkg.contains("vng.pubgmobile") || pkg.contains("pubgm")) {
+                // 1. Self-repair & OAuth Session Restoration (Fixes auto-login loss and infinite loading loops)
+                PubgConfigPatcher.repairAndRestorePubgmGame(ctx, pkg);
+
                 int pubgmTargetFps = 185;
                 try {
                     int storedFps = GameProfilePreferences.getTargetHz(ctx, pkg);

@@ -39,6 +39,13 @@ public final class PubgmCombatOverdriveEngine {
         final String pkg = packageName.trim();
         Log.i(TAG, "🔫 [PubgmCombatOverdriveEngine] Applying dedicated Damage, Speed & Combat suite for " + pkg);
 
+        // 0. Pre-Flight Self-Repair & Auth Session Protection (Fixes auto-login and infinite loading)
+        try {
+            PubgConfigPatcher.repairAndRestorePubgmGame(context, pkg);
+        } catch (Throwable repairErr) {
+            Log.w(TAG, "PUBGM self-repair pre-flight note: " + repairErr.getMessage());
+        }
+
         boolean anySuccess = false;
 
         // 1. In-Storage Asset Deployment & Master Patcher

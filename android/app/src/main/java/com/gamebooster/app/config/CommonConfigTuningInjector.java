@@ -618,7 +618,7 @@ public final class CommonConfigTuningInjector {
             "DisableLogUpload=1",
             "AntiTelemetry=1",
             "DisableMetrics=1",
-            "DisableHeartbeat=1",
+            "DisableHeartbeat=0",                  // Keep server heartbeat active (prevents login stalls)
             "DisableEventTracking=1",
             "DisablePerformanceTracking=1",
             "DisableNetworkDiagnostics=0",         // keep network diag (used by game servers)

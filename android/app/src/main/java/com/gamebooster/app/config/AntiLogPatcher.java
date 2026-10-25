@@ -103,7 +103,7 @@ public final class AntiLogPatcher {
         sb.append("rm -rf '/data/data/").append(pkg).append("/cache/*' 2>/dev/null; ");
         sb.append("rm -rf '/sdcard/Android/data/").append(pkg).append("/cache/*' 2>/dev/null; ");
 
-        // 3. Inject Anti-Log flags into game config files
+        // 3. Inject Anti-Log flags into game config files (Safe Crash & Trace suppression only; preserves MSDK auth & network loops)
         String[] antiLogKeys = {
             "DisableLogging=1",
             "DisableTelemetry=1",
@@ -113,11 +113,6 @@ public final class AntiLogPatcher {
             "bEnableBugly=False",
             "bEnableCrashReport=False",
             "bEnableTelemetry=False",
-            "bEnableLogServer=False",
-            "GCloudReport=0",
-            "ApolloReport=0",
-            "HawkLogEnable=0",
-            "IntlServiceReport=0",
             "+CVars=r.SuppressLogs=1",
             "+CVars=r.DisableDebugLog=1",
             "+CVars=r.EnableCrashReporting=0",
@@ -235,7 +230,10 @@ public final class AntiLogPatcher {
             paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Logs");
             paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Crashes");
             paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/StatEvents");
-            paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Pandora");
+            // NOTE: Never purge Saved/Pandora root! Pandora stores OAuth tokens & webview auth cache.
+            // Only clean diagnostic subfolders inside Pandora.
+            paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Pandora/Logs");
+            paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Pandora/StatsResend");
             paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/PufferTmpDir");
         } else if (pkg.contains("cod") || pkg.contains("callofduty") || pkg.contains("warzone")) {
             paths.add(extRoot + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Logs");

@@ -92,6 +92,17 @@ public final class ConfigFileHelper {
             return false;
         }
 
+        // CRITICAL PROTECTION: Never parse binary savegames, PAK archives, or auth/token files as text config
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".sav") || lower.endsWith(".dat") || lower.endsWith(".pak") || lower.endsWith(".bin")
+                || lower.contains("logintoken") || lower.contains("login_state") || lower.contains("guest_uuid")
+                || lower.contains("pandora/token") || lower.contains("pandora/cookies")) {
+            if (com.gamebooster.app.BuildConfig.DEBUG) {
+                Log.w(TAG, "Blocked unsafe text patching attempt on binary/auth file: " + path);
+            }
+            return false;
+        }
+
         try {
             ShizukuFileManager.ensureParentDirectory(path);
             String existingContent = ShizukuFileManager.readFile(path);

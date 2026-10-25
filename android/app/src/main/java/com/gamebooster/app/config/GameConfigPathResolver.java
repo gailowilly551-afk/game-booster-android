@@ -180,12 +180,13 @@ public class GameConfigPathResolver {
             return false;
         }
 
-        // 2. Blacklisted binary and media extensions
+        // 2. Blacklisted binary, archive, savegame, and media extensions
         if (lower.endsWith(".so") || lower.endsWith(".apk") || lower.endsWith(".unity3d") || lower.endsWith(".bundle")
                 || lower.endsWith(".bytes") || lower.endsWith(".obb") || lower.endsWith(".mp4") || lower.endsWith(".bank")
                 || lower.endsWith(".dex") || lower.endsWith(".jar") || lower.endsWith(".bin") || lower.endsWith(".png")
                 || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp") || lower.endsWith(".ogg")
-                || lower.endsWith(".pck") || lower.endsWith(".tga") || lower.endsWith(".wav")) {
+                || lower.endsWith(".pck") || lower.endsWith(".tga") || lower.endsWith(".wav")
+                || lower.endsWith(".sav") || lower.endsWith(".dat") || lower.endsWith(".pak")) {
             return false;
         }
 
@@ -223,9 +224,9 @@ public class GameConfigPathResolver {
             }
         }
 
-        // 5. Accepted config file extensions
+        // 5. Accepted config file extensions (Strict text/key-value configs only; binary savegames handled exclusively by dedicated GVAS patchers)
         return lower.endsWith(".ini") || lower.endsWith(".json")
-                || lower.endsWith(".cfg") || lower.endsWith(".sav") || lower.endsWith(".dat")
+                || lower.endsWith(".cfg")
                 || lower.endsWith("boot.config") || lower.endsWith(".properties");
     }
 
@@ -487,10 +488,7 @@ public class GameConfigPathResolver {
             rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/CompatibilityProfile.ini");
             rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Graphics.ini");
             rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/BaseDeviceProfile.ini");
-            rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav");
-            rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav");
             rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SrcVersion.ini");
-            rel.add("files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/game_patch.pak");
 
             // ── Single-Subfolder Mirrors (seen in engine refactors & certain distributions) ──
             rel.add("files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
@@ -505,8 +503,6 @@ public class GameConfigPathResolver {
             rel.add("files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/CompatibilityProfile.ini");
             rel.add("files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/Graphics.ini");
             rel.add("files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/BaseDeviceProfile.ini");
-            rel.add("files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav");
-            rel.add("files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/ActiveShadow.sav");
 
             // ── BGMI (Battlegrounds Mobile India) — com.pubg.imobile ──
             if (pkg.contains("imobile")) {
@@ -533,7 +529,6 @@ public class GameConfigPathResolver {
                 rel.add("files/UE4Game/PUBGNewState/PUBGNewState/Saved/Config/Android/DeviceProfile.ini");
                 rel.add("files/UE4Game/PUBGNewState/PUBGNewState/Saved/Config/Android/EnjoyCJZC.ini");
                 rel.add("files/UE4Game/PUBGNewState/PUBGNewState/Saved/Config/Android/Quality.ini");
-                rel.add("files/UE4Game/PUBGNewState/PUBGNewState/Saved/SaveGames/Active.sav");
                 rel.add("files/UE4Game/PUBGNewState/Saved/Config/Android/UserCustom.ini");
                 rel.add("files/UE4Game/PUBGNewState/Saved/Config/Android/GameUserSettings.ini");
                 rel.add("files/UE4Game/PUBGNewState/Saved/Config/Android/DeviceProfile.ini");

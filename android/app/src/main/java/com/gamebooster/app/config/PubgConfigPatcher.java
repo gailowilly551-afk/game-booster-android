@@ -1598,6 +1598,14 @@ public class PubgConfigPatcher {
      * CRITICAL SAFETY: Strictly preserves user session tokens (Active.sav, LoginToken.dat,
      * guest_uuid.dat, login_state.json, and player GameUserSettings.ini preferences).
      */
+    /**
+     * PUBG Mobile Self-Repair & Startup Optimization (UE4 Engine 2026).
+     * Cleans stale crash logs, corrupt lock files, and hanging temp files that cause
+     * infinite loading loops, crashes, or black screens on startup.
+     * CRITICAL SAFETY: Strictly preserves user session tokens (Active.sav, LoginToken.dat,
+     * guest_uuid.dat, login_state.json, and player GameUserSettings.ini preferences).
+     * Restores Pandora OAuth token cache and cleans any harmful .nomedia files blocking webview login.
+     */
     public static boolean repairAndRestorePubgmGame(Context context, String packageName) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
         String pkg = packageName.trim();
@@ -1607,7 +1615,36 @@ public class PubgConfigPatcher {
                 String ue4Path1 = root + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved";
                 String ue4Path2 = root + "/files/UE4Game/ShadowTrackerExtra/Saved";
 
-                String[] subdirsToClean = {"Logs", "Crashes", "Tmp", "StatData"};
+                // 1. Remove dangerous .nomedia placeholders that break Pandora OAuth token caching
+                String removeNomediaCmd = "rm -f '" + ue4Path1 + "/Pandora/.nomedia' "
+                                        + "'" + ue4Path2 + "/Pandora/.nomedia' "
+                                        + "'" + ue4Path1 + "/SaveGames/.nomedia' "
+                                        + "'" + ue4Path2 + "/SaveGames/.nomedia' "
+                                        + "'" + ue4Path1 + "/.nomedia' "
+                                        + "'" + ue4Path2 + "/.nomedia' 2>/dev/null; ";
+                try {
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand(removeNomediaCmd);
+                    } else {
+                        CommandExecutor.executeSystemCommand(removeNomediaCmd);
+                    }
+                } catch (Throwable ignored) {}
+
+                // 2. Ensure auth directories exist and have open read/write access
+                String ensureAuthDirsCmd = "mkdir -p '" + ue4Path1 + "/Pandora' '" + ue4Path1 + "/SaveGames' 2>/dev/null; "
+                                         + "mkdir -p '" + ue4Path2 + "/Pandora' '" + ue4Path2 + "/SaveGames' 2>/dev/null; "
+                                         + "chmod -R 777 '" + ue4Path1 + "/Pandora' '" + ue4Path1 + "/SaveGames' 2>/dev/null; "
+                                         + "chmod -R 777 '" + ue4Path2 + "/Pandora' '" + ue4Path2 + "/SaveGames' 2>/dev/null; ";
+                try {
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand(ensureAuthDirsCmd);
+                    } else {
+                        CommandExecutor.executeSystemCommand(ensureAuthDirsCmd);
+                    }
+                } catch (Throwable ignored) {}
+
+                // 3. Clean ONLY diagnostic logs & telemetry - NEVER the root Pandora directory or SaveGames
+                String[] subdirsToClean = {"Logs", "Crashes", "Tmp", "StatData", "StatEvents", "Pandora/Logs", "Pandora/StatsResend"};
                 for (String dirName : subdirsToClean) {
                     String d1 = ue4Path1 + "/" + dirName;
                     String d2 = ue4Path2 + "/" + dirName;
@@ -1621,7 +1658,20 @@ public class PubgConfigPatcher {
                     } catch (Throwable ignored) {}
                 }
 
-                // Unlock files and ensure readable/writable config trees
+                // 4. Remove stale lock files and broken staging temp files that cause infinite loading loops
+                String removeLocksCmd = "rm -f '" + ue4Path1 + "'/*.tmp* '" + ue4Path2 + "'/*.tmp* 2>/dev/null; "
+                                      + "rm -f '" + ue4Path1 + "'/*lock* '" + ue4Path2 + "'/*lock* 2>/dev/null; "
+                                      + "rm -f '" + ue4Path1 + "/SaveGames'/*.tmp* '" + ue4Path2 + "/SaveGames'/*.tmp* 2>/dev/null; "
+                                      + "rm -f '" + ue4Path1 + "/Pandora'/*.tmp* '" + ue4Path2 + "/Pandora'/*.tmp* 2>/dev/null; ";
+                try {
+                    if (ShizukuExecutor.hasShizukuPermission()) {
+                        ShizukuExecutor.executeShizukuCommand(removeLocksCmd);
+                    } else {
+                        CommandExecutor.executeSystemCommand(removeLocksCmd);
+                    }
+                } catch (Throwable ignored) {}
+
+                // 5. Unlock files and ensure readable/writable config trees
                 String unlockCmd = "chattr -R -i '" + root + "/files' 2>/dev/null; "
                                  + "chmod -R 777 '" + root + "/files' 2>/dev/null; ";
                 try {
@@ -1632,7 +1682,38 @@ public class PubgConfigPatcher {
                     }
                 } catch (Throwable ignored) {}
             }
-            Log.i(TAG, "🛡️ PUBGM self-repair & cache optimization complete for " + pkg);
+
+            // 6. Inspect Active.sav and ensure it is not text-corrupted from previous faulty patches
+            String[] savCandidatePaths = {
+                "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+                "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+                "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav",
+                "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/SaveGames/Active.sav"
+            };
+            for (String savPath : savCandidatePaths) {
+                try {
+                    byte[] d = null;
+                    if (ShizukuFileManager.fileExists(savPath)) {
+                        d = ShizukuFileManager.readFileBytes(savPath);
+                    } else {
+                        File f = new File(savPath);
+                        if (f.exists() && f.canRead()) {
+                            d = java.nio.file.Files.readAllBytes(f.toPath());
+                        }
+                    }
+                    if (d != null && d.length > 0) {
+                        boolean isGvas = (d.length >= 4 && d[0] == 0x47 && d[1] == 0x56 && d[2] == 0x41 && d[3] == 0x53);
+                        boolean isTextCorruption = (d[0] == '[' || d[0] == '+' || d[0] == '#' || d[0] == '\n' || d[0] == '\r');
+                        if (isTextCorruption || (!isGvas && d.length < 128)) {
+                            Log.w(TAG, "Detected corrupted text Active.sav at " + savPath + ", removing so game can generate authentic save.");
+                            ShizukuFileManager.deleteFile(savPath);
+                            new File(savPath).delete();
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
+
+            Log.i(TAG, "🛡️ PUBGM self-repair & login state restoration complete for " + pkg);
             return true;
         } catch (Throwable t) {
             Log.e(TAG, "Error in repairAndRestorePubgmGame: " + t.getMessage(), t);
