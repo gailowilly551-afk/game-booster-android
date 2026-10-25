@@ -237,6 +237,14 @@ public final class BotLobbyRankMatchEngine {
             return 0;
         }
         String pkg = packageName.trim().toLowerCase();
+
+        // If game is actively running in live match, avoid rewriting files on disk!
+        // Rewriting configs while Unity/Moonton is open triggers integrity check terminations.
+        if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+            Log.d(TAG, "🛡️ [BotLobby] " + pkg + " is currently in-game — skipping disk file modification to prevent client reload.");
+            return 0;
+        }
+
         int patchedCount = 0;
 
         if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
@@ -273,13 +281,15 @@ public final class BotLobbyRankMatchEngine {
         // 2. Game config injection
         int patchedFiles = applyBotLobbyAndRankMatchmaker(pkg);
 
-        // 3. For MLBB: additionally ensure ranked combat full suite and battle config are active
+        // 3. For MLBB: additionally ensure ranked combat full suite and battle config are active (Cold Boot only)
         if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
             try {
-                MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
-                MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
-                MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
-                MlbbConfigPatcher.applyBattleConfigOverdrive(pkg);
+                if (!com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+                    MlbbConfigPatcher.applyRankedCombatFullSuite(pkg);
+                    MlbbConfigPatcher.applyClassicCombatFullSuite(pkg);
+                    MlbbConfigPatcher.applyMlbbRankedMastery(pkg);
+                    MlbbConfigPatcher.applyBattleConfigOverdrive(pkg);
+                }
             } catch (Throwable t) {
                 Log.w(TAG, "MLBB ranked suite invocation note: " + t.getMessage());
             }

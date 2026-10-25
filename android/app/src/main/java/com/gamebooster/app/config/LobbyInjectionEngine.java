@@ -257,17 +257,10 @@ public final class LobbyInjectionEngine {
         // Wave 4: 60 seconds (Match loading screen transition)
         Runnable wave4 = () -> sWorkerExecutor.execute(() -> {
             try {
-                Log.i(TAG, "⚔️ [Wave-4 In-Match Sentinel] Re-asserting config & anti-reset lock at +60s for " + finalPkg);
-                // Re-enforce BattleConfig overdrive without resetting player settings
-                if (finalPkg.contains("mobile.legends") || finalPkg.contains("mobilelegends")) {
-                    MlbbConfigPatcher.applyBattleConfigOverdrive(finalPkg);
-                } else if (finalPkg.contains("tencent.ig") || finalPkg.contains("pubg")) {
-                    PubgConfigPatcher.applyPubgmBattleConfigOverdrive(finalPkg);
-                } else if (finalPkg.contains("cod") || finalPkg.contains("callofduty")) {
-                    CodmConfigPatcher.deployCodmCombatAssets(appCtx, finalPkg);
-                    CodmConfigPatcher.applyCodmMasterSuite(finalPkg);
-                }
-                GameSecurityBypassEngine.postInjectionBypassAndLock(finalPkg);
+                Log.i(TAG, "⚔️ [Wave-4 In-Match Sentinel] Re-asserting kernel pacing & CPU isolation at +60s for " + finalPkg);
+                // Zero file-writes: only reinforce kernel scheduler and prime core pinning to prevent mid-combat crashes
+                com.gamebooster.app.core.NativeKernelBridge.tuneSchedulerPacing();
+                com.gamebooster.app.core.NativeKernelBridge.isolateProcessToPrimeCores(appCtx, finalPkg);
             } catch (Throwable t) {
                 Log.w(TAG, "[Wave-4 In-Match] Reinforcement warning: " + t.getMessage());
             }
@@ -277,16 +270,9 @@ public final class LobbyInjectionEngine {
         // Wave 5: 90 seconds (Live combat match ongoing)
         Runnable wave5 = () -> sWorkerExecutor.execute(() -> {
             try {
-                Log.i(TAG, "⚔️ [Wave-5 In-Match Sentinel] Final battle config anchor at +90s for " + finalPkg);
-                if (finalPkg.contains("mobile.legends") || finalPkg.contains("mobilelegends")) {
-                    MlbbConfigPatcher.applyBattleConfigOverdrive(finalPkg);
-                } else if (finalPkg.contains("tencent.ig") || finalPkg.contains("pubg")) {
-                    PubgConfigPatcher.applyPubgmBattleConfigOverdrive(finalPkg);
-                } else if (finalPkg.contains("cod") || finalPkg.contains("callofduty")) {
-                    CodmConfigPatcher.deployCodmCombatAssets(appCtx, finalPkg);
-                    CodmConfigPatcher.applyCodmMasterSuite(finalPkg);
-                }
-                GameSecurityBypassEngine.postInjectionBypassAndLock(finalPkg);
+                Log.i(TAG, "⚔️ [Wave-5 In-Match Sentinel] Reinforcing sustained performance state at +90s for " + finalPkg);
+                com.gamebooster.app.core.NativeKernelBridge.tuneSchedulerPacing();
+                com.gamebooster.app.core.NativeKernelBridge.isolateProcessToPrimeCores(appCtx, finalPkg);
             } catch (Throwable t) {
                 Log.w(TAG, "[Wave-5 In-Match] Reinforcement warning: " + t.getMessage());
             }

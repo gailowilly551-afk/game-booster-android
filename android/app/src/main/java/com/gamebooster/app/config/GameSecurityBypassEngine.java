@@ -657,24 +657,22 @@ public final class GameSecurityBypassEngine {
     public static boolean purgeCorruptedAssetCaches(String packageName) {
         if (!ShellSafety.isSafePackageName(packageName)) return false;
         String pkg = packageName.trim().toLowerCase(Locale.ROOT);
+
+        // CRITICAL GUARD: Never delete files while the game is actively running in memory!
+        // Deleting files or caches during active gameplay triggers Moonton integrity crashes & forced kick to home.
+        if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+            Log.d(TAG, "🛡️ [AssetPurge] " + pkg + " is currently running — skipping asset cache purge.");
+            return true;
+        }
+
         StringBuilder sb = new StringBuilder();
 
         if (pkg.contains("mobile.legends") || pkg.contains("mobilelegends")) {
             // NEVER delete Document/ or uiatlas.ini - they contain Moonton's official C# game assemblies (hb_Assembly-CSharp.bytes).
-            // Deleting them causes instant crash loop & auto-back!
             // Clean up any stray .nomedia placed into app_vshell or MtpSdk from older versions
             sb.append("rm -f '/data/data/").append(pkg).append("/app_vshell/.nomedia' '/data/data/").append(pkg).append("/files/MtpSdk/.nomedia' 2>/dev/null; ");
 
-            // Remove ALL fake JSON files placed into assets/Document/ or files/ that cause Moonton's native asset loader to abort
-            sb.append("rm -f '/sdcard/Android/data/").append(pkg).append("/files/dragon2017/assets/Document/'*.json ")
-              .append("'/sdcard/Android/data/").append(pkg).append("/files/Dragon2017/assets/Document/'*.json ")
-              .append("'/storage/emulated/0/Android/data/").append(pkg).append("/files/dragon2017/assets/Document/'*.json ")
-              .append("'/storage/emulated/0/Android/data/").append(pkg).append("/files/Dragon2017/assets/Document/'*.json ")
-              .append("'/data/data/").append(pkg).append("/files/dragon2017/assets/Document/'*.json ")
-              .append("'/data/data/").append(pkg).append("/files/QualityConfig.json ")
-              .append("'/data/data/").append(pkg).append("/files/BattleConfig.json ")
-              .append("'/data/data/").append(pkg).append("/files/GraphicSetting.json ")
-              .append("'/data/data/").append(pkg).append("/files/GameConfig.json 2>/dev/null; ");
+            // Only remove XML disguised as JSON files that corrupt native parser, NEVER touch legitimate BattleConfig.json
             sb.append("for j in '/sdcard/Android/data/").append(pkg).append("/files/'*.json ")
               .append("'/storage/emulated/0/Android/data/").append(pkg).append("/files/'*.json ")
               .append("'/data/data/").append(pkg).append("/files/'*.json; do ");

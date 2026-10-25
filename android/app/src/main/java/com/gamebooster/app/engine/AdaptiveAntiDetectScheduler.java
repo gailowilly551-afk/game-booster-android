@@ -136,7 +136,13 @@ public class AdaptiveAntiDetectScheduler {
     private void performStealthSync() {
         try {
             if (mMonitoredPackage != null) {
-                GameAutoInjectDispatcher.dispatchForPackage(mMonitoredPackage);
+                // RUNTIME ONLY TUNING: Do NOT rewrite game files or clear caches mid-game!
+                // Rewriting files while game is actively running triggers Moonton anti-cheat checks
+                // and file lock exceptions, causing MLBB to crash and auto-relaunch.
+                com.gamebooster.app.core.NativeKernelBridge.tuneSchedulerPacing();
+                if (mMonitoredPid > 0) {
+                    com.gamebooster.app.core.NativeKernelBridge.isolateProcessToPrimeCores(null, mMonitoredPackage);
+                }
             }
         } catch (Throwable t) {
             Log.w(TAG, "Stealth sync warning: " + t.getMessage());

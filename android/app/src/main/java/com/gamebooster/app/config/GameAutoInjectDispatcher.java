@@ -46,8 +46,15 @@ public final class GameAutoInjectDispatcher {
 
     public static boolean isPackageInjected(String packageName) {
         if (packageName == null) return false;
-        Long ts = LAST_INJECTED.get(packageName.trim().toLowerCase());
-        return ts != null && (System.currentTimeMillis() - ts) < INJECTION_COOLDOWN_MS;
+        String key = packageName.trim().toLowerCase();
+        Long ts = LAST_INJECTED.get(key);
+        if (ts == null) return false;
+        // If the game process is still actively running in memory, lock injection for the whole session!
+        // Redundant mid-game file writes trigger integrity detection and crash MLBB back to home.
+        if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(key)) {
+            return true;
+        }
+        return (System.currentTimeMillis() - ts) < INJECTION_COOLDOWN_MS;
     }
 
     public static void resetPackageInjectionState(String packageName) {

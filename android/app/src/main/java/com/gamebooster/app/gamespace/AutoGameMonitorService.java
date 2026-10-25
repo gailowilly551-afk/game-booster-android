@@ -213,10 +213,10 @@ public class AutoGameMonitorService extends Service {
                                      android.widget.Toast.LENGTH_SHORT).show());
                 } else {
                     // Game is actively running in foreground:
-                    // Pulse Shizuku immortal shield every ~10s (every 3 ticks) to prevent OS / LMKD disconnect
+                    // Pulse Shizuku immortal shield & game process OOM -900 every ~10s (every 3 ticks) to prevent OS / LMKD disconnect
                     inGamePulseTicks++;
                     if (inGamePulseTicks % 3 == 0) {
-                        com.gamebooster.app.booster.BackgroundLimitImmunityEngine.keepAlivePulse(getApplicationContext());
+                        com.gamebooster.app.booster.BackgroundLimitImmunityEngine.keepAlivePulse(getApplicationContext(), currentPackage);
                     }
                 }
             } else if (lastActiveGamePackage != null) {
@@ -318,6 +318,11 @@ public class AutoGameMonitorService extends Service {
 
     private boolean isProcessAlive(String packageName) {
         if (packageName == null || packageName.isEmpty()) return false;
+        // 0. Primary Privileged / Shizuku / Proc Check
+        if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(packageName)) {
+            return true;
+        }
+
         // 1. Fast zero-fork Framework check first
         try {
             android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);

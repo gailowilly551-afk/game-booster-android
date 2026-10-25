@@ -45,9 +45,16 @@ public final class GameFastLoadAccelerator {
         burstCommands.add("cmd game mode performance " + pkg + " 2>/dev/null || true");
         burstCommands.add("cmd game set --mode 2 " + pkg + " 2>/dev/null || true");
 
-        // 2. Pre-Launch RAM Flush & Direct Contiguous Memory Compaction
-        burstCommands.add("echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true");
-        burstCommands.add("echo 1 > /proc/sys/vm/compact_memory 2>/dev/null || true");
+        // 2. Pre-Launch RAM Flush & Direct Contiguous Memory Compaction (Cold Boot Only)
+        // Never flush caches if the game is already in memory, as it triggers kswapd direct reclaim freezes,
+        // page fault stalls, and LMK kills in multi-hour gaming sessions.
+        boolean isRunning = ArtCompilerEngine.isPackageProcessRunning(pkg);
+        if (!isRunning) {
+            burstCommands.add("echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true");
+            burstCommands.add("echo 1 > /proc/sys/vm/compact_memory 2>/dev/null || true");
+        } else {
+            Log.i(TAG, "⚡ [FastLoad] " + pkg + " is already running in memory — bypassing drop_caches & compaction to preserve active textures.");
+        }
 
         // 3. Android 13-16 CPU UClamp & Scheduler Burst (100% capacity on top-app)
         burstCommands.add("echo 1024 > /dev/cpuset/top-app/uclamp.min 2>/dev/null || true");
@@ -82,7 +89,16 @@ public final class GameFastLoadAccelerator {
      * speed compilation so Dalvik/ART bytecode interpretation overhead is permanently removed.
      */
     private static void verifyAndWarmupArtAot(String packageName) {
-        Long lastTime = sLastCompiledTime.get(packageName);
+        if (packageName == null || packageName.trim().isEmpty()) return;
+        final String pkg = packageName.trim();
+
+        // If the game is already executing, NEVER warm up AOT (Android OS forcefully kills running apps on `cmd package compile -f`)
+        if (ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+            Log.d(TAG, "⚡ [FastLoad] " + pkg + " is already running — skipping AOT warmup to avoid OS process kill.");
+            return;
+        }
+
+        Long lastTime = sLastCompiledTime.get(pkg);
         long now = System.currentTimeMillis();
         // Only run AOT verification once every 24 hours per package to avoid battery drain
         if (lastTime != null && (now - lastTime < 86400000L)) {
@@ -92,15 +108,19 @@ public final class GameFastLoadAccelerator {
         AppExecutors.getInstance().executeCommand(() -> {
             try {
                 if (ShizukuExecutor.hasShizukuPermission() || ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-                    Log.i(TAG, "⚡ [FastLoad] Verifying AOT bytecode compilation for " + packageName + "...");
-                    boolean compiled = ArtCompilerEngine.compilePackageSync(packageName, ArtCompilerEngine.CompileFilter.SPEED);
+                    // Double check before invoking command
+                    if (ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+                        return;
+                    }
+                    Log.i(TAG, "⚡ [FastLoad] Verifying AOT bytecode compilation for " + pkg + "...");
+                    boolean compiled = ArtCompilerEngine.compilePackageSync(pkg, ArtCompilerEngine.CompileFilter.SPEED);
                     if (compiled) {
-                        sLastCompiledTime.put(packageName, now);
-                        Log.i(TAG, "✅ [FastLoad] " + packageName + " compiled to maximum native machine code (zero JIT startup overhead).");
+                        sLastCompiledTime.put(pkg, now);
+                        Log.i(TAG, "✅ [FastLoad] " + pkg + " compiled to maximum native machine code (zero JIT startup overhead).");
                     }
                 }
             } catch (Throwable t) {
-                Log.w(TAG, "AOT compilation check note for " + packageName + ": " + t.getMessage());
+                Log.w(TAG, "AOT compilation check note for " + pkg + ": " + t.getMessage());
             }
         });
     }

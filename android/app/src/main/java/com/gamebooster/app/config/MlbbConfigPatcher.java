@@ -2227,6 +2227,14 @@ public class MlbbConfigPatcher {
     public static void cleanLegacyLoadingLocks(String packageName) {
         if (packageName == null || packageName.trim().isEmpty()) return;
         String pkg = packageName.trim();
+
+        // If MLBB is currently actively running in memory, never purge caches or shared_prefs!
+        // Deleting files while Unity is active leads to native SIGSEGV and forced exit to home.
+        if (com.gamebooster.app.engine.ArtCompilerEngine.isPackageProcessRunning(pkg)) {
+            Log.d(TAG, "🛡️ [MLBB] " + pkg + " is actively running — skipping cache/pref purge to prevent crash.");
+            return;
+        }
+
         String[] lockPaths = {
             "/storage/emulated/0/Android/data/" + pkg + "/files/boot.config",
             "/sdcard/Android/data/" + pkg + "/files/boot.config",

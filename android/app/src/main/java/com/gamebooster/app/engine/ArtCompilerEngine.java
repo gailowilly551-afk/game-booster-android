@@ -76,17 +76,46 @@ public final class ArtCompilerEngine {
     }
 
     /**
+     * Checks if a package is actively running in memory to prevent OS force-stops during compilation.
+     */
+    public static boolean isPackageProcessRunning(String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()) return false;
+        String pkg = packageName.trim();
+        try {
+            String pids = executePrivileged("pidof " + pkg + " 2>/dev/null; pgrep -f \"" + pkg + "\" 2>/dev/null");
+            if (pids != null && !pids.trim().isEmpty() && !pids.startsWith("ERROR")) {
+                for (String token : pids.trim().split("[\\s\\n\\r]+")) {
+                    try {
+                        if (Integer.parseInt(token) > 0) return true;
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    /**
      * Compiles a single package synchronously.
      */
     public static boolean compilePackageSync(String packageName, CompileFilter filter) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
+        final String pkg = packageName.trim();
+
+        // CRITICAL GUARD: Never run forced AOT compile while the package is actively running!
+        // Android's PackageManagerService / installd forcefully terminates any active process of the package
+        // during `cmd package compile -f` so that oat/art files can be replaced on disk.
+        if (isPackageProcessRunning(pkg)) {
+            Log.w(TAG, "⚠️ [ArtCompilerEngine] " + pkg + " is actively running! Aborting compilation to prevent OS killing the game.");
+            return false;
+        }
+
         String mode = (filter != null ? filter.filterName : CompileFilter.SPEED.filterName);
         // 2026 Android 14-16 AOT compilation with layout pre-inflation and secondary dex support
-        String cmd = "cmd package compile -m " + mode + " -f --compile-layouts " + packageName.trim() + " 2>/dev/null || cmd package compile -m " + mode + " -f " + packageName.trim();
+        String cmd = "cmd package compile -m " + mode + " -f --compile-layouts " + pkg + " 2>/dev/null || cmd package compile -m " + mode + " -f " + pkg;
         String output = executePrivileged(cmd);
         // Also ensure secondary dex files are compiled for large titles like MLBB & PUBGM
-        executePrivileged("cmd package compile -m " + mode + " --secondary-dex " + packageName.trim() + " 2>/dev/null");
-        Log.i(TAG, "compilePackageSync [" + packageName + "] (" + mode + "): " + output);
+        executePrivileged("cmd package compile -m " + mode + " --secondary-dex " + pkg + " 2>/dev/null");
+        Log.i(TAG, "compilePackageSync [" + pkg + "] (" + mode + "): " + output);
         return output != null && (output.contains("Success") || (!output.contains("Error") && !output.contains("Exception")));
     }
 

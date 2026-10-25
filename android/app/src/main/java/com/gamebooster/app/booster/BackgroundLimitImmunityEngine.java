@@ -227,23 +227,30 @@ public final class BackgroundLimitImmunityEngine {
 
     /**
      * Periodic in-game keep-alive pulse:
-     * Constantly refreshes OOM scores and warms Shizuku IPC so Android LMKD never kills the daemon during games.
+     * Constantly refreshes OOM scores and warms Shizuku IPC so Android LMKD never kills the daemon or active game during games.
      */
     public static void keepAlivePulse(Context context) {
+        keepAlivePulse(context, null);
+    }
+
+    public static void keepAlivePulse(Context context, String activeGamePackage) {
         AppExecutors.getInstance().executeCommand(() -> {
             try {
-                // 1. Re-pin OOM scores for Shizuku and Game Booster
+                // 1. Re-pin OOM scores for Shizuku, Game Booster, and active Game Process
                 protectProcessOomScore(SHIZUKU_PACKAGE);
                 protectProcessOomScore(GAME_BOOSTER_PACKAGE);
+                if (activeGamePackage != null && !activeGamePackage.trim().isEmpty()) {
+                    protectProcessOomScore(activeGamePackage.trim());
+                }
 
-                // 2. Lock loopback port & anti-freezer settings (Keeps Shizuku alive when Wi-Fi is turned OFF)
-                // Note: Do NOT alter service.adb.tcp.port or adb_wifi_enabled here as modifying them restarts adbd and kills shizuku_server!
+                // 2. Keep standby bucket active without thrashing device_config
                 List<String> pulseCmds = new ArrayList<>();
-                pulseCmds.add("settings put global adb_allowed_connection_time 0 2>/dev/null");
-                pulseCmds.add("settings put global cached_apps_freezer disabled 2>/dev/null");
-                pulseCmds.add("cmd device_config put activity_manager use_freezer false 2>/dev/null");
                 pulseCmds.add("am set-standby-bucket " + SHIZUKU_PACKAGE + " active 2>/dev/null");
                 pulseCmds.add("cmd app_standby set " + SHIZUKU_PACKAGE + " active 2>/dev/null");
+                if (activeGamePackage != null && !activeGamePackage.trim().isEmpty()) {
+                    pulseCmds.add("am set-standby-bucket " + activeGamePackage.trim() + " active 2>/dev/null");
+                    pulseCmds.add("cmd app_standby set " + activeGamePackage.trim() + " active 2>/dev/null");
+                }
                 CommandExecutor.executeBatchCommands(pulseCmds);
 
                 // 3. Keep IPC connection warm and auto-rebind if needed
