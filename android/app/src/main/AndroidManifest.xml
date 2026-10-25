@@ -250,16 +250,6 @@
         </provider>
 
         <service
-            android:name="com.gamebooster.app.overlay.FloatingOverlayService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Game space performance monitoring overlay HUD" />
-        </service>
-
-        <service
             android:name="com.gamebooster.app.overlay.CrosshairOverlayService"
             android:enabled="true"
             android:exported="false"

@@ -128,12 +128,9 @@ public final class GameManagerLauncher {
         // ═══════════════════════════════════════════════════════════
         final Intent finalTargetIntent = targetIntent != null ? new Intent(targetIntent) : null;
         Runnable launchNow = () -> {
-            // Start FloatingOverlayService (Esports HUD) and InGameTrainerOverlayService while app is in the foreground
+            // Start InGameTrainerOverlayService if overlay permission is granted
             try {
                 if (android.provider.Settings.canDrawOverlays(appContext)) {
-                    if (!com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning()) {
-                        com.gamebooster.app.overlay.FloatingOverlayService.startOverlay(appContext);
-                    }
                     if (!com.gamebooster.app.overlay.InGameTrainerOverlayService.isRunning()) {
                         com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext);
                     }
@@ -219,16 +216,6 @@ public final class GameManagerLauncher {
                     AppExecutors.getInstance().postToMainThread(() -> {
                         Toast.makeText(appContext, "⚡ " + gameTitle + " 100% Injected & Overdrive Active!", Toast.LENGTH_SHORT).show();
                     });
-
-                    // STAGE 4: Start FloatingOverlayService (Esports HUD) if overlay permission is granted
-                    try {
-                        if (android.provider.Settings.canDrawOverlays(appContext) &&
-                                !com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning()) {
-                            com.gamebooster.app.overlay.FloatingOverlayService.startOverlay(appContext);
-                        }
-                    } catch (Throwable overlayErr) {
-                        Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());
-                    }
 
                     // STAGE 5: Purge game diagnostic logs for stealth
                     try {

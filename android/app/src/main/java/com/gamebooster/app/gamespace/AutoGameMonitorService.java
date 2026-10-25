@@ -29,7 +29,6 @@ import com.gamebooster.app.games.GameAppInfo;
 import com.gamebooster.app.games.GameManagerRepository;
 import com.gamebooster.app.config.GameProfilePreferences;
 import com.gamebooster.app.config.GameSessionSettings;
-import com.gamebooster.app.overlay.FloatingOverlayService;
 
 import java.util.List;
 import java.util.Set;
@@ -202,11 +201,8 @@ public class AutoGameMonitorService extends Service {
                     // Stage 2 (10s Lobby-Safe): In-Lobby Stealth Overdrive & Multi-Slot Drone View Re-injection
                     com.gamebooster.app.config.LobbyInjectionEngine.scheduleLobbyInjection(appCtx, currentPackage, targetHz, 10);
 
-                    // Auto-Start Floating Gaming HUD & Bind Real FPS Target
+                    // Bind Real FPS Target
                     com.gamebooster.app.overlay.RealGameFpsMonitor.getInstance().setTargetPackage(currentPackage);
-                    if (!FloatingOverlayService.isOverlayRunning() && !FloatingOverlayService.isSessionDismissed()) {
-                        FloatingOverlayService.startOverlay(appCtx);
-                    }
 
                     AppExecutors.getInstance().postToMainThread(() ->
                             android.widget.Toast.makeText(appCtx, "⚡ Auto-Optimized: " + currentPackage,
@@ -239,7 +235,6 @@ public class AutoGameMonitorService extends Service {
                 lastSessionEndTimeMs = System.currentTimeMillis(); // record exit time for cooldown
 
                 com.gamebooster.app.overlay.RealGameFpsMonitor.getInstance().setTargetPackage(null);
-                FloatingOverlayService.setSessionDismissed(false); // Reset dismissal for next game
 
                 // End GameManager Session and revert to baseline
                 com.gamebooster.app.gamemanager.GameManagerSessionEngine.endSession(getApplicationContext(), exitingPkg);

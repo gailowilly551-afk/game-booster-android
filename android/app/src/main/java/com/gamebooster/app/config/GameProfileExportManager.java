@@ -72,14 +72,6 @@ public final class GameProfileExportManager {
             }
             root.put("device_spoof_prefs", spoofObj);
 
-            // 4. HUD Overlay Preferences
-            JSONObject hudObj = new JSONObject();
-            SharedPreferences hudPrefs = app.getSharedPreferences("gamebooster_hud_prefs", Context.MODE_PRIVATE);
-            for (Map.Entry<String, ?> entry : hudPrefs.getAll().entrySet()) {
-                hudObj.put(entry.getKey(), entry.getValue());
-            }
-            root.put("gamebooster_hud_prefs", hudObj);
-
             return root.toString(2);
         } catch (JSONException e) {
             Log.e(TAG, "Failed to serialize export profiles: " + e.getMessage(), e);
@@ -137,22 +129,6 @@ public final class GameProfileExportManager {
                 for (java.util.Iterator<String> it = spoofObj.keys(); it.hasNext(); ) {
                     String key = it.next();
                     Object val = spoofObj.get(key);
-                    if (val instanceof Integer) editor.putInt(key, (Integer) val);
-                    else if (val instanceof Boolean) editor.putBoolean(key, (Boolean) val);
-                    else if (val instanceof Float) editor.putFloat(key, (Float) val);
-                    else if (val instanceof Long) editor.putLong(key, (Long) val);
-                    else if (val instanceof String) editor.putString(key, (String) val);
-                }
-                editor.apply();
-            }
-
-            // Restore HUD Overlay Preferences
-            if (root.has("gamebooster_hud_prefs")) {
-                JSONObject hudObj = root.getJSONObject("gamebooster_hud_prefs");
-                SharedPreferences.Editor editor = app.getSharedPreferences("gamebooster_hud_prefs", Context.MODE_PRIVATE).edit();
-                for (java.util.Iterator<String> it = hudObj.keys(); it.hasNext(); ) {
-                    String key = it.next();
-                    Object val = hudObj.get(key);
                     if (val instanceof Integer) editor.putInt(key, (Integer) val);
                     else if (val instanceof Boolean) editor.putBoolean(key, (Boolean) val);
                     else if (val instanceof Float) editor.putFloat(key, (Float) val);

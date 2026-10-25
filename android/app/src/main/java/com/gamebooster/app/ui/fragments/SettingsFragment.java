@@ -126,7 +126,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private SwitchCompat switch5g6gData;
     private SwitchCompat switchWifiLowLatency;
     private SwitchCompat switchDualDataWifi;
-    private SwitchCompat switchOverlayHud;
     private SwitchCompat switchGamingDnd;
     private SwitchCompat switchAutoGameBoost;
     private SwitchCompat switchEsportsAudio;
@@ -372,43 +371,10 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         refreshSafStatus();
 
         // Card 2: Esports Gaming Controls
-        switchOverlayHud = view.findViewById(R.id.switch_overlay_hud);
         switchGamingDnd = view.findViewById(R.id.switch_gaming_dnd);
         switchAutoGameBoost = view.findViewById(R.id.switch_auto_game_boost);
         switchEsportsAudio = view.findViewById(R.id.switch_esports_audio);
         switchSpeakerBypassBoost = view.findViewById(R.id.switch_speaker_bypass_boost);
-
-        if (switchOverlayHud != null) {
-            isProgrammaticToggle = true;
-            switchOverlayHud.setChecked(com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning());
-            isProgrammaticToggle = false;
-            switchOverlayHud.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Performance HUD Overlay")) return;
-                if (!Settings.canDrawOverlays(getContext())) {
-                    isProgrammaticToggle = true;
-                    switchOverlayHud.setChecked(false);
-                    isProgrammaticToggle = false;
-                    Toast.makeText(getContext(), "Please grant 'Draw over other apps' permission first", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-                    intent.setData(Uri.parse("package:" + getContext().getPackageName()));
-                    startActivity(intent);
-                    return;
-                }
-                try {
-                    if (isChecked) {
-                        com.gamebooster.app.overlay.FloatingOverlayService.startOverlay(getContext());
-                        Toast.makeText(getContext(), "⚡ Performance HUD Overlay Enabled", Toast.LENGTH_SHORT).show();
-                    } else {
-                        com.gamebooster.app.overlay.FloatingOverlayService.stopOverlay(getContext());
-                        Toast.makeText(getContext(), "Performance HUD Overlay Disabled", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Throwable t) {
-                    android.util.Log.e("SettingsFragment", "Overlay service toggle error", t);
-                    Toast.makeText(getContext(), "Overlay note: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
 
         if (switchGamingDnd != null) {
             isProgrammaticToggle = true;
@@ -2266,7 +2232,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
             if (getContext() != null) {
                 isProgrammaticToggle = true;
-                if (switchOverlayHud != null) switchOverlayHud.setChecked(com.gamebooster.app.overlay.FloatingOverlayService.isOverlayRunning());
                 if (switchGamingDnd != null) switchGamingDnd.setChecked(com.gamebooster.app.gamespace.GameSpaceDndManager.isDndActive(getContext()));
                 if (switchAutoGameBoost != null) switchAutoGameBoost.setChecked(com.gamebooster.app.gamespace.AutoGameMonitorService.isRunning());
                 if (switchEsportsAudio != null) switchEsportsAudio.setChecked(com.gamebooster.app.booster.EsportsAudioEnhancer.isEnabled());
