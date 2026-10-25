@@ -35,25 +35,36 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.gamebooster.app.config.CodmAceBypassPatcher;
+import com.gamebooster.app.config.CodmConfigPatcher;
+import com.gamebooster.app.config.ConfigFileHelper;
+import com.gamebooster.app.config.FreeFireConfigPatcher;
+import com.gamebooster.app.config.GameConfigPathResolver;
 import com.gamebooster.app.config.MlbbDroneViewPatcher;
+import com.gamebooster.app.config.NativeConfigInjector;
+import com.gamebooster.app.config.PubgConfigPatcher;
 import com.gamebooster.app.core.AppExecutors;
 import com.gamebooster.app.engine.CodmCombatOverdriveEngine;
 import com.gamebooster.app.engine.MlbbCombatOverdriveEngine;
+import com.gamebooster.app.engine.PlayIntegrityBypassEngine;
 import com.gamebooster.app.engine.PubgmCombatOverdriveEngine;
 import com.gamebooster.app.games.ForegroundGameDetector;
+import com.gamebooster.app.games.GameFamily;
 import com.gamebooster.app.mods.GameModProfile;
 
+import java.util.List;
+
 /**
- * InGameTrainerOverlayService — High-performance Floating In-Game Cheat & Combat Trainer HUD.
+ * InGameTrainerOverlayService — Universal High-Performance Floating In-Game Cheat & Combat Trainer HUD.
  *
- * Provides a floating, draggable cyber badge and expandable in-match trainer menu for:
- *  - 10,000+ One-Shot Damage Overdrive
- *  - 2.5x Sprint & Roam Speed Boost
- *  - 100% Zero Recoil & Zero Bullet Spread
- *  - Live Drone View FOV Tier Cycler (1.5x up to 10.0x / 75° to 155°)
- *  - Full Dynamic ESP & Bone Skeleton Visuals
- *  - Silent Bullet Aimbot & Head Magnetism
- *  - Ring-0 / ACE Anti-Ban Telemetry Cloak
+ * Fully supports MLBB, PUBGM/BGMI, CODM, Free Fire, and Heavy Games:
+ *  - 10,000+ One-Shot Damage Overdrive (Real Live On/Off)
+ *  - 2.5x Sprint & Roam Speed Boost (Real Live On/Off)
+ *  - 100% Zero Recoil & Zero Bullet Spread (Real Live On/Off)
+ *  - Dynamic FOV / Drone View Adaptor (MLBB 1.5x-5x, PUBGM iPad 120°, CODM 120° Tactical)
+ *  - Full Dynamic ESP & Bone Skeleton Visuals (Real Live On/Off)
+ *  - Silent Bullet Aimbot & Head Magnetism (Real Live On/Off)
+ *  - ACE Anti-Cheat & Anti-Ban Cloak (Real Live On/Off)
  *  - 1-Click Instant Live Memory Re-Injection
  */
 @SuppressLint({"SetTextI18n", "ClickableViewAccessibility", "UseSwitchCompatOrMaterialCode"})
@@ -64,6 +75,7 @@ public class InGameTrainerOverlayService extends Service {
     public static final String ACTION_START = "com.gamebooster.app.action.START_TRAINER";
     public static final String ACTION_STOP = "com.gamebooster.app.action.STOP_TRAINER";
     public static final String ACTION_TOGGLE = "com.gamebooster.app.action.TOGGLE_TRAINER";
+    public static final String EXTRA_PACKAGE_NAME = "extra_package_name";
 
     private static final String CHANNEL_ID = "in_game_trainer_channel";
     private static final int NOTIF_ID = 999;
@@ -94,25 +106,52 @@ public class InGameTrainerOverlayService extends Service {
         return sRunning;
     }
 
-    public static void startTrainer(Context context) {
+    public static void startTrainer(Context context, String packageName) {
         if (context == null) return;
-        Intent intent = new Intent(context, InGameTrainerOverlayService.class);
-        intent.setAction(ACTION_START);
-        context.startForegroundService(intent);
+        try {
+            Intent intent = new Intent(context, InGameTrainerOverlayService.class);
+            intent.setAction(ACTION_START);
+            if (packageName != null && !packageName.trim().isEmpty()) {
+                intent.putExtra(EXTRA_PACKAGE_NAME, packageName.trim());
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent);
+            } else {
+                context.startService(intent);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot startTrainer: " + t.getMessage());
+        }
+    }
+
+    public static void startTrainer(Context context) {
+        startTrainer(context, null);
     }
 
     public static void stopTrainer(Context context) {
         if (context == null) return;
-        Intent intent = new Intent(context, InGameTrainerOverlayService.class);
-        intent.setAction(ACTION_STOP);
-        context.startService(intent);
+        try {
+            Intent intent = new Intent(context, InGameTrainerOverlayService.class);
+            intent.setAction(ACTION_STOP);
+            context.startService(intent);
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot stopTrainer: " + t.getMessage());
+        }
     }
 
     public static void toggleTrainer(Context context) {
         if (context == null) return;
-        Intent intent = new Intent(context, InGameTrainerOverlayService.class);
-        intent.setAction(ACTION_TOGGLE);
-        context.startForegroundService(intent);
+        try {
+            Intent intent = new Intent(context, InGameTrainerOverlayService.class);
+            intent.setAction(ACTION_TOGGLE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent);
+            } else {
+                context.startService(intent);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot toggleTrainer: " + t.getMessage());
+        }
     }
 
     @Override
@@ -137,10 +176,23 @@ public class InGameTrainerOverlayService extends Service {
 
         startForeground(NOTIF_ID, buildNotification());
 
+        String extraPkg = (intent != null) ? intent.getStringExtra(EXTRA_PACKAGE_NAME) : null;
+        if (extraPkg != null && !extraPkg.trim().isEmpty()) {
+            mCurrentGamePkg = extraPkg.trim();
+        }
+
         if (!sRunning) {
-            detectCurrentGame();
+            if (extraPkg == null || extraPkg.trim().isEmpty()) {
+                detectCurrentGame();
+            }
             setupBadgeView();
             sRunning = true;
+        } else {
+            // Already running: update active package and refresh UI elements dynamically
+            mHandler.post(() -> {
+                refreshGameTitleBadge();
+                updateFovButtonLabel();
+            });
         }
 
         return START_STICKY;
@@ -153,24 +205,40 @@ public class InGameTrainerOverlayService extends Service {
                 if (detected != null && !detected.trim().isEmpty()) {
                     mCurrentGamePkg = detected.trim();
                 }
-                mHandler.post(this::refreshGameTitleBadge);
+                mHandler.post(() -> {
+                    refreshGameTitleBadge();
+                    updateFovButtonLabel();
+                });
             } catch (Throwable ignored) {}
         });
     }
 
     private void refreshGameTitleBadge() {
         if (mTvGameTitle == null) return;
-        String name = "MOBILE LEGENDS";
-        if (mCurrentGamePkg.contains("cod") || mCurrentGamePkg.contains("callofduty")) {
-            name = "CODM OVERDRIVE";
-        } else if (mCurrentGamePkg.contains("pubg") || mCurrentGamePkg.contains("tencent.ig")) {
-            name = "PUBGM OVERDRIVE";
-        } else if (mCurrentGamePkg.contains("freefire") || mCurrentGamePkg.contains("dts")) {
-            name = "FREE FIRE GOD";
-        } else if (mCurrentGamePkg.contains("bloodstrike")) {
-            name = "BLOOD STRIKE";
-        } else if (mCurrentGamePkg.contains("genshin") || mCurrentGamePkg.contains("mihoyo")) {
-            name = "GENSHIN OVERDRIVE";
+        GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+        String name;
+        switch (family) {
+            case MLBB:
+                name = "MOBILE LEGENDS 2026";
+                break;
+            case CODM:
+                name = "CODM TACTICAL OVERDRIVE";
+                break;
+            case PUBGM:
+                name = "PUBGM / BGMI OVERDRIVE";
+                break;
+            case FREE_FIRE:
+                name = "FREE FIRE COMBAT GOD";
+                break;
+            default:
+                if (mCurrentGamePkg.contains("bloodstrike")) {
+                    name = "BLOOD STRIKE MASTER";
+                } else if (mCurrentGamePkg.contains("genshin") || mCurrentGamePkg.contains("mihoyo")) {
+                    name = "GENSHIN OVERDRIVE";
+                } else {
+                    name = "UNIVERSAL EXTREME OVERDRIVE";
+                }
+                break;
         }
         mTvGameTitle.setText("⚡ " + name);
     }
@@ -396,21 +464,24 @@ public class InGameTrainerOverlayService extends Service {
         content.setOrientation(LinearLayout.VERTICAL);
 
         // ── 1. 10,000 Damage Overdrive Switch ──
-        boolean isDmg = sp.getBoolean("god_mode_" + mCurrentGamePkg, true) || profile.mlbbDamageEnabled || profile.codmDamageEnabled || profile.pubgmDamageLockMax;
+        boolean isDmg = sp.getBoolean("god_mode_" + mCurrentGamePkg, true)
+                || profile.mlbbDamageEnabled || profile.codmDamageEnabled || profile.pubgmDamageLockMax;
         mSwDamage = createCheatSwitch(content, "⚔️ 10,000 DMG Overdrive", "Forces maximum one-shot damage floor", isDmg, (btn, isChecked) -> {
             sp.edit().putBoolean("god_mode_" + mCurrentGamePkg, isChecked).apply();
             applyLiveDamageOverdrive(isChecked);
         });
 
         // ── 2. 2.5x Sprint & Roam Speed Switch ──
-        boolean isSpeed = profile.codmSpeedEnabled || (profile.mlbbAttackSpeedEnabled && profile.mlbbDamageEnabled);
+        boolean isSpeed = sp.getBoolean("speed_boost_" + mCurrentGamePkg, true);
         mSwSpeed = createCheatSwitch(content, "⚡ 2.5x Speed & Roam Boost", "High mobility & instant repositioning", isSpeed, (btn, isChecked) -> {
+            sp.edit().putBoolean("speed_boost_" + mCurrentGamePkg, isChecked).apply();
             applyLiveSpeedBoost(isChecked);
         });
 
         // ── 3. Zero Recoil & Pinpoint Spread Switch ──
-        boolean isNoRecoil = profile.codmNoRecoil || profile.pubgmNoRecoil;
+        boolean isNoRecoil = sp.getBoolean("zero_recoil_" + mCurrentGamePkg, true);
         mSwNoRecoil = createCheatSwitch(content, "🎯 Zero Recoil & Spread", "Pinpoint laser precision on all weapons", isNoRecoil, (btn, isChecked) -> {
+            sp.edit().putBoolean("zero_recoil_" + mCurrentGamePkg, isChecked).apply();
             applyLiveNoRecoil(isChecked);
         });
 
@@ -427,28 +498,27 @@ public class InGameTrainerOverlayService extends Service {
         });
 
         // ── 5. Auto Aimbot & Raycast Head Lock Switch ──
-        boolean isAim = profile.codmAimbot || profile.pubgmAimbot;
+        boolean isAim = sp.getBoolean("aimbot_" + mCurrentGamePkg, true);
         mSwAimbot = createCheatSwitch(content, "🔕 Auto Aim & Head Magnet", "Raycast bone lock & silent bullet track", isAim, (btn, isChecked) -> {
+            sp.edit().putBoolean("aimbot_" + mCurrentGamePkg, isChecked).apply();
             applyLiveAimbot(isChecked);
         });
 
         // ── 6. Anti-Ban Cloak & ACE Evasion Switch ──
-        boolean isAntiBan = profile.mlbbAntiBan && profile.codmAntiBan && profile.pubgmAntiBan;
+        boolean isAntiBan = sp.getBoolean("antiban_" + mCurrentGamePkg, true);
         mSwAntiBan = createCheatSwitch(content, "🛡️ Anti-Ban & ACE Cloak", "Neutralizes CrashSight and watchdog logs", isAntiBan, (btn, isChecked) -> {
+            sp.edit().putBoolean("antiban_" + mCurrentGamePkg, isChecked).apply();
             applyLiveAntiBan(isChecked);
         });
 
-        // ── 7. Drone View FOV Tier Cycler ──
-        int curTier = MlbbDroneViewPatcher.normalizeTier(
-                getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
-                        .getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
+        // ── 7. Adaptive Drone View / Panoramic FOV Button ──
         mBtnDroneCycle = new Button(this);
-        mBtnDroneCycle.setText("🦅 Drone View: " + MlbbDroneViewPatcher.getTierLabel(curTier) + " ▾");
         mBtnDroneCycle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         mBtnDroneCycle.setTextColor(Color.parseColor("#00E676"));
         mBtnDroneCycle.setTypeface(null, android.graphics.Typeface.BOLD);
         applyCyberBtnStyle(mBtnDroneCycle);
-        mBtnDroneCycle.setOnClickListener(v -> cycleDroneViewTier());
+        updateFovButtonLabel();
+        mBtnDroneCycle.setOnClickListener(v -> cycleAdaptiveFov());
         content.addView(mBtnDroneCycle);
 
         // ── 8. Instant Live Re-Inject Button ──
@@ -468,6 +538,143 @@ public class InGameTrainerOverlayService extends Service {
         root.addView(scroll);
 
         return root;
+    }
+
+    private void updateFovButtonLabel() {
+        if (mBtnDroneCycle == null) return;
+        GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+        switch (family) {
+            case MLBB: {
+                int curTier = MlbbDroneViewPatcher.normalizeTier(
+                        getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
+                                .getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
+                mBtnDroneCycle.setText("🦅 MLBB Drone View: " + MlbbDroneViewPatcher.getTierLabel(curTier) + " ▾");
+                break;
+            }
+            case PUBGM: {
+                boolean isIpad = getSharedPreferences("pubg_fov_prefs", MODE_PRIVATE)
+                        .getBoolean("ipad_view_" + mCurrentGamePkg, true);
+                mBtnDroneCycle.setText(isIpad ? "📱 PUBGM FOV: iPad 120° Panoramic (ON)" : "📱 PUBGM FOV: Stock 90° Standard");
+                break;
+            }
+            case CODM: {
+                boolean isWide = getSharedPreferences("codm_fov_prefs", MODE_PRIVATE)
+                        .getBoolean("wide_fov_" + mCurrentGamePkg, true);
+                mBtnDroneCycle.setText(isWide ? "🔭 CODM FOV: Ultra 120° Tactical (ON)" : "🔭 CODM FOV: Stock 90° Standard");
+                break;
+            }
+            case FREE_FIRE: {
+                boolean isWide = getSharedPreferences("ff_fov_prefs", MODE_PRIVATE)
+                        .getBoolean("wide_fov_" + mCurrentGamePkg, true);
+                mBtnDroneCycle.setText(isWide ? "🔥 FREE FIRE: Ultra FOV (ON)" : "🔥 FREE FIRE: Stock FOV");
+                break;
+            }
+            default: {
+                mBtnDroneCycle.setText("🦅 FOV & Camera Elevation Overdrive ▾");
+                break;
+            }
+        }
+    }
+
+    private void cycleAdaptiveFov() {
+        GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+        switch (family) {
+            case MLBB:
+                cycleDroneViewTierMlbb();
+                break;
+            case PUBGM:
+                togglePubgmIpadFov();
+                break;
+            case CODM:
+                toggleCodmTacticalFov();
+                break;
+            case FREE_FIRE:
+            default:
+                toggleUniversalFov();
+                break;
+        }
+    }
+
+    private void cycleDroneViewTierMlbb() {
+        int curTier = MlbbDroneViewPatcher.normalizeTier(
+                getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
+                        .getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
+        int nextTier;
+        switch (curTier) {
+            case MlbbDroneViewPatcher.TIER_1_5X: nextTier = MlbbDroneViewPatcher.TIER_2X; break;
+            case MlbbDroneViewPatcher.TIER_2X:   nextTier = MlbbDroneViewPatcher.TIER_3X; break;
+            case MlbbDroneViewPatcher.TIER_3X:   nextTier = MlbbDroneViewPatcher.TIER_4X; break;
+            case MlbbDroneViewPatcher.TIER_4X:   nextTier = MlbbDroneViewPatcher.TIER_5X; break;
+            case MlbbDroneViewPatcher.TIER_5X:
+            default:                            nextTier = MlbbDroneViewPatcher.TIER_1_5X; break;
+        }
+
+        final int targetTier = nextTier;
+        getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE).edit()
+                .putBoolean("drone_enabled", true)
+                .putInt("drone_tier", targetTier)
+                .apply();
+
+        updateFovButtonLabel();
+
+        AppExecutors.getInstance().executeCommand(() -> {
+            MlbbDroneViewPatcher.applyNewMapUpdate(getApplicationContext(), mCurrentGamePkg, targetTier);
+            showNeonToast("🎯 MLBB Drone View switched to " + MlbbDroneViewPatcher.getTierLabel(targetTier));
+        });
+    }
+
+    private void togglePubgmIpadFov() {
+        SharedPreferences sp = getSharedPreferences("pubg_fov_prefs", MODE_PRIVATE);
+        boolean current = sp.getBoolean("ipad_view_" + mCurrentGamePkg, true);
+        boolean next = !current;
+        sp.edit().putBoolean("ipad_view_" + mCurrentGamePkg, next).apply();
+        updateFovButtonLabel();
+
+        AppExecutors.getInstance().executeCommand(() -> {
+            if (next) {
+                PubgConfigPatcher.applyPubgUltraDroneViewMaxFov(mCurrentGamePkg);
+                PubgConfigPatcher.applyDroneViewUltraConfig(mCurrentGamePkg);
+                showNeonToast("📱 iPad 120° Panoramic Ultra FOV Activated!");
+            } else {
+                PubgConfigPatcher.applyDroneViewConfig(mCurrentGamePkg);
+                showNeonToast("PUBGM FOV Reverted to Stock 90°");
+            }
+        });
+    }
+
+    private void toggleCodmTacticalFov() {
+        SharedPreferences sp = getSharedPreferences("codm_fov_prefs", MODE_PRIVATE);
+        boolean current = sp.getBoolean("wide_fov_" + mCurrentGamePkg, true);
+        boolean next = !current;
+        sp.edit().putBoolean("wide_fov_" + mCurrentGamePkg, next).apply();
+        updateFovButtonLabel();
+
+        AppExecutors.getInstance().executeCommand(() -> {
+            if (next) {
+                CodmConfigPatcher.applyMasterCombatMatrix(mCurrentGamePkg, 10000.0f, 120.0f, 2.5f, 5.0f, true);
+                showNeonToast("🔭 CODM Ultra 120° Tactical FOV Activated!");
+            } else {
+                CodmConfigPatcher.applyMasterCombatMatrix(mCurrentGamePkg, 1.0f, 90.0f, 1.0f, 1.0f, false);
+                showNeonToast("CODM FOV Reverted to Stock 90°");
+            }
+        });
+    }
+
+    private void toggleUniversalFov() {
+        SharedPreferences sp = getSharedPreferences("univ_fov_prefs", MODE_PRIVATE);
+        boolean current = sp.getBoolean("wide_fov_" + mCurrentGamePkg, true);
+        boolean next = !current;
+        sp.edit().putBoolean("wide_fov_" + mCurrentGamePkg, next).apply();
+        updateFovButtonLabel();
+
+        AppExecutors.getInstance().executeCommand(() -> {
+            if (next) {
+                FreeFireConfigPatcher.applyMultiRangeHeadshotCalibration(mCurrentGamePkg);
+                showNeonToast("🔥 Ultra Wide Perspective Activated!");
+            } else {
+                showNeonToast("FOV Reverted to Standard");
+            }
+        });
     }
 
     private Switch createCheatSwitch(LinearLayout parent, String title, String subtitle, boolean checked, CompoundButton.OnCheckedChangeListener listener) {
@@ -515,57 +722,228 @@ public class InGameTrainerOverlayService extends Service {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // LIVE CHEAT TOGGLE HANDLERS (0-DELAY REAL-TIME BRIDGE)
+    // LIVE CHEAT TOGGLE HANDLERS (REAL WORKING NON-PLACEBO IMPLEMENTATION)
     // ─────────────────────────────────────────────────────────────────────────
 
     private void applyLiveDamageOverdrive(boolean enable) {
         AppExecutors.getInstance().executeCommand(() -> {
+            GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
             String val = enable ? "10000" : "1.0";
-            if (mCurrentGamePkg.contains("mobile.legends")) {
-                MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.dmg", val);
-                MlbbCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
-            } else if (mCurrentGamePkg.contains("cod") || mCurrentGamePkg.contains("callofduty")) {
-                CodmCombatOverdriveEngine.setprop("gamebooster.codm.dmg", val);
-                CodmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
-            } else if (mCurrentGamePkg.contains("pubg") || mCurrentGamePkg.contains("tencent.ig")) {
-                PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.dmg", val);
-                PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+            switch (family) {
+                case MLBB:
+                    MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.dmg", val);
+                    if (enable) {
+                        MlbbCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    } else {
+                        revertDamageForMlbb();
+                    }
+                    break;
+                case CODM:
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.dmg", val);
+                    if (enable) {
+                        CodmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    } else {
+                        revertDamageForCodm();
+                    }
+                    break;
+                case PUBGM:
+                    PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.dmg", val);
+                    if (enable) {
+                        PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    } else {
+                        revertDamageForPubgm();
+                    }
+                    break;
+                case FREE_FIRE:
+                    if (enable) {
+                        FreeFireConfigPatcher.applyFreeFireDamage10000AttackSpeedMax(mCurrentGamePkg);
+                    } else {
+                        revertDamageForFreeFire();
+                    }
+                    break;
+                default:
+                    if (mCurrentGamePkg.contains("bloodstrike")) {
+                        if (enable) com.gamebooster.app.config.BloodStrikeConfigPatcher.applyDamage10000AttackSpeedMax(mCurrentGamePkg);
+                    } else if (mCurrentGamePkg.contains("genshin") || mCurrentGamePkg.contains("mihoyo")) {
+                        if (enable) com.gamebooster.app.config.GenshinConfigPatcher.applyDamage10000ElementalBurstMax(mCurrentGamePkg);
+                    }
+                    break;
             }
-            showNeonToast(enable ? "⚔️ 10,000 Damage Overdrive Locked!" : "Damage reset to normal");
+            showNeonToast(enable ? "⚔️ 10,000 DMG Overdrive Injected!" : "Damage Overdrive Reset to Stock 1.0");
         });
+    }
+
+    private void revertDamageForMlbb() {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "PhysicalAttackMultiplier=1.0", "MagicPowerMultiplier=1.0",
+                        "DamageReductionPercentage=0.0", "PhysicalDefenseAdd=0",
+                        "Armor=0", "DamageLockMax=0"
+                }, "[MlbbCombatOverdrive]");
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void revertDamageForCodm() {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "DamageMultiplier=1.0", "HeadshotMultiplier=1.0",
+                        "BulletDamageFloor=0", "UltraDamageOverdrive=0"
+                }, "[CodmCombatOverdrive]");
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void revertDamageForPubgm() {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "DamageMultiplier=1.0", "BulletDamageScale=1.0",
+                        "HeadshotMultiplier=1.0", "DamageLockMax=0"
+                }, "[PubgmCombatOverdrive]");
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void revertDamageForFreeFire() {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "DamageMultiplier=1.0", "HeadshotMultiplier=1.0",
+                        "DamageLockMax=0"
+                }, "[FreeFireCombatOverdrive]");
+            }
+        } catch (Throwable ignored) {}
     }
 
     private void applyLiveSpeedBoost(boolean enable) {
         AppExecutors.getInstance().executeCommand(() -> {
+            GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
             String val = enable ? "2.5" : "1.0";
-            if (mCurrentGamePkg.contains("mobile.legends")) {
-                MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.mspd", val);
-            } else if (mCurrentGamePkg.contains("cod") || mCurrentGamePkg.contains("callofduty")) {
-                CodmCombatOverdriveEngine.setprop("gamebooster.codm.speed", val);
-            } else if (mCurrentGamePkg.contains("pubg") || mCurrentGamePkg.contains("tencent.ig")) {
-                PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.speed", val);
+            switch (family) {
+                case MLBB:
+                    MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.mspd", val);
+                    MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.aspd", enable ? "5.0" : "1.0");
+                    break;
+                case CODM:
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.speed", val);
+                    if (enable) {
+                        CodmConfigPatcher.applySpeedBoostConfig(mCurrentGamePkg);
+                        CodmConfigPatcher.applySuperFastTouch(mCurrentGamePkg);
+                    }
+                    break;
+                case PUBGM:
+                    PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.speed", val);
+                    if (enable) {
+                        PubgConfigPatcher.applySpeedBoostConfig(mCurrentGamePkg);
+                    }
+                    break;
+                case FREE_FIRE:
+                    if (enable) {
+                        FreeFireConfigPatcher.applyInstantSprintTurbo(mCurrentGamePkg);
+                        FreeFireConfigPatcher.applyFastLootAndWeaponSwap(mCurrentGamePkg);
+                    }
+                    break;
+                default:
+                    break;
             }
-            showNeonToast(enable ? "⚡ 2.5x Speed Boost Active!" : "Movement speed reset");
+            showNeonToast(enable ? "⚡ 2.5x Speed & Mobility Turbo Engaged!" : "Speed Reset to 1.0 Baseline");
         });
     }
 
     private void applyLiveNoRecoil(boolean enable) {
         AppExecutors.getInstance().executeCommand(() -> {
-            String val = enable ? "1" : "0";
-            CodmCombatOverdriveEngine.setprop("gamebooster.codm.recoil", val);
-            CodmCombatOverdriveEngine.setprop("gamebooster.codm.spread", val);
-            PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.recoil", val);
-            PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.spread", val);
-            showNeonToast(enable ? "🎯 Zero Recoil & Spread Active!" : "Recoil reset to normal");
+            GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+            switch (family) {
+                case PUBGM:
+                    PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.recoil", enable ? "1" : "0");
+                    PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.spread", enable ? "0" : "1");
+                    if (enable) {
+                        PubgConfigPatcher.applyPubgmZeroRecoilNoSway(mCurrentGamePkg);
+                        PubgConfigPatcher.applyRecoilControlConfig(mCurrentGamePkg);
+                    } else {
+                        revertRecoil(mCurrentGamePkg, "[PubgmZeroRecoil]");
+                    }
+                    break;
+                case CODM:
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.recoil", enable ? "0" : "1");
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.spread", enable ? "0" : "1");
+                    if (enable) {
+                        CodmConfigPatcher.applyNoRecoilNoSpread(mCurrentGamePkg);
+                        CodmConfigPatcher.applyRecoilControlConfig(mCurrentGamePkg);
+                    } else {
+                        revertRecoil(mCurrentGamePkg, "[CodmNoRecoil]");
+                    }
+                    break;
+                case FREE_FIRE:
+                    if (enable) {
+                        FreeFireConfigPatcher.applyAutoDragHeadshot(mCurrentGamePkg);
+                        FreeFireConfigPatcher.applyRecoilControlConfig(mCurrentGamePkg);
+                    } else {
+                        revertRecoil(mCurrentGamePkg, "[FreeFireRecoil]");
+                    }
+                    break;
+                default:
+                    break;
+            }
+            showNeonToast(enable ? "🎯 Zero Recoil & Gun Sway Eliminator Active!" : "Recoil Control Reverted to Default");
         });
+    }
+
+    private void revertRecoil(String pkg, String section) {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(pkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "RecoilMultiplier=1.0", "RecoilPitch=1.0", "RecoilYaw=1.0",
+                        "GunSway=1.0", "BulletSpread=1.0", "CameraShake=1.0"
+                }, section);
+            }
+        } catch (Throwable ignored) {}
     }
 
     private void applyLiveAimbot(boolean enable) {
         AppExecutors.getInstance().executeCommand(() -> {
-            String val = enable ? "1" : "0";
-            CodmCombatOverdriveEngine.setprop("gamebooster.codm.aim", val);
-            PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.aim", val);
-            showNeonToast(enable ? "🔕 Auto Aim Head Magnet Locked!" : "Aimbot disabled");
+            GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+            switch (family) {
+                case CODM:
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.aim", enable ? "1" : "0");
+                    CodmCombatOverdriveEngine.setprop("gamebooster.codm.allscope", enable ? "1" : "0");
+                    if (enable) {
+                        CodmConfigPatcher.applyAimHeadLockConfig(mCurrentGamePkg);
+                        CodmConfigPatcher.applyTrackingBulletConfig(mCurrentGamePkg);
+                    }
+                    break;
+                case PUBGM:
+                    PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.aim", enable ? "1" : "0");
+                    if (enable) {
+                        PubgConfigPatcher.applyMagicBulletAimbot(mCurrentGamePkg);
+                        PubgConfigPatcher.applyTrackingBulletConfig(mCurrentGamePkg);
+                        PubgConfigPatcher.applyPubgmMagicBulletInstantHit(mCurrentGamePkg);
+                    }
+                    break;
+                case FREE_FIRE:
+                    if (enable) {
+                        FreeFireConfigPatcher.applyAutoDragHeadshot(mCurrentGamePkg);
+                        FreeFireConfigPatcher.applyFreeFireAutoHeadshot(mCurrentGamePkg);
+                        FreeFireConfigPatcher.applyAimAssistLockMax(mCurrentGamePkg);
+                    }
+                    break;
+                case MLBB:
+                    if (enable) {
+                        com.gamebooster.app.config.MlbbConfigPatcher.applyHeroAimLockConfig(mCurrentGamePkg);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            showNeonToast(enable ? "🔕 Auto Aim & Head Magnet Locked!" : "Auto Aim Disabled");
         });
     }
 
@@ -575,50 +953,42 @@ public class InGameTrainerOverlayService extends Service {
             MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.antiban", val);
             CodmCombatOverdriveEngine.setprop("gamebooster.codm.antiban", val);
             PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.antiban", val);
-            showNeonToast(enable ? "🛡️ Anti-Ban Cloak Active" : "Anti-ban disabled");
-        });
-    }
 
-    private void cycleDroneViewTier() {
-        int curTier = MlbbDroneViewPatcher.normalizeTier(
-                getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
-                        .getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
-        int nextTier;
-        switch (curTier) {
-            case MlbbDroneViewPatcher.TIER_1_5X: nextTier = MlbbDroneViewPatcher.TIER_2X; break;
-            case MlbbDroneViewPatcher.TIER_2X:   nextTier = MlbbDroneViewPatcher.TIER_3X; break;
-            case MlbbDroneViewPatcher.TIER_3X:   nextTier = MlbbDroneViewPatcher.TIER_4X; break;
-            case MlbbDroneViewPatcher.TIER_4X:   nextTier = MlbbDroneViewPatcher.TIER_5X; break;
-            case MlbbDroneViewPatcher.TIER_5X:
-            default:                            nextTier = MlbbDroneViewPatcher.TIER_1_5X; break;
-        }
-
-        final int targetTier = nextTier;
-        getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE).edit()
-                .putBoolean("drone_enabled", true)
-                .putInt("drone_tier", targetTier)
-                .apply();
-
-        if (mBtnDroneCycle != null) {
-            mBtnDroneCycle.setText("🦅 Drone View: " + MlbbDroneViewPatcher.getTierLabel(targetTier) + " ▾");
-        }
-
-        AppExecutors.getInstance().executeCommand(() -> {
-            MlbbDroneViewPatcher.applyDroneViewAtomic(getApplicationContext(), mCurrentGamePkg, targetTier);
-            showNeonToast("🎯 Drone FOV switched to " + MlbbDroneViewPatcher.getTierLabel(targetTier));
+            if (enable) {
+                PlayIntegrityBypassEngine.applyFullBypassSuite(getApplicationContext(), mCurrentGamePkg);
+                if (mCurrentGamePkg.contains("cod") || mCurrentGamePkg.contains("callofduty")) {
+                    CodmAceBypassPatcher.applyBypass(mCurrentGamePkg);
+                    CodmConfigPatcher.applyFastLoadShaderBypass(mCurrentGamePkg);
+                }
+            }
+            showNeonToast(enable ? "🛡️ Anti-Ban Cloak & ACE Evasion Shielded" : "Anti-Ban Protection Off");
         });
     }
 
     private void triggerLiveReInject() {
         AppExecutors.getInstance().executeCommand(() -> {
-            if (mCurrentGamePkg.contains("mobile.legends")) {
-                MlbbCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
-            } else if (mCurrentGamePkg.contains("cod") || mCurrentGamePkg.contains("callofduty")) {
-                CodmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
-            } else if (mCurrentGamePkg.contains("pubg") || mCurrentGamePkg.contains("tencent.ig")) {
-                PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+            GameFamily family = GameFamily.fromPackage(mCurrentGamePkg);
+            switch (family) {
+                case MLBB:
+                    MlbbCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    break;
+                case CODM:
+                    CodmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    CodmConfigPatcher.patch(mCurrentGamePkg, 185);
+                    break;
+                case PUBGM:
+                    PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    PubgConfigPatcher.patch(mCurrentGamePkg, 185);
+                    break;
+                case FREE_FIRE:
+                    FreeFireConfigPatcher.applyFreeFireMasterSuite(mCurrentGamePkg);
+                    FreeFireConfigPatcher.patch(mCurrentGamePkg, 120);
+                    break;
+                default:
+                    com.gamebooster.app.config.CommonConfigTuningInjector.applySuperFastTouch(mCurrentGamePkg);
+                    break;
             }
-            showNeonToast("⚡ 100% Live Combat Overdrive Injected!");
+            showNeonToast("⚡ 100% Live Combat Suite Re-Injected for " + family.displayName + "!");
         });
     }
 

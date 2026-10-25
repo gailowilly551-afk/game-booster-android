@@ -204,6 +204,13 @@ public class AutoGameMonitorService extends Service {
                     // Bind Real FPS Target
                     com.gamebooster.app.overlay.RealGameFpsMonitor.getInstance().setTargetPackage(currentPackage);
 
+                    // Ensure In-Game Trainer HUD targets current active game
+                    try {
+                        if (android.provider.Settings.canDrawOverlays(appCtx)) {
+                            com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appCtx, currentPackage);
+                        }
+                    } catch (Throwable ignored) {}
+
                     AppExecutors.getInstance().postToMainThread(() ->
                             android.widget.Toast.makeText(appCtx, "⚡ Auto-Optimized: " + currentPackage,
                                      android.widget.Toast.LENGTH_SHORT).show());

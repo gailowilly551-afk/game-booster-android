@@ -128,12 +128,10 @@ public final class GameManagerLauncher {
         // ═══════════════════════════════════════════════════════════
         final Intent finalTargetIntent = targetIntent != null ? new Intent(targetIntent) : null;
         Runnable launchNow = () -> {
-            // Start InGameTrainerOverlayService if overlay permission is granted
+            // Start InGameTrainerOverlayService with target game package
             try {
                 if (android.provider.Settings.canDrawOverlays(appContext)) {
-                    if (!com.gamebooster.app.overlay.InGameTrainerOverlayService.isRunning()) {
-                        com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext);
-                    }
+                    com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext, pkg);
                 }
             } catch (Throwable overlayErr) {
                 Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());
