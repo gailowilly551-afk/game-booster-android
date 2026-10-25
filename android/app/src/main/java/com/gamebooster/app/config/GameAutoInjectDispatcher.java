@@ -7,6 +7,7 @@ import com.gamebooster.app.engine.FpsForceUnlockEngine;
 import com.gamebooster.app.engine.HardwareDisplayHelper;
 import com.gamebooster.app.engine.PlayIntegrityBypassEngine;
 import com.gamebooster.app.engine.AceContainerEvasionEngine;
+import com.gamebooster.app.engine.PubgmFpsUnlockEngine;
 
 /**
  * Compatibility bridge for older callers. Game data is never changed by the
@@ -314,6 +315,9 @@ public final class GameAutoInjectDispatcher {
                     PubgConfigPatcher.patchUltraExtreme165(pkg);
                     PubgConfigPatcher.patchSuperSmooth165(pkg);
                     PubgConfigPatcher.apply165FpsHdrUnlock(pkg);
+                    try {
+                        PubgmFpsUnlockEngine.unlock165Fps(ctx, pkg);
+                    } catch (Throwable ignored) {}
                 } else if (pubgmTargetFps >= 144) {
                     PubgConfigPatcher.patchUltraExtreme144(pkg);
                     PubgConfigPatcher.patchSuperSmooth144(pkg);

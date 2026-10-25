@@ -216,6 +216,11 @@ public final class GameProfilePreferences {
      * keep the requested value instead of collapsing every title to 60Hz.
      */
     private static int resolveRequestedHz(Context context, String packageName, int requestedHz) {
+        if (requestedHz >= 120) {
+            // Unconditionally preserve high-refresh and extreme FPS overclock targets (120, 144, 165, 185)
+            // for game config unlocking so game engines are never throttled by physical panel limits.
+            return requestedHz;
+        }
         try {
             DevicePerformanceCapabilities capabilities = DevicePerformanceCapabilities.detect(context);
             if (capabilities.getMaxRefreshRate() <= 0) {

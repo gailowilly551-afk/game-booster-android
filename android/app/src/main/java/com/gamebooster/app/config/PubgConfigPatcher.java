@@ -1470,7 +1470,7 @@ public class PubgConfigPatcher {
         String pkg = packageName.trim();
         boolean anySuccess = false;
 
-        String[] assetFiles = {"UserCustom.ini", "EnjoyCJZC.ini", "GameUserSettings.ini"};
+        String[] assetFiles = {"UserCustom.ini", "EnjoyCJZC.ini", "GameUserSettings.ini", "Active.sav"};
         String basePath = "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/";
 
         String doubleConfig = basePath + "ShadowTrackerExtra/Saved/Config/Android/";
@@ -1486,6 +1486,22 @@ public class PubgConfigPatcher {
             String path1 = isSav ? (doubleSave + file) : (doubleConfig + file);
             String path2 = isSav ? (singleSave + file) : (singleConfig + file);
 
+            // 165 FPS Active.sav Template Deployment:
+            // If Active.sav does not exist on disk, seed it with the authentic 165 FPS binary template
+            if (file.equals("Active.sav")) {
+                boolean p1Exists = new File(path1).exists() || ShizukuFileManager.fileExists(path1);
+                boolean p2Exists = new File(path2).exists() || ShizukuFileManager.fileExists(path2);
+                if (!p1Exists) {
+                    writeDataToGamePath(ctx, pkg, path1, data);
+                    anySuccess = true;
+                }
+                if (!p2Exists) {
+                    writeDataToGamePath(ctx, pkg, path2, data);
+                    anySuccess = true;
+                }
+                continue;
+            }
+
             // CRITICAL FIX: GameUserSettings.ini contains player credentials, control layouts,
             // sensitivity, and audio preferences. If it exists, patch only the graphics/FPS keys
             // rather than wiping out the entire user profile.
@@ -1493,7 +1509,11 @@ public class PubgConfigPatcher {
                 boolean p1Exists = new File(path1).exists() || ShizukuFileManager.fileExists(path1);
                 boolean p2Exists = new File(path2).exists() || ShizukuFileManager.fileExists(path2);
                 if (p1Exists || p2Exists) {
-                    int adaptiveFps = GameProfileAutoConfigurator.clampTargetFpsToDisplay(ctx, 185);
+                    int adaptiveFps = 165;
+                    if (ctx != null) {
+                        int stored = GameProfilePreferences.getTargetHz(ctx, pkg);
+                        if (stored >= 60) adaptiveFps = stored;
+                    }
                     int adaptiveLvl = FpsUnlockTier.fromFps(adaptiveFps).level;
                     String[] userSettingKeys = {
                         "FrameRateLevel=" + adaptiveLvl,
@@ -1508,7 +1528,7 @@ public class PubgConfigPatcher {
                         "ArtQuality=1",
                         "ShadowQuality=1",
                         "MobileHDRMode=0",
-                        "HighFPSMode=1",
+                        "HighFPSMode=6",
                         "bUseHDRMode=False",
                         "bUseUltraExtreme=True",
                         "bFramePacingEnabled=True",
@@ -1548,10 +1568,13 @@ public class PubgConfigPatcher {
         String pkg = packageName.trim();
         Log.i(TAG, "🚀 Applying PUBG Mobile 4.6.0 Master Update Suite for " + pkg + "...");
 
-        // Resolve hardware display capabilities (up to 165Hz - 185Hz)
-        int targetFps = 185;
+        // Resolve target FPS without forcing panel physical clamp (defaults to 165 FPS / level 9)
+        int targetFps = 165;
         if (ctx != null) {
-            targetFps = GameProfileAutoConfigurator.clampTargetFpsToDisplay(ctx, 185);
+            int stored = GameProfilePreferences.getTargetHz(ctx, pkg);
+            if (stored >= 60) {
+                targetFps = stored;
+            }
         }
 
         // 1. Deploy pre-tuned 4.6.0 asset templates safely (without wiping existing login session)
@@ -1705,9 +1728,15 @@ public class PubgConfigPatcher {
                         boolean isGvas = (d.length >= 4 && d[0] == 0x47 && d[1] == 0x56 && d[2] == 0x41 && d[3] == 0x53);
                         boolean isTextCorruption = (d[0] == '[' || d[0] == '+' || d[0] == '#' || d[0] == '\n' || d[0] == '\r');
                         if (isTextCorruption || (!isGvas && d.length < 128)) {
-                            Log.w(TAG, "Detected corrupted text Active.sav at " + savPath + ", removing so game can generate authentic save.");
+                            Log.w(TAG, "Detected corrupted text Active.sav at " + savPath + ", restoring authentic 165 FPS GVAS template.");
                             ShizukuFileManager.deleteFile(savPath);
                             new File(savPath).delete();
+                            if (context != null) {
+                                byte[] template = readAssetBytes(context, "pubgm/Active.sav");
+                                if (template != null && template.length > 0) {
+                                    writeDataToGamePath(context, pkg, savPath, template);
+                                }
+                            }
                         }
                     }
                 } catch (Throwable ignored) {}

@@ -274,17 +274,28 @@ public final class FpsForceUnlockEngine {
     private static void applyPubgmConfigFpsPatch(String pkg, int targetFps) {
         // PUBGM — Engine.ini (safe, not hash-checked) + GameUserSettings.ini
         String[] enginePaths = {
+            "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Engine.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Engine.ini",
+            "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/Engine.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/Engine.ini",
             "/sdcard/Android/data/" + pkg + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Engine.ini",
             "/storage/emulated/0/Android/data/" + pkg + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Engine.ini"
         };
         String[] gusPaths = {
+            "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+            "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
+            "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
             "/sdcard/Android/data/" + pkg + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini",
             "/storage/emulated/0/Android/data/" + pkg + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/GameUserSettings.ini"
         };
+        int effectiveLevel = (targetFps >= 185) ? 10 : ((targetFps >= 165) ? 9 : ((targetFps >= 144) ? 8 : 7));
         StringBuilder sb = new StringBuilder();
         for (String engine : enginePaths) {
             sb.append("if [ -f '").append(engine).append("' ]; then ")
               .append("grep -q 't.MaxFPS' '").append(engine).append("' && sed -i 's/t\\.MaxFPS=[0-9.]*/t.MaxFPS=").append(targetFps).append("/' '").append(engine).append("' 2>/dev/null || echo 't.MaxFPS=").append(targetFps).append("' >> '").append(engine).append("' 2>/dev/null; ")
+              .append("grep -q 'r.PUBGDeviceFPSPolicy' '").append(engine).append("' && sed -i 's/r\\.PUBGDeviceFPSPolicy=[0-9.]*/r.PUBGDeviceFPSPolicy=2/' '").append(engine).append("' 2>/dev/null || echo 'r.PUBGDeviceFPSPolicy=2' >> '").append(engine).append("' 2>/dev/null; ")
+              .append("grep -q 'r.PUBGDeviceFPSSupport165' '").append(engine).append("' || echo 'r.PUBGDeviceFPSSupport165=1' >> '").append(engine).append("' 2>/dev/null; ")
               .append("grep -q 'r.VSync' '").append(engine).append("' || echo 'r.VSync=0' >> '").append(engine).append("' 2>/dev/null; ")
               .append("fi; ");
         }
@@ -292,6 +303,9 @@ public final class FpsForceUnlockEngine {
             // GameUserSettings.ini is hash-checked — patch is safe because only in-memory hash is verified
             sb.append("if [ -f '").append(gus).append("' ]; then ")
               .append("sed -i 's/FrameRateLimit=[0-9.]*/FrameRateLimit=").append(targetFps).append(".000000/' '").append(gus).append("' 2>/dev/null; ")
+              .append("sed -i 's/FrameRateLevel=[0-9.]*/FrameRateLevel=").append(effectiveLevel).append("/' '").append(gus).append("' 2>/dev/null; ")
+              .append("sed -i 's/BattleFPS=[0-9.]*/BattleFPS=").append(effectiveLevel).append("/' '").append(gus).append("' 2>/dev/null; ")
+              .append("sed -i 's/LobbyFPS=[0-9.]*/LobbyFPS=").append(effectiveLevel).append("/' '").append(gus).append("' 2>/dev/null; ")
               .append("sed -i 's/UpperBound=(Type=Exclusive,Value=[0-9.]*)/UpperBound=(Type=Exclusive,Value=").append(targetFps + 1).append(".0)/' '").append(gus).append("' 2>/dev/null; ")
               .append("fi; ");
         }

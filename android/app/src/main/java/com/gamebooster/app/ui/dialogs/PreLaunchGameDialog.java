@@ -47,6 +47,7 @@ import com.gamebooster.app.engine.CodmCombatOverdriveEngine;
 import com.gamebooster.app.engine.FpsForceUnlockEngine;
 import com.gamebooster.app.engine.MlbbCombatOverdriveEngine;
 import com.gamebooster.app.engine.PubgmCombatOverdriveEngine;
+import com.gamebooster.app.engine.PubgmFpsUnlockEngine;
 import com.gamebooster.app.gamemanager.GameManagerLauncher;
 import com.gamebooster.app.games.GameAppInfo;
 import com.gamebooster.app.games.GameFamily;
@@ -435,7 +436,13 @@ public final class PreLaunchGameDialog {
 
                     AppExecutors.getInstance().executeCommand(() -> {
                         PubgmCombatOverdriveEngine.applyCombatOverdrive(context, packageName);
-                        PubgConfigPatcher.patch(packageName, finalRequestedRate);
+                        if (finalRequestedRate >= 165) {
+                            PubgmFpsUnlockEngine.unlock165Fps(context, packageName);
+                            PubgConfigPatcher.patchSuperSmooth165(packageName);
+                            PubgConfigPatcher.apply165FpsHdrUnlock(packageName);
+                        } else {
+                            PubgConfigPatcher.patch(packageName, finalRequestedRate);
+                        }
 
                         if (recoilOn) {
                             PubgConfigPatcher.applyPubgmZeroRecoilNoSway(packageName);
