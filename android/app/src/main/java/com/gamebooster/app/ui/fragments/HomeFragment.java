@@ -234,7 +234,12 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
 
                 @Override
                 public void onMoreOptions(GameAppInfo game, View anchorView) {
-                    showGameMoreOptionsMenu(game, anchorView);
+                    android.app.Activity act = getActivity();
+                    if (act != null && !act.isFinishing()) {
+                        com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
+                            if (adapter != null) adapter.notifyDataSetChanged();
+                        });
+                    }
                 }
             });
             rvGames.setAdapter(adapter);

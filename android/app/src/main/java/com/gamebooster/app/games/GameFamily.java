@@ -13,6 +13,7 @@ public enum GameFamily {
     MLBB("Mobile Legends: Bang Bang", "com.mobile.legends"),
     CODM("Call of Duty: Mobile", "com.garena.game.codm"),
     PUBGM("PUBG Mobile", "com.tencent.ig"),
+    FREE_FIRE("Free Fire", "com.dts.freefireth"),
     OTHER("Other", "");
 
     public final String displayName;
@@ -46,6 +47,9 @@ public enum GameFamily {
                 || pkg.contains("bgmi") || pkg.contains("iglite")) {
             return PUBGM;
         }
+        if (pkg.contains("freefire") || pkg.contains("dts.freefire")) {
+            return FREE_FIRE;
+        }
         return OTHER;
     }
 
@@ -56,12 +60,14 @@ public enum GameFamily {
             case CODM:
             case PUBGM:
                 return 185;
+            case FREE_FIRE:
+                return 120;
             default:
                 return 60;
         }
     }
 
     public static GameFamily[] supportedFamilies() {
-        return new GameFamily[]{MLBB, CODM, PUBGM};
+        return new GameFamily[]{MLBB, CODM, PUBGM, FREE_FIRE};
     }
 }
