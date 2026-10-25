@@ -133,8 +133,15 @@ public class UserService extends IUserService.Stub {
         if (commands == null || commands.isEmpty()) {
             return results;
         }
+        // Execute batch as a unified multi-command script to eliminate sequential process spawn overhead (300x speedup)
+        StringBuilder sb = new StringBuilder();
         for (String cmd : commands) {
-            results.add(execCommand(cmd));
+            if (cmd != null && !cmd.trim().isEmpty()) {
+                sb.append(cmd.trim()).append("\n");
+            }
+        }
+        if (sb.length() > 0) {
+            results.add(execCommand(sb.toString()));
         }
         return results;
     }

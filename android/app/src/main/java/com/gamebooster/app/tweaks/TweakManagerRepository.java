@@ -961,6 +961,7 @@ public class TweakManagerRepository {
                 context != null ? context : com.gamebooster.app.GameBoosterApp.getInstance());
 
         List<String> batchCmds = new ArrayList<>();
+        List<String> appliedIds = new ArrayList<>();
         for (TweakItem tweak : TWEAKS) {
             // Bypass Charging stops physical battery charging — must NEVER be auto-applied in bulk
             if ("bypass_charging_shield".equals(tweak.getId())) {
@@ -968,10 +969,11 @@ public class TweakManagerRepository {
             }
             batchCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware(tweak.getApplyCommand(), context));
             tweak.setApplied(true);
-            if (context != null) {
-                TweakPreferences.saveTweakState(context, tweak.getId(), true);
-            }
+            appliedIds.add(tweak.getId());
             appliedCount++;
+        }
+        if (context != null) {
+            TweakPreferences.saveAllTweakStates(context, appliedIds, true);
         }
 
         // Neutralize aggressive kill flags and safeguard background multitasking
@@ -1127,13 +1129,15 @@ public class TweakManagerRepository {
     public static int revertAllTweaks(Context context) {
         int revertedCount = 0;
         List<String> batchCmds = new ArrayList<>();
+        List<String> revertedIds = new ArrayList<>();
         for (TweakItem tweak : TWEAKS) {
             batchCmds.add(tweak.getRevertCommand());
             tweak.setApplied(false);
-            if (context != null) {
-                TweakPreferences.saveTweakState(context, tweak.getId(), false);
-            }
+            revertedIds.add(tweak.getId());
             revertedCount++;
+        }
+        if (context != null) {
+            TweakPreferences.saveAllTweakStates(context, revertedIds, false);
         }
 
         // Neutralize aggressive kill flags and safeguard background multitasking

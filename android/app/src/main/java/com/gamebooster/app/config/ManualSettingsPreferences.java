@@ -8,6 +8,9 @@ import com.gamebooster.app.engine.CommandExecutor;
 import com.gamebooster.app.engine.GameModeApiSupport;
 import com.gamebooster.app.shizuku.ShizukuExecutor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ManualSettingsPreferences {
     private static final String TAG = "ManualSettingsPrefs";
     private static final String PREF_NAME = "game_booster_manual_settings";
@@ -452,6 +455,30 @@ public class ManualSettingsPreferences {
         return getPrefs(context).getBoolean(KEY_AOT_SPEED, true);
     }
 
+    public static void enableAllPerformanceToggles(Context context) {
+        if (context == null) return;
+        getPrefs(context).edit()
+                .putString(KEY_GPU_MODE, "vulkan")
+                .putString(KEY_CPU_MODE, "performance")
+                .putBoolean(KEY_GAME_DRIVER, true)
+                .putBoolean(KEY_THERMAL_BYPASS, true)
+                .putBoolean(KEY_ADPF_ENGINE, true)
+                .putBoolean(KEY_UCLAMP_BOOST, true)
+                .putBoolean(KEY_TOUCH_1000HZ_LOCK, true)
+                .putBoolean(KEY_PHANTOM_FREEZER_KILL, true)
+                .putBoolean(KEY_VULKAN_SKIAVK, true)
+                .putBoolean(KEY_MEMORY_16KB_SHIELD, true)
+                .putBoolean(KEY_ANTI_LOG, true)
+                .putBoolean(KEY_DISABLE_DATA_SAVER, true)
+                .putBoolean(KEY_DISABLE_BATTERY_SAVER, true)
+                .putBoolean(KEY_DISABLE_WIFI_SAVER, true)
+                .putBoolean(KEY_TCP_BBR_BUFFERS, true)
+                .putBoolean(KEY_5G_6G_DATA, true)
+                .putBoolean(KEY_WIFI_LOW_LATENCY, true)
+                .putBoolean(KEY_DUAL_DATA_WIFI, true)
+                .apply();
+    }
+
     /**
      * Applies all stored manual hardware, kernel, network, and driver settings via Shizuku.
      */
@@ -470,40 +497,41 @@ public class ManualSettingsPreferences {
             return;
         }
         String cleanPkg = packageName != null ? packageName.trim() : null;
+        List<String> batchCmds = new ArrayList<>();
 
         try {
             // 1. Android Game Mode API & Per-App Refresh Rate (Official Android 13/14/15/16)
             if (cleanPkg != null) {
-                executeCmd("cmd game mode performance " + cleanPkg);
-                executeCmd("cmd game set --fps 185 " + cleanPkg);
-                executeCmd("cmd window set-app-refresh-rate " + cleanPkg + " 185");
+                batchCmds.add("cmd game mode performance " + cleanPkg);
+                batchCmds.add("cmd game set --fps 185 " + cleanPkg);
+                batchCmds.add("cmd window set-app-refresh-rate " + cleanPkg + " 185");
             }
 
             // 2. GPU Render Mode
             String gpuMode = getGpuMode(context);
             if ("vulkan".equalsIgnoreCase(gpuMode)) {
-                executeCmd("setprop debug.hwui.renderer skiavk");
-                executeCmd("setprop debug.renderengine.backend vulkan");
-                executeCmd("setprop renderthread.skia.glcontext 0");
+                batchCmds.add("setprop debug.hwui.renderer skiavk");
+                batchCmds.add("setprop debug.renderengine.backend vulkan");
+                batchCmds.add("setprop renderthread.skia.glcontext 0");
             } else {
-                executeCmd("setprop debug.hwui.renderer skiagl");
+                batchCmds.add("setprop debug.hwui.renderer skiagl");
             }
 
             // 3. CPU Governor & Thermal Throttling Mitigation
             String cpuMode = getCpuMode(context);
             if ("performance".equalsIgnoreCase(cpuMode)) {
-                executeCmd("for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo performance > $g 2>/dev/null; done");
+                batchCmds.add("for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo performance > $g 2>/dev/null; done");
             }
             if (isThermalBypassEnabled(context)) {
                 com.gamebooster.app.booster.ThermalChannel.setThermalOverride(true);
             }
 
             // 4. ANGLE Graphics Backend (Strictly Purged for stability)
-            executeCmd("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null");
-            executeCmd("settings delete global angle_gl_driver_selection_values 2>/dev/null");
-            executeCmd("settings delete global angle_enabled_pkgs 2>/dev/null");
-            executeCmd("settings put global angle_gl_driver_all_angle 0 2>/dev/null");
-            executeCmd("setprop debug.angle.backend 0");
+            batchCmds.add("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null");
+            batchCmds.add("settings delete global angle_gl_driver_selection_values 2>/dev/null");
+            batchCmds.add("settings delete global angle_enabled_pkgs 2>/dev/null");
+            batchCmds.add("settings put global angle_gl_driver_all_angle 0 2>/dev/null");
+            batchCmds.add("setprop debug.angle.backend 0");
 
             // 5. Game Driver / Updatable Driver (Strictly MLBB, CODM, and PUBGM only)
             if (isGameDriverEnabled(context)) {
@@ -513,102 +541,102 @@ public class ManualSettingsPreferences {
                 } else {
                     targetPkgs = com.gamebooster.app.booster.GpuTweaksChannel.getTargetGamesCsv();
                 }
-                executeCmd("settings put global game_driver_all_apps 0");
-                executeCmd("settings put global updatable_driver_all_apps 0");
-                executeCmd("settings put global game_driver_opt_in_apps \"" + targetPkgs + "\"");
-                executeCmd("settings put global game_driver_prerelease_opt_in_apps \"" + targetPkgs + "\"");
-                executeCmd("settings put global updatable_driver_production_opt_in_apps \"" + targetPkgs + "\"");
+                batchCmds.add("settings put global game_driver_all_apps 0");
+                batchCmds.add("settings put global updatable_driver_all_apps 0");
+                batchCmds.add("settings put global game_driver_opt_in_apps \"" + targetPkgs + "\"");
+                batchCmds.add("settings put global game_driver_prerelease_opt_in_apps \"" + targetPkgs + "\"");
+                batchCmds.add("settings put global updatable_driver_production_opt_in_apps \"" + targetPkgs + "\"");
             }
 
             // 6. Network Low-Latency, 5G/6G, Savers Disabling & Dual WiFi/Cellular Boost
             if (isDisableDataSaverEnabled(context)) {
-                executeCmd("cmd netpolicy set restrict-background false 2>/dev/null");
-                executeCmd("cmd connectivity set-background-data true 2>/dev/null");
-                executeCmd("settings put global restrict_background_data 0 2>/dev/null");
-                executeCmd("settings put global data_saver_enabled 0 2>/dev/null");
+                batchCmds.add("cmd netpolicy set restrict-background false 2>/dev/null");
+                batchCmds.add("cmd connectivity set-background-data true 2>/dev/null");
+                batchCmds.add("settings put global restrict_background_data 0 2>/dev/null");
+                batchCmds.add("settings put global data_saver_enabled 0 2>/dev/null");
             }
             if (isDisableBatterySaverEnabled(context)) {
-                executeCmd("settings put global low_power 0 2>/dev/null");
-                executeCmd("settings put global low_power_sticky 0 2>/dev/null");
-                executeCmd("settings put global low_power_trigger_level 0 2>/dev/null");
-                executeCmd("cmd power set-mode 0 2>/dev/null");
-                executeCmd("cmd power set-fixed-performance-mode-enabled true 2>/dev/null");
-                executeCmd("dumpsys deviceidle disable 2>/dev/null");
-                executeCmd("cmd deviceidle disable 2>/dev/null");
+                batchCmds.add("settings put global low_power 0 2>/dev/null");
+                batchCmds.add("settings put global low_power_sticky 0 2>/dev/null");
+                batchCmds.add("settings put global low_power_trigger_level 0 2>/dev/null");
+                batchCmds.add("cmd power set-mode 0 2>/dev/null");
+                batchCmds.add("cmd power set-fixed-performance-mode-enabled true 2>/dev/null");
+                batchCmds.add("dumpsys deviceidle disable 2>/dev/null");
+                batchCmds.add("cmd deviceidle disable 2>/dev/null");
             }
             if (isDisableWifiSaverEnabled(context)) {
-                executeCmd("settings put global wifi_power_save 0 2>/dev/null");
-                executeCmd("setprop persist.sys.wifi.power_save 0 2>/dev/null");
-                executeCmd("setprop persist.vendor.wifi.powersave 0 2>/dev/null");
-                executeCmd("cmd wifi set-power-save-enabled disabled 2>/dev/null");
-                executeCmd("settings put global wifi_sleep_policy 2 2>/dev/null");
-                executeCmd("settings put global wifi_suspend_optimizations_enabled 0 2>/dev/null");
-                executeCmd("setprop persist.sys.wifi.energy.saving 0 2>/dev/null");
-                executeCmd("setprop persist.sys.wifi.wmm_power_save 0 2>/dev/null");
-                executeCmd("setprop persist.vendor.wifi.twt_disable 1 2>/dev/null");
+                batchCmds.add("settings put global wifi_power_save 0 2>/dev/null");
+                batchCmds.add("setprop persist.sys.wifi.power_save 0 2>/dev/null");
+                batchCmds.add("setprop persist.vendor.wifi.powersave 0 2>/dev/null");
+                batchCmds.add("cmd wifi set-power-save-enabled disabled 2>/dev/null");
+                batchCmds.add("settings put global wifi_sleep_policy 2 2>/dev/null");
+                batchCmds.add("settings put global wifi_suspend_optimizations_enabled 0 2>/dev/null");
+                batchCmds.add("setprop persist.sys.wifi.energy.saving 0 2>/dev/null");
+                batchCmds.add("setprop persist.sys.wifi.wmm_power_save 0 2>/dev/null");
+                batchCmds.add("setprop persist.vendor.wifi.twt_disable 1 2>/dev/null");
             }
             if (isWifiLowLatencyEnabled(context)) {
-                executeCmd("cmd wifi set-low-latency-mode enabled");
-                executeCmd("setprop net.tcp.delack.default 1");
+                batchCmds.add("cmd wifi set-low-latency-mode enabled");
+                batchCmds.add("setprop net.tcp.delack.default 1");
             }
             if (is5g6gDataEnabled(context)) {
-                executeCmd("setprop persist.vendor.radio.5g_mode_pref 1");
-                executeCmd("settings put global mobile_data_always_on 1");
+                batchCmds.add("setprop persist.vendor.radio.5g_mode_pref 1");
+                batchCmds.add("settings put global mobile_data_always_on 1");
             }
             if (isDualDataWifiEnabled(context)) {
-                executeCmd("settings put global mobile_data_always_on 1");
+                batchCmds.add("settings put global mobile_data_always_on 1");
             }
             if (isTetherHwEnabled(context)) {
-                executeCmd("settings put global tether_offload_disabled 0");
+                batchCmds.add("settings put global tether_offload_disabled 0");
             }
             if (isForceGnssEnabled(context)) {
-                executeCmd("settings put global force_gnss_raw_measurements 1");
+                batchCmds.add("settings put global force_gnss_raw_measurements 1");
             }
 
             // Disable Android Default Frame Rate & Disable 120Hz/60Hz Game Limiting
-            executeCmd("setprop debug.egl.force_msaa 1");
-            executeCmd("setprop debug.hwui.fps_divisor 1");
-            executeCmd("setprop debug.graphics.game_default_frame_rate.disabled 1");
-            executeCmd("setprop ro.vendor.dfps.enable 0");
-            executeCmd("setprop vendor.display.enable_default_fps_switch 0");
-            executeCmd("setprop persist.vendor.power.dfps.level 0");
-            executeCmd("setprop persist.vendor.display.vrr.disable 1");
-            executeCmd("setprop ro.surface_flinger.set_idle_timer_ms 0");
-            executeCmd("setprop ro.surface_flinger.set_touch_timer_ms 0");
-            executeCmd("setprop debug.sf.fps_limit 185");
-            executeCmd("setprop persist.sys.NV_FPSLIMIT 185");
-            executeCmd("setprop persist.sys.game.fps 185");
-            executeCmd("setprop persist.sys.game.rate 185");
-            executeCmd("setprop persist.sys.fps 185");
-            executeCmd("setprop debug.cpurend.fps 185");
-            executeCmd("setprop persist.sys.power.game_mode 1");
+            batchCmds.add("setprop debug.egl.force_msaa 1");
+            batchCmds.add("setprop debug.hwui.fps_divisor 1");
+            batchCmds.add("setprop debug.graphics.game_default_frame_rate.disabled 1");
+            batchCmds.add("setprop ro.vendor.dfps.enable 0");
+            batchCmds.add("setprop vendor.display.enable_default_fps_switch 0");
+            batchCmds.add("setprop persist.vendor.power.dfps.level 0");
+            batchCmds.add("setprop persist.vendor.display.vrr.disable 1");
+            batchCmds.add("setprop ro.surface_flinger.set_idle_timer_ms 0");
+            batchCmds.add("setprop ro.surface_flinger.set_touch_timer_ms 0");
+            batchCmds.add("setprop debug.sf.fps_limit 185");
+            batchCmds.add("setprop persist.sys.NV_FPSLIMIT 185");
+            batchCmds.add("setprop persist.sys.game.fps 185");
+            batchCmds.add("setprop persist.sys.game.rate 185");
+            batchCmds.add("setprop persist.sys.fps 185");
+            batchCmds.add("setprop debug.cpurend.fps 185");
+            batchCmds.add("setprop persist.sys.power.game_mode 1");
 
             // Disable Android Match Content Frame Rate & System Refresh Rate Limiters
-            executeCmd("settings put system match_content_frame_rate 0");
-            executeCmd("settings put secure match_content_frame_rate_preference 0");
-            executeCmd("settings put system peak_refresh_rate 185.0");
-            executeCmd("settings put system min_refresh_rate 185.0");
-            executeCmd("settings put system user_refresh_rate 185");
-            executeCmd("settings put global peak_refresh_rate 185.0");
-            executeCmd("settings put global min_refresh_rate 185.0");
-            executeCmd("service call SurfaceFlinger 1035 i32 185");
-            executeCmd("service call SurfaceFlinger 1036 i32 185");
+            batchCmds.add("settings put system match_content_frame_rate 0");
+            batchCmds.add("settings put secure match_content_frame_rate_preference 0");
+            batchCmds.add("settings put system peak_refresh_rate 185.0");
+            batchCmds.add("settings put system min_refresh_rate 185.0");
+            batchCmds.add("settings put system user_refresh_rate 185");
+            batchCmds.add("settings put global peak_refresh_rate 185.0");
+            batchCmds.add("settings put global min_refresh_rate 185.0");
+            batchCmds.add("service call SurfaceFlinger 1035 i32 185");
+            batchCmds.add("service call SurfaceFlinger 1036 i32 185");
 
             // Disable OEM-specific 120Hz/60Hz game throttling (MIUI/HyperOS Joyose, Samsung GOS, ColorOS/OxygenOS, ROG, iQOO, RedMagic)
-            executeCmd("settings put secure user_refresh_rate 185");
-            executeCmd("settings put global surface_flinger_peak_refresh_rate 185");
-            executeCmd("settings put secure refresh_rate_mode 2");
-            executeCmd("settings put system sec_display_fps 185");
-            executeCmd("settings put secure game_auto_temperature_control 0");
-            executeCmd("settings put global oneplus_screen_refresh_rate 2");
-            executeCmd("settings put global realme_screen_refresh_rate 185");
-            executeCmd("settings put global oppo_screen_refresh_rate 185");
-            executeCmd("settings put system asus_option_display_refresh_rate 185");
-            executeCmd("settings put system asus_hfr_mode 1");
-            executeCmd("settings put system screen_refresh_rate 185");
-            executeCmd("settings put system iqoo_refresh_rate 185");
-            executeCmd("settings put system display_refresh_rate 185");
-            executeCmd("settings put system redmagic_refresh_rate 185");
+            batchCmds.add("settings put secure user_refresh_rate 185");
+            batchCmds.add("settings put global surface_flinger_peak_refresh_rate 185");
+            batchCmds.add("settings put secure refresh_rate_mode 2");
+            batchCmds.add("settings put system sec_display_fps 185");
+            batchCmds.add("settings put secure game_auto_temperature_control 0");
+            batchCmds.add("settings put global oneplus_screen_refresh_rate 2");
+            batchCmds.add("settings put global realme_screen_refresh_rate 185");
+            batchCmds.add("settings put global oppo_screen_refresh_rate 185");
+            batchCmds.add("settings put system asus_option_display_refresh_rate 185");
+            batchCmds.add("settings put system asus_hfr_mode 1");
+            batchCmds.add("settings put system screen_refresh_rate 185");
+            batchCmds.add("settings put system iqoo_refresh_rate 185");
+            batchCmds.add("settings put system display_refresh_rate 185");
+            batchCmds.add("settings put system redmagic_refresh_rate 185");
 
             // 8. Android 13, 14, 15, 16 Modern OS & ADPF Flags (Zero Fallback)
             GameModeApiSupport.applyModernAndroidPerformanceFlags(cleanPkg, 185);
@@ -622,9 +650,14 @@ public class ManualSettingsPreferences {
             }
 
             // 10. Hidden Settings: Under-the-hood performance flags & WebView Graphite acceleration
-            applyHiddenPerformanceSettings(context);
+            applyHiddenPerformanceSettings(context, batchCmds);
 
-            Log.i(TAG, "Manual hardware, kernel, Ultra Extreme & Max FPS settings applied successfully.");
+            // Execute all collected manual settings in a single fast privileged batch
+            if (!batchCmds.isEmpty()) {
+                com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivilegedBatch(batchCmds);
+            }
+
+            Log.i(TAG, "Manual hardware, kernel, Ultra Extreme & Max FPS settings applied successfully in batch.");
         } catch (Throwable e) {
             Log.w(TAG, "Failed to apply manual settings: " + e.getMessage());
         }
@@ -634,39 +667,44 @@ public class ManualSettingsPreferences {
      * Silently applies hidden performance settings and next-gen WebView flags without UI controls.
      */
     public static void applyHiddenPerformanceSettings(Context context) {
+        applyHiddenPerformanceSettings(context, null);
+    }
+
+    public static void applyHiddenPerformanceSettings(Context context, List<String> outBatchCmds) {
         if (context == null) return;
+        List<String> cmds = (outBatchCmds != null) ? outBatchCmds : new ArrayList<>();
         try {
             if (isHiddenPerfPipelineEnabled(context)) {
                 // Low-latency SurfaceFlinger & HWUI Realtime RenderThread
-                executeCmd("setprop debug.sf.latch_unsignaled 0");
-                executeCmd("setprop debug.sf.disable_backpressure 1");
-                executeCmd("setprop debug.sf.auto_latch_unsignaled 0");
-                executeCmd("setprop debug.sf.predict_hwc_composition_strategy 1");
-                executeCmd("setprop debug.sf.enable_gl_backpressure 0");
-                executeCmd("setprop debug.sf.early_phase_offset_ns 500000");
-                executeCmd("setprop debug.sf.early_app_phase_offset_ns 500000");
-                executeCmd("setprop debug.sf.early_gl_phase_offset_ns 3000000");
-                executeCmd("setprop debug.sf.early_gl_app_phase_offset_ns 3000000");
+                cmds.add("setprop debug.sf.latch_unsignaled 0");
+                cmds.add("setprop debug.sf.disable_backpressure 1");
+                cmds.add("setprop debug.sf.auto_latch_unsignaled 0");
+                cmds.add("setprop debug.sf.predict_hwc_composition_strategy 1");
+                cmds.add("setprop debug.sf.enable_gl_backpressure 0");
+                cmds.add("setprop debug.sf.early_phase_offset_ns 500000");
+                cmds.add("setprop debug.sf.early_app_phase_offset_ns 500000");
+                cmds.add("setprop debug.sf.early_gl_phase_offset_ns 3000000");
+                cmds.add("setprop debug.sf.early_gl_app_phase_offset_ns 3000000");
 
-                executeCmd("setprop debug.hwui.render_thread_priority -20");
-                executeCmd("setprop debug.hwui.use_buffer_age true");
-                executeCmd("setprop debug.hwui.target_cpu_time_percent 95");
-                executeCmd("setprop debug.hwui.use_partial_updates true");
+                cmds.add("setprop debug.hwui.render_thread_priority -20");
+                cmds.add("setprop debug.hwui.use_buffer_age true");
+                cmds.add("setprop debug.hwui.target_cpu_time_percent 95");
+                cmds.add("setprop debug.hwui.use_partial_updates true");
             }
 
             if (isHiddenKernelSchedTuneEnabled(context)) {
                 // Kernel scheduler latency elimination & dirty buffer flushes
-                executeCmd("sysctl -w kernel.sched_schedstats=0 2>/dev/null");
-                executeCmd("sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null");
-                executeCmd("sysctl -w vm.dirty_ratio=10 2>/dev/null");
-                executeCmd("sysctl -w vm.dirty_background_ratio=5 2>/dev/null");
-                executeCmd("sysctl -w vm.vfs_cache_pressure=50 2>/dev/null");
-                executeCmd("setprop persist.sys.performance.level max");
-                executeCmd("setprop persist.sys.cpu.governor.boost 1");
-                executeCmd("setprop dalvik.vm.execution-mode JIT");
-                executeCmd("setprop dalvik.vm.dex2oat-threads 8");
-                executeCmd("setprop dalvik.vm.image-dex2oat-threads 8");
-                executeCmd("setprop dalvik.vm.jittargetfootprint 0");
+                cmds.add("sysctl -w kernel.sched_schedstats=0 2>/dev/null");
+                cmds.add("sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null");
+                cmds.add("sysctl -w vm.dirty_ratio=10 2>/dev/null");
+                cmds.add("sysctl -w vm.dirty_background_ratio=5 2>/dev/null");
+                cmds.add("sysctl -w vm.vfs_cache_pressure=50 2>/dev/null");
+                cmds.add("setprop persist.sys.performance.level max");
+                cmds.add("setprop persist.sys.cpu.governor.boost 1");
+                cmds.add("setprop dalvik.vm.execution-mode JIT");
+                cmds.add("setprop dalvik.vm.dex2oat-threads 8");
+                cmds.add("setprop dalvik.vm.image-dex2oat-threads 8");
+                cmds.add("setprop dalvik.vm.jittargetfootprint 0");
             }
 
             if (isHiddenWebviewTurboGraphiteEnabled(context)) {
@@ -676,6 +714,9 @@ public class ManualSettingsPreferences {
             // Zero-Delay Touch Screen & Hardware Digitizer Overdrive
             com.gamebooster.app.booster.TouchLatencyChannel.enableUltraTouchResponse();
 
+            if (outBatchCmds == null && !cmds.isEmpty()) {
+                com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivilegedBatch(cmds);
+            }
             Log.d(TAG, "⚡ Hidden performance settings, WebView turbo & zero-delay touch pipeline enforced silently.");
         } catch (Throwable t) {
             Log.w(TAG, "Hidden performance settings error: " + t.getMessage());

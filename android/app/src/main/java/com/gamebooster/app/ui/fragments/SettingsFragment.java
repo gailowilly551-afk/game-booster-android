@@ -1398,7 +1398,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     // 1. Apply all system & kernel tweaks from TweakManagerRepository
                     int applied = com.gamebooster.app.tweaks.TweakManagerRepository.applyAllSupportedTweaks(getContext());
 
-                    // 2. Apply all Hardware Engines & Performance Toggles via ManualSettingsPreferences
+                    // 2. Apply all Hardware Engines & Performance Toggles via ManualSettingsPreferences (Batch)
                     try {
                         GpuTweaksChannel.setGameDriverMode(true);
                         PerformanceChannel.setGpuRenderMode(true);
@@ -1406,42 +1406,17 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         com.gamebooster.app.booster.ThermalChannel.setThermalOverride(true);
 
                         if (ctx != null) {
-                            ManualSettingsPreferences.setGameDriverEnabled(ctx, true);
-                            ManualSettingsPreferences.setGpuMode(ctx, "vulkan");
-                            ManualSettingsPreferences.setCpuMode(ctx, "performance");
-                            ManualSettingsPreferences.setThermalBypassEnabled(ctx, true);
-                            ManualSettingsPreferences.setAdpfEngineEnabled(ctx, true);
-                            ManualSettingsPreferences.setUclampBoostEnabled(ctx, true);
-                            ManualSettingsPreferences.setTouch1000HzLockEnabled(ctx, true);
-                            ManualSettingsPreferences.setPhantomFreezerKillEnabled(ctx, true);
-                            ManualSettingsPreferences.setVulkanSkiaVkEnabled(ctx, true);
-                            ManualSettingsPreferences.setMemory16kbShieldEnabled(ctx, true);
-                            ManualSettingsPreferences.setWebViewBoostEnabled(ctx, true);
-                            ManualSettingsPreferences.setAntiLogEnabled(ctx, true);
+                            ManualSettingsPreferences.enableAllPerformanceToggles(ctx);
                             ManualSettingsPreferences.applyManualSettings(ctx);
                         }
                     } catch (Throwable ignored) {}
 
-                    // 3. Apply all Network Optimizations
+                    // 3. Low-Latency Socket Tuning & Resolver Flush
                     try {
-                        NetworkOptimizer.disableDataSaver();
-                        NetworkOptimizer.disableBatterySaver();
-                        NetworkOptimizer.disableWifiPowerSaver();
-                        NetworkOptimizer.optimizeTcpBuffers();
-                        NetworkOptimizer.optimize5gAnd6gDataNetwork(true);
-                        NetworkOptimizer.optimizeWifi6and7LowLatency(true);
-                        NetworkOptimizer.setDualDataAndWifiAcceleration(true);
-                        NetworkOptimizer.enableRankedLowLatencySocketTuning(ctx);
-                        NetworkOptimizer.flushDnsCache();
                         if (ctx != null) {
-                            ManualSettingsPreferences.setDisableDataSaverEnabled(ctx, true);
-                            ManualSettingsPreferences.setDisableBatterySaverEnabled(ctx, true);
-                            ManualSettingsPreferences.setDisableWifiSaverEnabled(ctx, true);
-                            ManualSettingsPreferences.setTcpBbrBuffersEnabled(ctx, true);
-                            ManualSettingsPreferences.set5g6gDataEnabled(ctx, true);
-                            ManualSettingsPreferences.setWifiLowLatencyEnabled(ctx, true);
-                            ManualSettingsPreferences.setDualDataWifiEnabled(ctx, true);
+                            NetworkOptimizer.enableRankedLowLatencySocketTuning(ctx);
                         }
+                        NetworkOptimizer.flushDnsCache();
                     } catch (Throwable ignored) {}
 
                     AppExecutors.getInstance().postToMainThread(() -> {

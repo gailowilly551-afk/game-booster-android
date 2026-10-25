@@ -22,6 +22,17 @@ public class TweakPreferences {
         getPrefs(context).edit().putBoolean(KEY_PREFIX_TWEAK + tweakId, applied).apply();
     }
 
+    public static void saveAllTweakStates(Context context, java.util.Collection<String> tweakIds, boolean applied) {
+        if (context == null || tweakIds == null || tweakIds.isEmpty()) return;
+        SharedPreferences.Editor editor = getPrefs(context).edit();
+        for (String id : tweakIds) {
+            if (id != null) {
+                editor.putBoolean(KEY_PREFIX_TWEAK + id, applied);
+            }
+        }
+        editor.apply();
+    }
+
     public static boolean isTweakApplied(Context context, String tweakId) {
         if (context == null || tweakId == null) return false;
         return getPrefs(context).getBoolean(KEY_PREFIX_TWEAK + tweakId, false);
