@@ -1,26 +1,26 @@
 <div align="center">
 
-# 🚀 Game Launcher PRO
+# 🚀 Game Launcher PRO / Game Booster 2.0
 
 ### **Next-Generation Android Performance Engine & Competitive MOBA / Battle Royale Hardware Accelerator**
 
 [![Android](https://img.shields.io/badge/Android-14%20|%2015%20|%2016%20(API%2034--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/Version-20.6.0-blueviolet?style=for-the-badge)](https://github.com/gailowilly551-afk/game-booster-android)
+[![Version](https://img.shields.io/badge/Version-2.0.0--PRO-blueviolet?style=for-the-badge)](https://github.com/Willy-kali/GAME-BOOSTER-0.2)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Arch-arm64--v8a%20|%20armeabi--v7a%20|%20x86__64-red?style=for-the-badge)](https://developer.android.com/ndk)
-[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/gailowilly551-afk/game-booster-android)
+[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/Willy-kali/GAME-BOOSTER-0.2)
 [![Privilege](https://img.shields.io/badge/Privilege-Root%20|%20Shizuku%20|%20Non--Root-yellow?style=for-the-badge)](https://shizuku.rikka.app)
-[![GitHub](https://img.shields.io/badge/GitHub-gailowilly551--afk-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/gailowilly551-afk)
+[![GitHub](https://img.shields.io/badge/GitHub-Willy--kali-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Willy-kali)
 [![Facebook](https://img.shields.io/badge/Facebook-Connect-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/share/14tdhV1h92S/)
 
 <p align="center">
   <b>A state-of-the-art gaming environment engineered for elite competitive esports.</b><br>
-  Locks display refresh rates from <b>60 Hz up to 480 Hz</b>, pins CPU/GPU silicon clocks, overclocks digitizer touch polling to <b>1000 Hz</b>, eliminates frame buffer jitter, and orchestrates atomic, low-overhead native hardware acceleration.
+  Locks display refresh rates from <b>60 Hz up to 480 Hz</b>, pins CPU/GPU silicon clocks, overclocks digitizer touch polling to <b>1000 Hz</b>, eliminates frame buffer jitter, integrates a live floating in-game trainer overlay, and orchestrates atomic, low-overhead native hardware acceleration.
 </p>
 
 ---
 
-[Key Highlights](#-key-highlights) • [Architecture](#-performance-channels--architecture) • [Supported Games](#-game-engines--competitive-presets) • [Installation & Setup](#-installation--privilege-tiers) • [Shizuku Guide](#-step-by-step-guide-how-to-use-shizuku-with-game-space) • [Verification](#-verification--telemetry-audit) • [Build Guide](#-build--development) • [Developer & Socials](#-developer--socials)
+[Key Highlights](#-key-highlights) • [Architecture](#-performance-channels--architecture) • [Supported Games](#-game-engines--competitive-presets) • [In-Game Trainer Overlay](#-in-game-trainer-floating-overlay) • [Installation & Setup](#-installation--privilege-tiers) • [Shizuku Guide](#-step-by-step-guide-how-to-use-shizuku-with-game-space) • [Verification](#-verification--telemetry-audit) • [Build Guide](#-build--development) • [Developer & Socials](#-developer--socials)
 
 ---
 
@@ -32,8 +32,9 @@
 * 🏎️ **Per-Cluster CPU Governor Pinning:** Isolates Cortex Prime/Big cores into pure `performance` governors, clamps `scaling_min_freq` to hardware ceilings, suppresses C-states, and maximizes `uclamp.min` to 1024.
 * 🎮 **GPU Clocks & Driver Tuning:** Locks GPU devfreq frequencies across Adreno, Mali, Xclipse (Exynos/RDNA), Tensor, Kirin, and UNISOC architectures with Game Driver opt-in.
 * 🎯 **Zero-Latency 1000 Hz Touch Digitizer:** Bypasses Android `InputFlinger` resampling, locks touch thread real-time priority, and activates OEM low-latency game touch drivers.
+* 📱 **Floating In-Game Trainer Overlay:** Real-time draggable cyberpunk HUD overlay featuring live toggleable switches for Damage Overdrive, Zero Recoil, Auto Aim, Speed Turbo, Drone FOV, and Anti-Ban Cloak.
 * 🛡️ **Streamlined 2-Tab Cyberpunk UI:** Modernized interface featuring pure **HOME** and **SETTINGS** navigation tabs, eliminating legacy mod clutter in favor of automatic, zero-overhead background injection.
-* 💎 **Dedicated Non-Overlapping Game Isolation:** Strict separation of hardware masking and native C++ memory injection suites for **MLBB** (Unity IL2CPP), **CODM** (Unity IW8 + ACE), and **PUBGM** (Unreal Engine 4) with zero file or target collision.
+* 💎 **Dedicated Non-Overlapping Game Isolation:** Strict separation of hardware masking and native C++ memory injection suites for **Honor of Kings (HOK)**, **MLBB** (Unity IL2CPP), **CODM** (Unity IW8 + ACE), and **PUBGM** (Unreal Engine 4) with zero file or target collision.
 
 ---
 
@@ -47,6 +48,7 @@ graph TD
     Launcher --> CPU[CpuGovernorChannel<br/>Cluster Pinning & uclamp]
     Launcher --> GPU[GpuTweaksChannel<br/>Adreno / Mali / Xclipse]
     Launcher --> Input[TouchLatencyChannel<br/>1000 Hz Digitizer & Resampling]
+    Launcher --> Overlay[InGameTrainerOverlayService<br/>Live HUD & Combat Injector]
     Launcher --> Render[HwuiRenderAccelerator<br/>RenderThread RT FIFO 6 & SkiaVK]
     Launcher --> Net[AdvancedNetworkQosEngine<br/>TCP BBR, DSCP EF, Wi-Fi QTc]
     Launcher --> Memory[RamZramChannel<br/>ZRAM Optimization & OOM Lock]
@@ -60,143 +62,35 @@ graph TD
 | **`HzFpsChannel`** / **`MaxHzForceChannel`** | 8-layer refresh rate lock (60, 90, 120, 144, 165, 185, 240, 300, 360, 480 Hz). Disables Variable Refresh Rate (VRR) flutter, applies per-package Game Mode API commands, and binds panel DRM refresh cycles. |
 | **`CpuGovernorChannel`** | Granular per-cluster governors (`performance` on Prime/Big, `powersave` on LITTLE). Clamps `scaling_min_freq = scaling_max_freq`, suppresses C-state idle latency, and tunes CFS / EAS / WALT schedulers. |
 | **`GpuTweaksChannel`** | Devfreq clock locking, extended sysfs power governors, GPU preemption control, and Vulkan / OpenGL ES Game Driver system opt-in. |
-
----
-
-## 🗂️ Complete Project Architecture & Directory Layout
-
-Game Launcher PRO is architected with a decoupled, high-performance layered pipeline spanning user-facing UI overlays, background system tuning, and ultra-low latency native C++ execution:
-
-```
-Game-Launcher/
-├── .github/                                           # CI/CD workflows, PR and Issue templates
-│   ├── workflows/ci.yml
-│   └── ISSUE_TEMPLATE/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── gradle.properties
-│
-└── android/                                           # ANDROID PROJECT ROOT & COMPILATION
-    ├── build.gradle                                   # Top-level Gradle script
-    ├── build_native_libs.sh                           # Standalone multi-ABI Clang/CMake compile script
-    ├── debug.keystore                                 # Development signing key
-    ├── gradle.properties                              # JVM allocation & AndroidX settings
-    ├── gradlew / gradlew.bat                          # Portable Gradle execution binaries
-    ├── local.properties                               # Android SDK & NDK references
-    ├── settings.gradle                                # Project module mapping
-    │
-    ├── CODM-LATEST-PATCH/                             # CODM EXPLOIT & DUMP ENVIRONMENT
-    │   ├── Call of Duty_1.6.57.apks                   # Base split APK container (v1.6.57.0)
-    │   ├── dump_codm_patch.py                         # High-speed dumper and metadata extractor
-    │   └── dump_codm/                                 # Extracted game artifacts & signatures
-    │       ├── Metadata/global-metadata.dat           # IL2CPP string literals and method table
-    │       ├── Config/UserCustom.ini                  # Combat & graphic parameters
-    │       └── libs/arm64-v8a/                        # libunity.so, libanort.so, libanogs.so
-    │
-    ├── MLBB-LATES-Patch/                              # MLBB EXPLOIT & DUMP ENVIRONMENT
-    │   ├── dump_newpatch_suite.py                     # Moonton Season 42+ automated dump suite
-    │   ├── patchMLBB/Mobile Legends...2.2.16.apks     # Raw game package
-    │   └── dump_mlbb/                                 # Extracted MLBB assets
-    │       ├── boot.config                            # Unity boot parameters
-    │       ├── Metadata/global-metadata.dat           # Method signatures and field tokens
-    │       ├── Document/android/                      # BattleConfig.unity3d, BinaryPatchMD5.xml
-    │       ├── Scenes/android/                        # Map containers (PVP_009.unity3d)
-    │       └── libs/arm64-v8a/libil2cpp.so            # Core game logic binary
-    │
-    └── app/                                           # MAIN ANDROID ENGINE MODULE
-        ├── build.gradle                               # Dependencies, NDK toolchains & ABI filters
-        ├── proguard-rules.pro
-        │
-        └── src/main/
-            ├── AndroidManifest.xml                    # System permissions, foreground services
-            ├── aidl/com/gamebooster/                   # IPC Services for Shizuku & Root bridging
-            │
-            ├── jniLibs/                               # COMPILED & STRIPPED NATIVE SHARED LIBS
-            │   ├── arm64-v8a/libgamebooster_native.so # 1.9 MB (Arm64 Native Engine)
-            │   ├── armeabi-v7a/libgamebooster_native.so # 1.2 MB (Arm32 Fallback)
-            │   └── x86_64/libgamebooster_native.so    # 2.0 MB (Emulator Engine)
-            │
-            ├── cpp/                                   # NATIVE C++ TRANSLATION UNITS
-            │   ├── CMakeLists.txt                     # Native CMake compilation script
-            │   ├── config_common.h / .cpp             # Shared string parsers & JNI macros
-            │   ├── native_config_injector.h / .cpp    # JNI symbol exports (1900+ lines)
-            │   ├── combat_system.hpp / .cpp           # Vector3 Math, Raycast & Cone calculations
-            │   ├── combat_system_jni.cpp              # Target evaluation JNI bindings
-            │   ├── mlbb_injector.cpp                  # MLBB 90% Damage, Drone View, Energy loops
-            │   ├── codm_injector.cpp                  # CODM 4-Bullet Kill, Recoil, Aimbot matrix
-            │   ├── universal_combat_injector.cpp      # Cross-game touch overclock & damage floor
-            │   ├── proc_cloak_engine.cpp              # Persistent /proc watcher daemon
-            │   ├── ace_cloak_engine.cpp               # Tencent ACE anti-cheat evasion
-            │   ├── memfd_inject_engine.cpp            # In-memory stealth loader (LibMap)
-            │   ├── mem_proc_patch_engine.cpp          # Live memory protection flipper (RWX/RX)
-            │   ├── signal_trap_guard.cpp              # ETW & debugger signal interceptor
-            │   ├── il2cpp_direct_scanner.cpp          # Dynamic AOB memory pattern scanner
-            │   └── native_lua_engine.h / .cpp         # Embedded Lua execution runtime
-            │
-            ├── assets/                                # IN-APP EMBEDDED SCRIPTS & OVERLAYS
-            │   ├── frida/                             # Frida hook scripts & offset tables
-            │   │   ├── mlbb_il2cpp_offsets.json       # RVAs for MLBB v2.2.16
-            │   │   ├── codm_offsets.json              # Tokens for CODM v1.6.57
-            │   │   ├── mlbb_hooks.js / codm_hooks.js  # Dynamic JavaScript hooks
-            │   │   └── frida-server-arm64             # Standalone ARM64 server
-            │   ├── mlbb_drone/                        # Drone View Tiers 1X - 10X configs
-            │   ├── mlbb_mod/modified/                 # Pre-patched BattleConfig.json & Camera files
-            │   ├── codm/Config/                       # Base combat INI templates
-            │   └── lua/mlbb_heroes/                   # Dedicated hero combo Lua scripts
-            │
-            ├── java/com/gamebooster/app/              # JAVA ORCHESTRATION & BUSINESS LOGIC
-            │   ├── core/                              # Base Application, Kernel & Executors
-            │   │   ├── AppExecutors.java
-            │   │   ├── NativeKernelBridge.java
-            │   │   └── SurfaceFlingerDirectBinder.java
-            │   ├── config/                            # Game Specific Patchers (50+ Classes)
-            │   │   ├── GameAutoInjectDispatcher.java  # Auto-dispatcher on game start
-            │   │   ├── NativeConfigInjector.java      # Java-to-JNI native binding bridge
-            │   │   ├── MlbbConfigPatcher.java         # MLBB XML, JSON & Drone deployer
-            │   │   ├── CodmConfigPatcher.java         # CODM Config, BSA & Recoil patcher
-            │   │   ├── MlbbDroneViewPatcher.java      # Camera elevation calculator
-            │   │   ├── PlayIntegrityBypassEngine.java # Google Play Integrity evasion
-            │   │   └── AceContainerEvasionEngine.java # Container & VM detection bypass
-            │   ├── mods/                              # Mod State Management
-            │   │   ├── mlbb/ (MlbbModManager, MlbbIl2cppResolver)
-            │   │   └── codm/ (CodmModManager, CodmIl2cppResolver)
-            │   ├── booster/                           # System Overclock Engines
-            │   │   ├── CpuGovernorChannel.java
-            │   │   ├── HzFpsChannel.java (185 FPS)
-            │   │   ├── GyroCalibratorEngine.java
-            │   │   └── AdvancedNetworkQosEngine.java
-            │   ├── spoofer/                           # Device Identity & Vendor Masking
-            │   │   ├── DeviceSpooferEngine.java
-            │   │   └── brands/ (ASUS ROG, BlackShark, RedMagic profiles)
-            │   ├── shizuku/                           # Rootless elevated permission executor
-            │   ├── overlay/                           # In-Game Floating HUD & Quick Bar
-            │   ├── gamespace/                         # Gaming Mode & Per-Game Profiles
-            │   └── ui/                                # UI Activities, Dialogs & Adapters
-            │
-            └── res-layouts/ & res-drawables/          # MODULAR UI RESOURCES
-                ├── activities/layout/                 # Activity XML definitions
-                ├── hud/layout/                        # In-Game Overlay Bar layouts
-                └── badges/, backgrounds/, buttons/    # Gaming HUD design tokens
-```
-
-### Layered Processing Hierarchy
-
-1. **Presentation & HUD Layer (`com.gamebooster.app.ui`, `.overlay`):**  
-   Non-intrusive floating overlay and game dashboard enabling real-time telemetry, drone FOV scaling, aimbot toggle, and digitizer overclocking during live gameplay.
-2. **Java Orchestration Layer (`com.gamebooster.app.config`):**  
-   `GameAutoInjectDispatcher` identifies running processes, executes hardware spoofing (ROG Phone 8 Pro), applies container evasion, and schedules deferred config patching (avoiding splash-screen CRC race conditions).
-3. **Native C++ Performance Engine (`app/src/main/cpp`):**  
-   Compiles into `libgamebooster_native.so`. Executes direct syscalls, in-memory anonymous loading (`memfd_create`), live logic patching (MLBB 90% damage, CODM 4-bullet kill, zero recoil), and signal trapping (`SIGTRAP`/`SIGSEGV`).
-4. **Persistent Daemon Watcher (`proc_cloak_engine.cpp`):**  
-   Monitors `/proc/[pid]/cmdline` in a background thread to seamlessly re-apply combat and memory offsets upon game restart without user intervention.
 | **`TouchLatencyChannel`** | Overclocks digitizer touch polling to 1000 Hz, eliminates `InputFlinger` motion event resampling, and activates OEM touch profiles (Samsung Game Booster, Xiaomi Game Turbo, ASUS ROG, OnePlus HyperBoost). |
 | **`HwuiRenderAccelerator`** | Assigns `RenderThread` real-time FIFO priority tier 6, enables SkiaVK Vulkan backend, tunes Choreographer phase offsets, and expands GPU shader cache pool to 256 MB. |
-| **`WebViewBoosterChannel`** | Tiered optimizations (Flagship, Mid, Budget) enabling WebGPU, WASM SIMD, multithreading, DrDc, Graphite rendering, and V8 TurboShaft JIT pipeline acceleration. |
 | **`AdvancedNetworkQosEngine`** | Disables Wi-Fi 802.11 power saving, activates kernel TCP BBR congestion control, marks packet egress with DSCP EF (Expedited Forwarding), and enforces low-latency DoH DNS resolution. |
 | **`RamZramChannel`** | Tunes ZRAM compression, pins swappiness to 10, locks essential framebuffers via `mlockall`, and shields foreground gaming processes against low-memory killer (OOM) demotions. |
 | **`ThermalChannel`** & **`SafetyGuard`** | Continuous 2-second thermal polling with adaptive headroom detection. Safely dials back boost levels if internal SoC temp approaches 50°C to guarantee hardware longevity. |
-| **`SnapshotSystem`** | Captures snapshot states of sysfs nodes, Android settings, and system properties prior to boost engagement with one-tap JSON rollback on game exit. |
+
+---
+
+## 🎮 In-Game Trainer Floating Overlay
+
+The built-in **InGameTrainerOverlayService** provides an interactive, movable floating badge on screen while running any supported game.
+
+```
+┌──────────────────────────────────────────────┐
+│  ⚡ HONOR OF KINGS 2026 / MLBB / PUBGM / CODM │
+├──────────────────────────────────────────────┤
+│  [🦅 FOV & Camera Elevation Overdrive ▾]     │
+│  [⚔️ Live Damage Overdrive (10,000 DPS)] [ON]│
+│  [⚡ 2.5x Mobility & Movement Speed]    [ON]│
+│  [🎯 Zero Recoil & Sway Eliminator]     [ON]│
+│  [🔕 Auto Aim & Head Magnet Lock]       [ON]│
+│  [🛡️ Anti-Ban Cloak & ACE Evasion]      [ON]│
+│  [⚡ Re-Inject Combat Suite Now]             │
+└──────────────────────────────────────────────┘
+```
+
+- **Adaptive Game Recognition:** Automatically detects foreground package (`com.levelinfinite.sgameGlobal`, `com.mobile.legends`, `com.tencent.ig`, `com.activision.callofduty.shooter`, etc.) and dynamically adjusts feature sets.
+- **Dynamic Drone / FOV Control:** Single-tap cycle across MLBB Drone Tiers (1.5x–5x), HOK Ultra Drone FOV, PUBGM iPad 120° Panoramic FOV, and CODM Ultra Tactical FOV.
+- **Live Memory & Prop Injector:** Real-time property flipping (`gamebooster.<game>.dmg`, `gamebooster.<game>.speed`, `gamebooster.<game>.antiban`) with zero latency.
 
 ---
 
@@ -204,27 +98,37 @@ Game-Launcher/
 
 Game Launcher PRO includes targeted, high-performance tuning suites designed specifically for competitive MOBA and Battle Royale titles:
 
+### 👑 Honor of Kings (HOK)
+* **Package IDs:** `com.levelinfinite.sgameGlobal`, `com.levelinfinite.sgameGlobal.gpkg`, `com.tencent.tmgp.sgame`
+* **Engine Tuning:** Calibrated for Unity `libunity_cp.so`, Burst-generated math kernels (`lib_burst_generated_cp.so`), and Vulkan rendering pipelines.
+* **Features:**
+  * 120 / 144 / 165 / 185 FPS high-refresh mode unlock.
+  * Dedicated **HokCombatOverdriveEngine** injecting 10,000 Damage multiplier & 5.0x Attack Speed.
+  * Auto-Smite Objective lock for Abyssal Dragon, Dark Slayer, and Overlord.
+  * Instant Spell Cooldown refresh and 2.5x hero mobility turbo.
+  * Pre-warmed Vulkan pipeline cache eliminating mid-match frame drops.
+
 ### ⚔️ Mobile Legends: Bang Bang (MLBB)
 * **Modes Supported:** Ranked (Draft Pick), Classic, Brawl, and Custom matches.
 * **Engine Tuning:** Fully compatible with Unity & IL2CPP `libil2cpp.so` across Western Expanse and Sanctum Expanse.
 * **Features:**
-  * 185 FPS high-refresh mode unlock with zero frame-pacing variance.
+  * 185 FPS high-refresh mode unlock with zero frame-pacing variance (`HighFPSMode 6`, `HighFPSEnable 1`).
   * Direct 1000 Hz hit registration synchronization and instant spell cast frame sync.
-  * Adaptive Drone View camera FOV tiers (Tiers 1–5) with perspective stability.
-  * Comprehensive 130+ hero-specific Lua scripting and passive role overdrives.
+  * Adaptive Drone View camera FOV tiers (Tiers 1.5X–5X) with perspective stability.
+  * 130+ hero-specific Lua scripting and passive role overdrives.
   * Fast farming, jungle creep clear speed acceleration, and smart smite indicator thresholds.
 
 ### 🔫 Call of Duty: Mobile (CODM)
 * **Modes Supported:** Ranked Multiplayer (Search & Destroy, Hardpoint, Domination) and Battle Royale (Isolated, Blackout).
 * **Engine Tuning:** Calibrated for Unity BSA and native C++ raycast systems (`com.garena.game.codm` and `com.activision.callofduty.shooter`).
 * **Features:**
-  * 120 / 144 FPS ultra-rate calibration.
+  * 120 / 144 / 165 FPS ultra-rate calibration with ROG Phone 8 Pro hardware masking.
   * Magnetic aim assist range expansion up to 350 meters with adaptive 95.0 radius lock.
   * Optimized headshot multiplier routing and custom hitbox scaling.
-  * Zero-delay ADS transitions, weapon swap overclocking, and zero-recoil recoil stabilization.
+  * Zero-delay ADS transitions, weapon swap overclocking, and zero-recoil stabilization.
 
 ### 🪂 PUBG Mobile & Free Fire
-* **PUBG Mobile:** 90 / 120 FPS frame-unlocking via `Active.sav` and `UserCustom.ini` tuning, Gyroscope touch polling acceleration, zero sound delay, and thermal throttling suppression.
+* **PUBG Mobile:** 90 / 120 / 165 FPS frame-unlocking via `Active.sav` and `UserCustom.ini` tuning, Gyroscope touch polling acceleration, zero sound delay, and thermal throttling suppression.
 * **Free Fire / MAX:** 120 FPS high-rate mode, sensitivity curve linearity normalization, and instant gloo wall deployment response.
 
 ---
@@ -259,17 +163,18 @@ Game Launcher PRO adapts dynamically to the permissions granted on your Android 
 | GPU Clock & Devfreq Override | ❌ | ⚠️ Vendor Properties | ✅ Full Clamping |
 | 1000 Hz Touch Digitizer & Resampling Bypass | ❌ | ✅ Full | ✅ Full |
 | Atomic Game Config Tuning | ⚠️ SAF Storage Access | ✅ Elevated Root/Shizuku I/O | ✅ Full Root File I/O |
+| Floating In-Game Trainer Overlay | ✅ Full | ✅ Full | ✅ Full |
 | Automated Kernel Sysfs Rollback | ❌ | ✅ Full | ✅ Full |
 
 ---
 
 ## 📱 Step-by-Step Guide: How to Use Shizuku with Game Space
 
-If your device is **not rooted**, you can unlock privileged hardware acceleration (8-layer display refresh rate override, 1000 Hz digitizer touch overclocking, and elevated game config tuning) using **Shizuku**.
+If your device is **not rooted**, you can unlock privileged hardware acceleration using **Shizuku**.
 
 ### 📋 Prerequisites
 1. **Shizuku App:** Download and install [Shizuku from GitHub](https://github.com/RikkaApps/Shizuku/releases) or the [Google Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
-2. **Wi-Fi Connection:** Connect your device to any Wi-Fi network (or turn on your phone's personal hotspot and connect another device).
+2. **Wi-Fi Connection:** Connect your device to any Wi-Fi network (or turn on your phone's personal hotspot).
 3. **Developer Options:** Enable Developer Options:
    * Go to `Settings` ➔ `About Phone` ➔ tap **Build Number** 7 times until you see *"You are now a developer!"*.
 
@@ -280,36 +185,27 @@ If your device is **not rooted**, you can unlock privileged hardware acceleratio
 #### 1️⃣ Step 1: Open the Shizuku App
 * Launch the **Shizuku** application on your device from the app drawer or home screen.
 
-#### 2️⃣ Step 2: Start Shizuku (and Re-Start to Stabilize)
+#### 2️⃣ Step 2: Start Shizuku
 * **Enable Wireless Debugging:**
-  1. Open your phone's `Settings` ➔ `System` / `Additional Settings` ➔ `Developer Options`.
-  2. Scroll down to **Wireless Debugging** and toggle it **ON**. Tap **Allow** when prompted.
-* **Pair with Shizuku (First-time only):**
-  1. Inside the Shizuku app, tap **Pairing** under the *"Start via Wireless debugging"* section.
-  2. Tap **Developer options** to jump directly to your settings.
-  3. Under Wireless Debugging, tap **Pair device with pairing code**. Note the **6-digit Wi-Fi pairing code**.
-  4. Pull down your notification bar, type the 6-digit code into the Shizuku notification prompt, and tap **Send**.
-  5. You will see a notification confirming *"Pairing successful"*.
+  1. Open your phone's `Settings` ➔ `Developer Options`.
+  2. Scroll down to **Wireless Debugging** and toggle it **ON**.
+* **Pair with Shizuku:**
+  1. Inside Shizuku, tap **Pairing** under *"Start via Wireless debugging"*.
+  2. Tap **Developer options**, then tap **Pair device with pairing code**. Note the **6-digit Wi-Fi code**.
+  3. Enter the 6-digit code in the Shizuku notification and submit.
 * **Start the Shizuku Service:**
-  1. Return to the Shizuku app.
-  2. Tap the **Start** button under *"Start via Wireless debugging"*.
-  3. A terminal window will briefly run and Shizuku will display **"Shizuku is running (Version xx, UID 2000)"**.
-* **Pro-Tip: Direct Shizuku Binder IPC Integration**
-  > [!TIP]
-  > Game Launcher PRO connects directly to Shizuku via high-speed native Binder IPC and UserService transactions.
-  > Legacy `rish` binaries and dex hooks have been completely removed to prevent socket contention or permission collisions with official Shizuku builds.
+  1. Return to Shizuku and tap **Start**.
+  2. Confirm status displays **"Shizuku is running"**.
 
 #### 3️⃣ Step 3: Authorize Game Space in Shizuku
-1. In the Shizuku app main menu, tap **Authorized applications** (or *"Use Shizuku in authorized apps"*).
-2. Scroll down and locate **Game Space / Game Launcher PRO** (`com.gamebooster.app`).
-3. Toggle the switch to **ON** to grant Shizuku access.
+1. In Shizuku, tap **Authorized applications**.
+2. Locate **Game Space / Game Launcher PRO** (`com.gamebooster.app`).
+3. Toggle the switch to **ON**.
 
 #### 4️⃣ Step 4: Launch and Boost Games
-1. Open **Game Launcher PRO (Game Space)**.
-2. The privilege indicator in the top header will now display **⚡ Shizuku Privileged Mode**.
-3. Select your game (e.g., **Mobile Legends: Bang Bang** or **Call of Duty: Mobile**).
-4. Configure your desired target refresh rate (90 Hz, 120 Hz, 144 Hz, or maximum panel capability) and hardware tuning preset.
-5. Tap **Launch & Boost**! Game Space will atomically enforce privileged display rates and zero-revert hardware optimization without root.
+1. Open **Game Launcher PRO**.
+2. The privilege indicator in the top header will display **⚡ Shizuku Privileged Mode**.
+3. Select your game, configure your desired refresh rate and tweaks, and tap **Launch & Boost**!
 
 ---
 
@@ -350,29 +246,23 @@ adb shell dumpsys gfxinfo <package_name> framestats
 
 ```bash
 # Clone the repository
-git clone https://github.com/gailowilly551-afk/game-booster-android.git
-cd game-booster-android/android
+git clone https://github.com/Willy-kali/GAME-BOOSTER-0.2.git
+cd GAME-BOOSTER-0.2/android
 
-# Full Pre-Build Verification & Automated APK Build (Compile + Lint + Tests + Assemble)
-./tools/full_check_and_build.sh
-
-# Or run full check & build directly via Gradle:
-./gradlew check assembleDebug
+# Build Debug APK directly via Gradle:
+./gradlew assembleDebug
 
 # Output APK path:
-# Game_Space_v20.6.0-PRO_debug.apk (project root)
-# android/app/build/outputs/apk/debug/Game_Space_Debug.apk
+# android/app/build/outputs/apk/debug/app-debug.apk
 ```
-
-To create signed production releases, define `keystore.properties` inside `android/` with your signing keys.
 
 ---
 
 ## 👤 Developer & Socials
 
-Developed and maintained by **gailowilly551-afk**. Connect, follow, or contribute:
+Developed and maintained by **Willy-kali**. Connect, follow, or contribute:
 
-* 🐙 **GitHub:** [https://github.com/gailowilly551-afk](https://github.com/gailowilly551-afk)
+* 🐙 **GitHub:** [https://github.com/Willy-kali](https://github.com/Willy-kali)
 * 📘 **Facebook:** [Connect on Facebook](https://www.facebook.com/share/14tdhV1h92S/)
 
 ---
