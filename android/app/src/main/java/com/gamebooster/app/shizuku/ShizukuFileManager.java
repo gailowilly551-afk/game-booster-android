@@ -50,13 +50,10 @@ public final class ShizukuFileManager {
     }
 
     /**
-     * Dispatches command through Shizuku elevated shell if available, falling back to standard shell.
+     * Dispatches command through Shizuku elevated shell or Root if available, falling back to standard shell.
      */
     public static String executePrivileged(String cmd) {
-        if (ShizukuExecutor.hasShizukuPermission()) {
-            return ShizukuExecutor.executeShizukuCommand(cmd);
-        }
-        return CommandExecutor.executeSystemCommand(cmd);
+        return com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(cmd);
     }
 
     /**
@@ -124,9 +121,12 @@ public final class ShizukuFileManager {
                 }
             }
 
-            String cmd = "mkdir -p '" + dirPath + "' && chmod 777 '" + dirPath + "'";
-            String res = executePrivileged(cmd);
-            return res != null && !res.toLowerCase().contains("error");
+            String cmd = "mkdir -p '" + dirPath + "'; chmod 777 '" + dirPath + "' 2>/dev/null || true";
+            executePrivileged(cmd);
+            File dirCheck = new File(dirPath);
+            if (dirCheck.exists()) return true;
+            String res = executePrivileged("test -d '" + dirPath + "' && echo YES");
+            return res != null && res.contains("YES");
         } catch (Throwable t) {
             Log.w(TAG, "makeDirectory exception for " + dirPath, t);
             return false;
@@ -190,46 +190,43 @@ public final class ShizukuFileManager {
                 b64 = java.util.Base64.getEncoder().encodeToString(bytes);
             }
 
-            String writeCmd = "echo '" + b64 + "' | base64 -d > '" + path + "' && chmod " + mode + " '" + path + "'";
+            String parentDir = path.substring(0, Math.max(path.lastIndexOf('/'), 0));
+            String writeCmd = (parentDir.isEmpty() ? "" : "mkdir -p '" + parentDir + "' 2>/dev/null; ") +
+                    "echo '" + b64 + "' | base64 -d > '" + path + "'; chmod " + mode + " '" + path + "' 2>/dev/null || true";
 
-            if (hasFullAccess()) {
-                String res = executePrivileged(writeCmd);
-                boolean ok = res != null && !res.toLowerCase().contains("error");
-                if (ok) {
-                    Log.d(TAG, "writeFile SUCCESS: " + path + " (" + bytes.length + " bytes, mode=" + mode + ")");
-                    return FileOpResult.ok(path, "Written " + bytes.length + " bytes");
-                } else {
-                    Log.w(TAG, "writeFile FAILED: " + path + " -> " + res);
-                    return FileOpResult.fail(path, "Write failed: " + res);
-                }
-            } else {
-                String res = executePrivileged(writeCmd);
-                File testF = new File(path);
-                if (testF.exists() && testF.length() > 0) {
-                    Log.d(TAG, "writeFile via CommandExecutor SUCCESS: " + path);
-                    return FileOpResult.ok(path, "Written via standard shell");
-                }
+            executePrivileged(writeCmd);
 
-                // 3. Storage Access Framework (SAF) Fallback (MT Manager method)
-                try {
-                    Context ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
-                    if (ctx != null) {
-                        String pkg = extractPackageFromPath(path);
-                        if (com.gamebooster.app.saf.SafStorageManager.hasSafPermission(ctx, pkg)) {
-                            boolean safOk = com.gamebooster.app.saf.SafStorageManager.writeTextFile(ctx, pkg, path, content);
-                            if (safOk) {
-                                Log.i(TAG, "writeFile via SAF Document Engine SUCCESS: " + path);
-                                return FileOpResult.ok(path, "Written via SAF Document Engine");
-                            }
+            File testF = new File(path);
+            if (testF.exists() && (bytes.length == 0 || testF.length() > 0)) {
+                Log.d(TAG, "writeFile SUCCESS: " + path + " (" + testF.length() + " bytes)");
+                return FileOpResult.ok(path, "Written " + testF.length() + " bytes");
+            }
+
+            String verify = executePrivileged("test -f '" + path + "' && echo EXISTS");
+            if (verify != null && verify.contains("EXISTS")) {
+                Log.d(TAG, "writeFile verified via shell SUCCESS: " + path);
+                return FileOpResult.ok(path, "Written " + bytes.length + " bytes");
+            }
+
+            // 3. Storage Access Framework (SAF) Fallback (MT Manager method)
+            try {
+                Context ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
+                if (ctx != null) {
+                    String pkg = extractPackageFromPath(path);
+                    if (com.gamebooster.app.saf.SafStorageManager.hasSafPermission(ctx, pkg)) {
+                        boolean safOk = com.gamebooster.app.saf.SafStorageManager.writeTextFile(ctx, pkg, path, content);
+                        if (safOk) {
+                            Log.i(TAG, "writeFile via SAF Document Engine SUCCESS: " + path);
+                            return FileOpResult.ok(path, "Written via SAF Document Engine");
                         }
                     }
-                } catch (Throwable safT) {
-                    Log.w(TAG, "SAF writeFile fallback exception: " + safT.getMessage());
                 }
-
-                Log.w(TAG, "writeFile via CommandExecutor FAILED (Requires Shizuku/Root/SAF): " + path + " -> " + res);
-                return FileOpResult.fail(path, "Unprivileged write failed (Requires Shizuku or SAF): " + res);
+            } catch (Throwable safT) {
+                Log.w(TAG, "SAF writeFile fallback exception: " + safT.getMessage());
             }
+
+            Log.w(TAG, "writeFile FAILED (path not writable or rejected by OS): " + path);
+            return FileOpResult.fail(path, "Write verification failed for: " + path);
         } catch (Throwable t) {
             Log.e(TAG, "writeFile exception for " + path, t);
             return FileOpResult.fail(path, "Exception: " + t.getMessage());
@@ -275,14 +272,14 @@ public final class ShizukuFileManager {
             return tmpRes;
         }
 
-        String moveCmd = "mv -f '" + tmpPath + "' '" + path + "' && chmod " + (chmodMode != null ? chmodMode : "666") + " '" + path + "'";
-        String res = executePrivileged(moveCmd);
-        boolean ok = res != null && !res.toLowerCase().contains("error");
-        if (!ok) {
-            deleteFile(tmpPath);
-            return FileOpResult.fail(path, "Atomic rename failed: " + res);
+        String moveCmd = "mv -f '" + tmpPath + "' '" + path + "'; chmod " + (chmodMode != null ? chmodMode : "666") + " '" + path + "' 2>/dev/null || true";
+        executePrivileged(moveCmd);
+        File check = new File(path);
+        if (check.exists()) {
+            return FileOpResult.ok(path, "Written atomically");
         }
-        return FileOpResult.ok(path, "Written atomically");
+        deleteFile(tmpPath);
+        return FileOpResult.fail(path, "Atomic rename verification failed");
     }
 
     public static FileOpResult writeFileAtomic(String path, String content) {
@@ -296,9 +293,9 @@ public final class ShizukuFileManager {
         if (srcDir == null || destDir == null) return false;
         try {
             ensureParentDirectory(destDir);
-            String cmd = "cp -rf '" + srcDir + "/.' '" + destDir + "/' && chmod -R 777 '" + destDir + "'";
-            String res = executePrivileged(cmd);
-            return res != null && !res.toLowerCase().contains("error");
+            String cmd = "cp -rf '" + srcDir + "/.' '" + destDir + "/'; chmod -R 777 '" + destDir + "' 2>/dev/null || true";
+            executePrivileged(cmd);
+            return isDirectory(destDir);
         } catch (Throwable t) {
             Log.w(TAG, "copyDirectory exception: " + srcDir + " -> " + destDir, t);
             return false;
@@ -344,10 +341,18 @@ public final class ShizukuFileManager {
         if (path == null || path.trim().isEmpty()) return new byte[0];
 
         try {
-            String cmd = "base64 -w0 '" + path + "' 2>/dev/null";
+            File f = new File(path);
+            if (f.exists() && f.canRead()) {
+                try {
+                    return java.nio.file.Files.readAllBytes(f.toPath());
+                } catch (Throwable ignored) {}
+            }
+
+            String cmd = "base64 -w 0 '" + path + "' 2>/dev/null || base64 '" + path + "' 2>/dev/null";
             String res = executePrivileged(cmd);
             if (res != null && !res.startsWith("ERROR:") && !res.trim().isEmpty()) {
-                return Base64.decode(res.trim(), Base64.DEFAULT);
+                String clean = res.replaceAll("\\s+", "");
+                return Base64.decode(clean, Base64.DEFAULT);
             }
         } catch (Throwable t) {
             Log.w(TAG, "readFileBytes exception for " + path, t);

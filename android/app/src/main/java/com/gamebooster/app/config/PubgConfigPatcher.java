@@ -591,9 +591,10 @@ public class PubgConfigPatcher {
         if (pkg == null || pkg.trim().isEmpty()) return false;
 
         String foundSource = null;
-        String pakFileName = "game_patch_4.6.1.21588.pak";
+        String pakFileName = "game_patch_4.6.1.21606.pak";
+        String liveHighestPak = null;
 
-        // 1. Dynamic check: inspect device's live Saved/Paks to discover installed build stream (e.g. 4.6.1.21588)
+        // 1. Dynamic check: inspect device's live Saved/Paks to discover installed build stream (e.g. 4.6.1.21605)
         try {
             String paksDir = "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks";
             String highestPakCmd = "ls -1 \"" + paksDir + "\"/game_patch_*.pak 2>/dev/null | sort -V | tail -n 1";
@@ -603,62 +604,74 @@ public class PubgConfigPatcher {
             if (highestRes != null && !highestRes.trim().isEmpty() && !highestRes.startsWith("ERROR:")) {
                 String liveHighest = highestRes.trim();
                 int slash = liveHighest.lastIndexOf('/');
-                if (slash >= 0) {
-                    pakFileName = liveHighest.substring(slash + 1);
-                    Log.i(TAG, "🔍 Detected live PUBGM game_patch on device: " + pakFileName);
-                }
+                liveHighestPak = (slash >= 0) ? liveHighest.substring(slash + 1) : liveHighest;
+                Log.i(TAG, "🔍 Detected live PUBGM game_patch on device: " + liveHighestPak);
             }
         } catch (Throwable t) {
             Log.d(TAG, "Live pak detection note: " + t.getMessage());
+        }
+
+        // Calculate incremented patch name so UE4 mounts it as highest priority above official patches
+        String targetPakName = pakFileName;
+        if (liveHighestPak != null && liveHighestPak.startsWith("game_patch_") && liveHighestPak.endsWith(".pak")) {
+            try {
+                int lastDot = liveHighestPak.lastIndexOf('.');
+                int prevDot = liveHighestPak.lastIndexOf('.', lastDot - 1);
+                if (prevDot > 0 && lastDot > prevDot) {
+                    String numStr = liveHighestPak.substring(prevDot + 1, lastDot);
+                    long num = Long.parseLong(numStr);
+                    targetPakName = liveHighestPak.substring(0, prevDot + 1) + (num + 1) + ".pak";
+                }
+            } catch (Throwable ignored) {}
         }
 
         // 2. Check if bundled in APK assets, extract to app cache for deployment
         try {
             android.content.Context ctx = com.gamebooster.app.GameBoosterApp.getInstance();
             if (ctx != null) {
-                // Dynamically detect latest pak in assets/paks if available
                 String[] assetPaks = ctx.getAssets().list("paks");
                 if (assetPaks != null && assetPaks.length > 0) {
-                    java.util.Arrays.sort(assetPaks);
-                    for (int i = assetPaks.length - 1; i >= 0; i--) {
-                        if (assetPaks[i].startsWith("game_patch") && assetPaks[i].endsWith(".pak")) {
-                            pakFileName = assetPaks[i];
-                            break;
+                    String bestAsset = null;
+                    for (String ap : assetPaks) {
+                        if (ap.endsWith(".pak")) {
+                            bestAsset = ap;
+                            if (ap.equals(targetPakName) || ap.equals("game_patch_4.6.1.21606.pak")) {
+                                bestAsset = ap;
+                                break;
+                            }
                         }
                     }
-                }
-
-                java.io.File cachePak = new java.io.File(ctx.getCacheDir(), pakFileName);
-                if (!cachePak.exists() || cachePak.length() == 0) {
-                    try (java.io.InputStream is = ctx.getAssets().open("paks/" + pakFileName);
-                         java.io.FileOutputStream fos = new java.io.FileOutputStream(cachePak)) {
-                        byte[] buf = new byte[8192];
-                        int len;
-                        while ((len = is.read(buf)) > 0) {
-                            fos.write(buf, 0, len);
+                    if (bestAsset != null) {
+                        java.io.File cachePak = new java.io.File(ctx.getCacheDir(), targetPakName);
+                        if (!cachePak.exists() || cachePak.length() == 0) {
+                            try (java.io.InputStream is = ctx.getAssets().open("paks/" + bestAsset);
+                                 java.io.FileOutputStream fos = new java.io.FileOutputStream(cachePak)) {
+                                byte[] buf = new byte[8192];
+                                int len;
+                                while ((len = is.read(buf)) > 0) {
+                                    fos.write(buf, 0, len);
+                                }
+                                fos.flush();
+                            }
                         }
-                        fos.flush();
+                        if (cachePak.exists() && cachePak.length() > 0) {
+                            cachePak.setReadable(true, true);
+                            foundSource = cachePak.getAbsolutePath();
+                        }
                     }
-                }
-                if (cachePak.exists() && cachePak.length() > 0) {
-                    cachePak.setReadable(true, true);
-                    foundSource = cachePak.getAbsolutePath();
                 }
             }
         } catch (Throwable t) {
             Log.d(TAG, "Asset pak extraction note: " + t.getMessage());
         }
 
-        // 3. Check local directories and downloads
+        // 3. Check local directories and downloads fallback
         if (foundSource == null) {
             String[] candidateDirs = {
-                "/home/willygailo/Downloads/Game-Launcher/android",
                 "/storage/emulated/0/Download",
                 "/sdcard/Download",
-                "/storage/emulated/0/Documents/Game-Launcher",
-                "/sdcard/Documents/Game-Launcher",
-                "/storage/emulated/0/GameLauncher",
-                "/sdcard/GameLauncher",
+                "/storage/emulated/0/Documents",
+                "/sdcard/Documents",
                 "/data/local/tmp"
             };
 
@@ -670,15 +683,13 @@ public class PubgConfigPatcher {
                         : CommandExecutor.executeSystemCommand(checkCmd);
                 if (res != null && !res.trim().isEmpty() && !res.startsWith("ERROR:") && !res.contains("No such")) {
                     foundSource = res.trim();
-                    int slash = foundSource.lastIndexOf('/');
-                    pakFileName = (slash >= 0) ? foundSource.substring(slash + 1) : foundSource;
                     break;
                 }
             }
         }
 
         if (foundSource == null) {
-            Log.d(TAG, "No optional PAK file found for " + pkg + "; relying purely on native INI & Active.sav binary patch.");
+            Log.d(TAG, "No unlock PAK file found for " + pkg + "; relying on native INI & Active.sav binary patch.");
             return false;
         }
 
@@ -686,18 +697,24 @@ public class PubgConfigPatcher {
         boolean deployed = false;
 
         for (String base : basePaths) {
-            String dir = base + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks";
-            ShizukuFileManager.makeDirectory(dir);
-            String dest = dir + "/" + pakFileName;
-            String copyCmd = "cp -f \"" + foundSource + "\" \"" + dest + "\" && chmod 666 \"" + dest + "\"";
-            if (ShizukuExecutor.hasShizukuPermission()) {
-                ShizukuExecutor.executeShizukuCommand(copyCmd);
-            } else {
-                CommandExecutor.executeSystemCommand(copyCmd);
-            }
-            if (ShizukuFileManager.fileExists(dest)) {
-                deployed = true;
-                Log.i(TAG, "Successfully deployed optional " + pakFileName + " to " + dest);
+            String dir1 = base + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks";
+            String dir2 = base + "/files/UE4Game/ShadowTrackerExtra/Saved/Paks";
+            for (String dir : new String[]{dir1, dir2}) {
+                ShizukuFileManager.makeDirectory(dir);
+                String destInc = dir + "/" + targetPakName;
+                String destGeneric = dir + "/game_patch.pak";
+                String copyCmd = "cp -f \"" + foundSource + "\" \"" + destInc + "\" 2>/dev/null; "
+                               + "cp -f \"" + foundSource + "\" \"" + destGeneric + "\" 2>/dev/null; "
+                               + "chmod 666 \"" + destInc + "\" \"" + destGeneric + "\" 2>/dev/null; ";
+                if (ShizukuExecutor.hasShizukuPermission()) {
+                    ShizukuExecutor.executeShizukuCommand(copyCmd);
+                } else {
+                    CommandExecutor.executeSystemCommand(copyCmd);
+                }
+                if (ShizukuFileManager.fileExists(destInc)) {
+                    deployed = true;
+                    Log.i(TAG, "🚀 Successfully deployed 165 FPS unlock " + targetPakName + " to " + destInc);
+                }
             }
         }
         return deployed;
@@ -1007,11 +1024,13 @@ public class PubgConfigPatcher {
      */
     public static void patchActiveSavBinary(String pkg, int targetFps, boolean enableHdr, int qualityLevel) {
         if (pkg == null) return;
-        final int rawLevel = FpsUnlockTier.fromFps(targetFps).level;
-        // PUBGM UE4 FPS level mapping: 7=120fps, 8=144fps, 9=165fps, 10=185fps.
-        // All levels 7-10 are valid — do NOT clamp. Old clamp to 7 was the root cause of 165/185fps unlock failure.
-        final int effectiveFpsLevel = rawLevel;
-        final int effectiveQuality = (qualityLevel > 0) ? qualityLevel : (enableHdr ? 4 : 1);
+        // In PUBG Mobile UE4 binary (com.tencent.ig, com.pubg.imobile, etc.),
+        // EFPSLevel enum values are: 1=Low(20), 2=Medium(25), 3=High(30), 4=Ultra(40), 5=Extreme(60), 6=90fps, 7=120fps(Extreme+/Ultra Extreme).
+        // Levels 8, 9, 10 do NOT exist in the UE4 binary and cause EFPSLevel validation failure / reset to 40fps.
+        // Therefore, for 120Hz/144Hz/165Hz/185Hz, effectiveFpsLevel MUST be 7 (120fps Extreme+ / Ultra Extreme).
+        final int effectiveFpsLevel = (targetFps >= 120) ? 7 : (targetFps >= 90 ? 6 : 5);
+        // Extreme+ (120fps) requires Smooth graphics (level 1 or 2); higher qualities lock FPS to 40 or 60.
+        final int effectiveQuality = (effectiveFpsLevel >= 7) ? 1 : ((qualityLevel > 0) ? qualityLevel : (enableHdr ? 4 : 1));
         final int mobileHdrMode = (effectiveQuality >= 5) ? 2 : (enableHdr ? 1 : 0);
         final int shadowQuality = (effectiveQuality >= 5) ? 4 : (enableHdr ? 3 : 0);
         final int shadowSwitch = (effectiveQuality >= 4) ? 1 : 0;
@@ -1585,6 +1604,7 @@ public class PubgConfigPatcher {
         // 2. Unlock adaptive FPS (up to 165/185 FPS depending on screen panel) & Active.sav
         patchCompetitive(pkg, targetFps);
         patchActiveSavBinary(pkg, targetFps, true, 4);
+        deployPakPatch(pkg);
 
         // 3. Inject 4.6.0 specific CVars across all discovered paths
         List<String> paths = getConfigPaths(pkg);
@@ -1681,11 +1701,21 @@ public class PubgConfigPatcher {
                     } catch (Throwable ignored) {}
                 }
 
-                // 4. Remove stale lock files and broken staging temp files that cause infinite loading loops
+                // 4. Remove stale lock files, corrupted loginInfoFile (+CVars), and broken staging temp files
                 String removeLocksCmd = "rm -f '" + ue4Path1 + "'/*.tmp* '" + ue4Path2 + "'/*.tmp* 2>/dev/null; "
                                       + "rm -f '" + ue4Path1 + "'/*lock* '" + ue4Path2 + "'/*lock* 2>/dev/null; "
                                       + "rm -f '" + ue4Path1 + "/SaveGames'/*.tmp* '" + ue4Path2 + "/SaveGames'/*.tmp* 2>/dev/null; "
-                                      + "rm -f '" + ue4Path1 + "/Pandora'/*.tmp* '" + ue4Path2 + "/Pandora'/*.tmp* 2>/dev/null; ";
+                                      + "rm -f '" + ue4Path1 + "/Pandora'/*.tmp* '" + ue4Path2 + "/Pandora'/*.tmp* 2>/dev/null; "
+                                      + "for l in '" + ue4Path1 + "/SaveGames/loginInfoFile.json' '" + ue4Path2 + "/SaveGames/loginInfoFile.json'; do "
+                                      + "  [ -f \"$l\" ] && grep -q '+CVars' \"$l\" 2>/dev/null && rm -f \"$l\"; "
+                                      + "done; "
+                                      + "for cfg in '" + ue4Path1 + "/Config/Android' '" + ue4Path2 + "/Config/Android'; do "
+                                      + "  if [ -d \"$cfg\" ]; then "
+                                      + "    for f in \"$cfg\"/*.ini; do "
+                                      + "      case \"$f\" in *UserCustom.ini|*GameUserSettings.ini) ;; *) rm -f \"$f\" 2>/dev/null ;; esac; "
+                                      + "    done; "
+                                      + "  fi; "
+                                      + "done; ";
                 try {
                     if (ShizukuExecutor.hasShizukuPermission()) {
                         ShizukuExecutor.executeShizukuCommand(removeLocksCmd);

@@ -111,31 +111,31 @@ public final class SnapshotSystem {
         for (String p : SYSFS_PATTERNS) {
             glob.append(p).append(' ');
         }
-        glob.append("; do if [ -r \"$f\" ]; then printf '%s\\t%s\\n' \"$f\" \"$(cat \"$f\" 2>/dev/null | tr '\\n' ' ')\"; fi; done");
+        glob.append("; do if [ -r \"$f\" ]; then printf 'SYSFS\\t%s\\t%s\\n' \"$f\" \"$(cat \"$f\" 2>/dev/null | tr '\\n' ' ')\"; fi; done; ");
+        for (String[] s : SETTINGS) {
+            glob.append("printf 'SETTING\\t").append(s[0]).append('/').append(s[1])
+                .append("\\t%s\\n' \"$(settings get ").append(s[0]).append(' ').append(s[1]).append(" 2>/dev/null)\"; ");
+        }
+        for (String p : PROPS) {
+            glob.append("printf 'PROP\\t").append(p)
+                .append("\\t%s\\n' \"$(getprop ").append(p).append(" 2>/dev/null)\"; ");
+        }
         String out = CommandExecutor.executeSystemCommand(glob.toString());
         if (out != null) {
             for (String line : out.split("\n")) {
-                int tab = line.indexOf('\t');
-                if (tab <= 0) continue;
-                String key = line.substring(0, tab).trim();
-                String value = line.substring(tab + 1).trim();
-                if (!key.isEmpty() && !value.isEmpty()) {
+                String[] parts = line.split("\t", 3);
+                if (parts.length < 3) continue;
+                String typeStr = parts[0].trim();
+                String key = parts[1].trim();
+                String value = parts[2].trim();
+                if (key.isEmpty() || value.isEmpty()) continue;
+                if ("SYSFS".equals(typeStr)) {
                     entries.add(new Entry(EntryType.SYSFS, key, value));
+                } else if ("SETTING".equals(typeStr)) {
+                    entries.add(new Entry(EntryType.SETTING, key, value));
+                } else if ("PROP".equals(typeStr)) {
+                    entries.add(new Entry(EntryType.PROP, key, value));
                 }
-            }
-        }
-
-        for (String[] s : SETTINGS) {
-            String value = CommandExecutor.getSystemSetting(s[0], s[1]);
-            if (value != null && !value.trim().isEmpty()) {
-                entries.add(new Entry(EntryType.SETTING, s[0] + "/" + s[1], value.trim()));
-            }
-        }
-
-        for (String p : PROPS) {
-            String value = CommandExecutor.getSystemProperty(p);
-            if (value != null && !value.trim().isEmpty()) {
-                entries.add(new Entry(EntryType.PROP, p, value.trim()));
             }
         }
 
@@ -258,11 +258,11 @@ public final class SnapshotSystem {
             }
         }
 
+        for (String cmd : others) {
+            sysfs.append(cmd).append(" 2>/dev/null; ");
+        }
         if (sysfs.length() > 0) {
             CommandExecutor.executeSystemCommand(sysfs.toString());
-        }
-        for (String cmd : others) {
-            CommandExecutor.executeSystemCommand(cmd);
         }
 
         Log.i(TAG, "Restored " + applied + "/" + candidate + " entries from snapshot '" + snapshot.label + "'");

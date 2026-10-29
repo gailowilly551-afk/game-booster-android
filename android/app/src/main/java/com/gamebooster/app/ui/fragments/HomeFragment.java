@@ -218,27 +218,39 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             adapter.setOnGameCardActionListener(new HomeGamesAdapter.OnGameCardActionListener() {
                 @Override
                 public void onLaunch(GameAppInfo game) {
-                    Context ctx = getContext();
-                    if (ctx != null) GameLauncherHelper.autoLaunchGame(ctx, game);
+                    try {
+                        Context ctx = getContext();
+                        if (ctx != null) GameLauncherHelper.autoLaunchGame(ctx, game);
+                    } catch (Throwable t) {
+                        android.util.Log.e("HomeFragment", "onLaunch error: " + t.getMessage(), t);
+                    }
                 }
 
                 @Override
                 public void onTune(GameAppInfo game) {
-                    android.app.Activity act = getActivity();
-                    if (act != null && !act.isFinishing()) {
-                        com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
-                            if (adapter != null) adapter.notifyDataSetChanged();
-                        });
+                    try {
+                        android.app.Activity act = getActivity();
+                        if (act != null && !act.isFinishing()) {
+                            com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
+                                if (adapter != null) adapter.notifyDataSetChanged();
+                            });
+                        }
+                    } catch (Throwable t) {
+                        android.util.Log.e("HomeFragment", "onTune error: " + t.getMessage(), t);
                     }
                 }
 
                 @Override
                 public void onMoreOptions(GameAppInfo game, View anchorView) {
-                    android.app.Activity act = getActivity();
-                    if (act != null && !act.isFinishing()) {
-                        com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
-                            if (adapter != null) adapter.notifyDataSetChanged();
-                        });
+                    try {
+                        android.app.Activity act = getActivity();
+                        if (act != null && !act.isFinishing()) {
+                            com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
+                                if (adapter != null) adapter.notifyDataSetChanged();
+                            });
+                        }
+                    } catch (Throwable t) {
+                        android.util.Log.e("HomeFragment", "onMoreOptions error: " + t.getMessage(), t);
                     }
                 }
             });

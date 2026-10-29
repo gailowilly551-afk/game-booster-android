@@ -62,7 +62,18 @@ public class SpoofPreferences {
 
     public static void setActiveProfileId(Context context, String profileId) {
         if (context == null) return;
-        getPrefs(context).edit().putString(KEY_ACTIVE_PROFILE_ID, profileId).apply();
+        SharedPreferences.Editor editor = getPrefs(context).edit()
+                .putString(KEY_ACTIVE_PROFILE_ID, profileId);
+        // Clear all stale per-package overrides so new selection applies universally to all games
+        Map<String, ?> all = getPrefs(context).getAll();
+        if (all != null) {
+            for (String k : all.keySet()) {
+                if (k.startsWith(PREFIX_PKG_PROFILE)) {
+                    editor.remove(k);
+                }
+            }
+        }
+        editor.apply();
     }
 
     public static void clearActiveProfile(Context context) {
@@ -130,9 +141,20 @@ public class SpoofPreferences {
 
     /**
      * Resolves the effective profile ID for a package:
-     * per-package override → per-family override → global active profile → null.
+     * When spoofAllApps is enabled, global active profile takes universal precedence.
+     * Otherwise: per-package override → per-family override → global active profile → null.
      */
     public static String resolveProfileId(Context context, String packageName) {
+        if (context == null) return null;
+
+        // When user forces spoof all apps or selects from brand dialog, active profile is universal
+        if (isSpoofAllApps(context)) {
+            String activeId = getActiveProfileId(context);
+            if (activeId != null && !activeId.trim().isEmpty()) {
+                return activeId.trim();
+            }
+        }
+
         String pkgProfile = getProfileIdForPackage(context, packageName);
         if (pkgProfile != null && !pkgProfile.isEmpty()) return pkgProfile;
 

@@ -44,16 +44,11 @@ public class SpoofBrandSelectorDialog {
         Activity activity = (Activity) context;
         if (activity.isFinishing() || activity.isDestroyed()) return;
 
-        if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-            new androidx.appcompat.app.AlertDialog.Builder(activity)
-                    .setTitle("🛡️ SHIZUKU API REQUIRED")
-                    .setMessage("Hardware Masking & Device Spoofing requires active Shizuku API (UID 2000 Privileged Shell) to inject system properties, SurfaceFlinger refresh rates, and game configs.\n\nPlease authorize Shizuku to proceed.")
-                    .setPositiveButton("GRANT SHIZUKU", (d, w) -> {
-                        com.gamebooster.app.shizuku.ShizukuExecutor.requestPermission();
-                    })
-                    .setNegativeButton("CANCEL", null)
-                    .show();
-            return;
+        boolean privileged = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive()
+                || com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission();
+        if (!privileged && !com.gamebooster.app.shizuku.ShizukuManager.isShizukuRunningAndGranted()) {
+            Toast.makeText(context, "⚠️ Note: Shizuku or Root enables full hardware spoofing across system props", Toast.LENGTH_SHORT).show();
+            com.gamebooster.app.shizuku.ShizukuExecutor.requestPermission();
         }
 
         dismissCurrent();
@@ -79,6 +74,8 @@ public class SpoofBrandSelectorDialog {
 
         // Brand Filter Buttons
         Button btnAll = view.findViewById(R.id.btn_chip_all);
+        Button btnTranssion = view.findViewById(R.id.btn_chip_transsion);
+        Button btnHuawei = view.findViewById(R.id.btn_chip_huawei);
         Button btnRog = view.findViewById(R.id.btn_chip_rog);
         Button btnSamsung = view.findViewById(R.id.btn_chip_samsung);
         Button btnNubia = view.findViewById(R.id.btn_chip_nubia);
@@ -92,7 +89,7 @@ public class SpoofBrandSelectorDialog {
         Button btnLenovo = view.findViewById(R.id.btn_chip_lenovo);
 
         Button[] allButtons = new Button[]{
-                btnAll, btnRog, btnSamsung, btnNubia, btnXiaomi, btnRealme,
+                btnAll, btnTranssion, btnHuawei, btnRog, btnSamsung, btnNubia, btnXiaomi, btnRealme,
                 btnOneplus, btnBlackshark, btnApple, btnVivo, btnOppo, btnLenovo
         };
 
@@ -105,15 +102,16 @@ public class SpoofBrandSelectorDialog {
         final SpoofProfileAdapter adapter = new SpoofProfileAdapter(context, allProfiles, selectedProfile -> {
             if (selectedProfile == null) return;
 
-            if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                Toast.makeText(context, "⚠️ Shizuku API required to force spoof profile!", Toast.LENGTH_SHORT).show();
+            boolean hasPriv = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive()
+                    || com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission();
+            if (!hasPriv) {
                 com.gamebooster.app.shizuku.ShizukuExecutor.requestPermission();
-                return;
             }
 
             // 1. Immediately persist and activate selected profile
             SpoofPreferences.setSpoofEnabled(context, true);
             SpoofPreferences.setActiveProfileId(context, selectedProfile.id);
+            SpoofPreferences.setSpoofAllApps(context, true);
 
             Toast.makeText(context, "⚡ Activating & Forcing: " + selectedProfile.displayName, Toast.LENGTH_SHORT).show();
 
@@ -168,10 +166,12 @@ public class SpoofBrandSelectorDialog {
             });
         }
 
+        bindBrandFilter(btnTranssion, "Transsion", "⚡ INFINIX & TECNO (Dimensity 8200-U 144Hz)", allButtons, adapter, rvProfiles, tvSubtitle, context);
+        bindBrandFilter(btnHuawei, "Huawei", "🌐 HUAWEI & HONOR (Pura 70 Ultra / Magic 6 Pro)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnRog, "ASUS ROG", "⚡ ASUS ROG Phone (185Hz / 165Hz Gaming Flagships)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnSamsung, "Samsung", "📱 SAMSUNG Galaxy (Ultra Gaming Lineup)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnNubia, "Nubia", "🎮 NUBIA RedMagic (165Hz eSports Lineup)", allButtons, adapter, rvProfiles, tvSubtitle, context);
-        bindBrandFilter(btnXiaomi, "Xiaomi", "🚀 XIAOMI & POCO (Snapdragon 8 Series)", allButtons, adapter, rvProfiles, tvSubtitle, context);
+        bindBrandFilter(btnXiaomi, "showme", "🚀 XIAOMI, REDMI & POCO (Snapdragon 8 Series)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnRealme, "Realme", "🔥 REALME GT (Extreme Performance)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnOneplus, "OnePlus", "🏎️ ONEPLUS (Ultra Fast Oxygen/ColorOS)", allButtons, adapter, rvProfiles, tvSubtitle, context);
         bindBrandFilter(btnBlackshark, "Black Shark", "🦈 BLACK SHARK (Gaming Flagships)", allButtons, adapter, rvProfiles, tvSubtitle, context);

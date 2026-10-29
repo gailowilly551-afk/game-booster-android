@@ -17,119 +17,9 @@ public class TouchLatencyChannel {
     private static final String TAG = "TouchLatencyChannel";
 
     public static boolean enableUltraTouchResponse() {
-        boolean ok = true;
-        Log.i(TAG, "⚡ Enforcing Developer-Grade Zero-Delay Touch (Hardware + Software Pipeline)");
-
-        // 1. Android System Settings & Gesture Slop Elimination
-        ok &= CommandExecutor.setSystemSetting("system", "touch_slop_reduction", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "pointer_speed", "7");
-        ok &= CommandExecutor.setSystemSetting("system", "touch_sensitivity", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "master_touch_sensitivity", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "game_mode_touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "edge_touch_filter", "0");
-        ok &= CommandExecutor.setSystemSetting("secure", "long_press_timeout", "100");
-        ok &= CommandExecutor.setSystemSetting("secure", "multi_press_timeout", "50");
-        ok &= CommandExecutor.setSystemSetting("secure", "edge_rejection_mode", "0");
-
-        // 2. View Framework & Resampling Delay Bypass (Critical Latency Killer)
-        ok &= CommandExecutor.setSystemProperty("view.touch_slop", "0");
-        ok &= CommandExecutor.setSystemProperty("view.scroll_friction", "0.001");
-        ok &= CommandExecutor.setSystemProperty("view.fading_edge_length", "0");
-        ok &= CommandExecutor.setSystemProperty("ro.min_pointer_dur", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.input.resampling", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.resampling", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.throttle_time", "0");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.inputflinger.nice", "-20");
-        ok &= CommandExecutor.setSystemProperty("persist.input.velocitytracker.strategy", "impulse");
-        ok &= CommandExecutor.setSystemProperty("debug.input.max_events_per_sec", "2000");
-        ok &= CommandExecutor.setSystemProperty("debug.hwui.input_latency_timeout", "0");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.input.latency", "0");
-
-        // 3. SurfaceFlinger & Touch-to-Photon Display Synchronization (GPU-Fence Synchronized, Zero Tearing)
-        ok &= CommandExecutor.setSystemProperty("ro.surface_flinger.set_touch_timer_ms", "0");
-        ok &= CommandExecutor.setSystemProperty("ro.surface_flinger.set_idle_timer_ms", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.latch_unsignaled", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.auto_latch_unsignaled", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.disable_backpressure", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.early_phase_offset_ns", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.early_app_phase_offset_ns", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sf.early_gl_phase_offset_ns", "0");
-
-        // 4. Tecno (HiOS) & Infinix (XOS) / Transsion Touch Acceleration
-        ok &= CommandExecutor.setSystemSetting("system", "tran_game_mode_touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "tran_touch_rate", "1000");
-        ok &= CommandExecutor.setSystemSetting("system", "tran_game_touch_response", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "tran_touch_sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemSetting("system", "tran_game_boost_touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "hios_game_touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "xos_game_touch", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.tran.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.tran.game_touch", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.transsion.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.tran.touch.sampling_rate", "1000");
-
-        // 5. MediaTek Helio & Dimensity MTK Kernel Touch Boost
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.mediatek.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.mtk.touch_boost", "1");
-
-        // 6. Universal OEM 1000Hz Digitizer & Game Mode Locks
-        ok &= CommandExecutor.setSystemSetting("system", "sec_touch_sensitivity", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "touch_protective_film", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.sec.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.report_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.touch.sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("debug.touch.sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.gamemode.touch", "1");
-        ok &= CommandExecutor.setSystemProperty("vendor.touch.game_mode", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.asus.touch_sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.asus.touch_opt", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.asus.armoury_crate.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.miui.game_touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.touch.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.smooth", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.oplus.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.oplus.game_touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "oplus_touch_game_mode", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vivo.touch_sample_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.vivo.gamemode.touch", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "vivo_game_touch_enhance", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.nubia.touch_sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.redmagic.touch_mode", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.goodix.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.synaptics.touch_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.hyperos.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.samsung.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.mot.touch.sampling_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("persist.mot.touch_boost", "1");
-        ok &= CommandExecutor.setSystemSetting("system", "mot_game_touch_optimization", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.honor.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.huawei.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.sprd.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.sprd.touch_rate", "1000");
-
-        // 7. InputFlinger & Gyro Sensor 1000Hz Aim
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.touch_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.fling_boost", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.input.boost_time_ms", "5000");
-        ok &= CommandExecutor.setSystemProperty("touch.motion_filter.enable", "0");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.edge_filter", "0");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.touch.edge_reject", "0");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.corner_filter", "0");
-        ok &= CommandExecutor.setSystemProperty("touch.pressure.scale", "0.0001");
-        ok &= CommandExecutor.setSystemProperty("touch.size.calibration", "geometric");
-        ok &= CommandExecutor.setSystemProperty("touch.pressure.calibration", "physical");
-        ok &= CommandExecutor.setSystemProperty("touch.distance.scale", "0");
-        ok &= CommandExecutor.setSystemProperty("touch.size.bias", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.sensor.gyro.sample_rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("debug.sensor.motion.rate", "1000");
-        ok &= CommandExecutor.setSystemProperty("debug.sensor.gyro.smooth", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.sensor.gyro.stabilization", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.gyro.delay", "0");
-
-        // 8. Elevated Batch & Kernel Driver Hardware Sysfs Overdrive
+        Log.i(TAG, "⚡ Enforcing Developer-Grade Zero-Delay Touch (Batched Hardware + Software Pipeline)");
         executeElevatedTouchBatch();
-
-        return ok;
+        return true;
     }
 
     private static void executeElevatedTouchBatch() {
@@ -161,11 +51,42 @@ public class TouchLatencyChannel {
         commands.add("setprop persist.sys.transsion.touch_boost 1");
         commands.add("setprop persist.vendor.tran.touch.sampling_rate 1000");
 
-        // MediaTek MTK Touch Boost
+        // MediaTek MTK & Universal OEM 1000Hz Digitizer Locks
         commands.add("setprop persist.vendor.mediatek.touch_boost 1");
         commands.add("setprop debug.mtk.touch_boost 1");
+        commands.add("setprop persist.sys.sec.touch_rate 1000");
+        commands.add("setprop persist.sys.touch.report_rate 1000");
+        commands.add("setprop persist.vendor.touch.sampling_rate 1000");
+        commands.add("setprop debug.touch.sampling_rate 1000");
+        commands.add("setprop persist.sys.gamemode.touch 1");
+        commands.add("setprop vendor.touch.game_mode 1");
+        commands.add("setprop persist.asus.touch_sampling_rate 1000");
+        commands.add("setprop persist.vendor.asus.touch_opt 1");
+        commands.add("setprop persist.asus.armoury_crate.touch_rate 1000");
+        commands.add("setprop persist.sys.miui.game_touch_rate 1000");
+        commands.add("setprop persist.vendor.touch.touch_boost 1");
+        commands.add("setprop persist.sys.touch.smooth 1");
+        commands.add("setprop persist.vendor.oplus.touch_rate 1000");
+        commands.add("setprop persist.sys.oplus.game_touch 1");
+        commands.add("settings put system oplus_touch_game_mode 1");
+        commands.add("setprop persist.vivo.touch_sample_rate 1000");
+        commands.add("setprop persist.sys.vivo.gamemode.touch 1");
+        commands.add("settings put system vivo_game_touch_enhance 1");
+        commands.add("setprop persist.sys.nubia.touch_sampling_rate 1000");
+        commands.add("setprop persist.sys.redmagic.touch_mode 1");
+        commands.add("setprop persist.vendor.goodix.touch_rate 1000");
+        commands.add("setprop persist.vendor.synaptics.touch_rate 1000");
+        commands.add("setprop persist.sys.hyperos.touch_boost 1");
+        commands.add("setprop persist.vendor.samsung.touch_boost 1");
+        commands.add("setprop persist.mot.touch.sampling_rate 1000");
+        commands.add("setprop persist.mot.touch_boost 1");
+        commands.add("settings put system mot_game_touch_optimization 1");
+        commands.add("setprop persist.sys.honor.touch_boost 1");
+        commands.add("setprop persist.sys.huawei.touch_boost 1");
+        commands.add("setprop persist.sys.sprd.touch_boost 1");
+        commands.add("setprop persist.vendor.sprd.touch_rate 1000");
 
-        // Resampling & Slop Elimination
+        // Resampling, Slop Elimination & Gyro 1000Hz
         commands.add("setprop view.touch_slop 0");
         commands.add("setprop view.scroll_friction 0.001");
         commands.add("setprop view.fading_edge_length 0");
@@ -178,6 +99,23 @@ public class TouchLatencyChannel {
         commands.add("setprop debug.input.max_events_per_sec 2000");
         commands.add("setprop debug.hwui.input_latency_timeout 0");
         commands.add("setprop persist.sys.input.latency 0");
+        commands.add("setprop debug.inputflinger.touch_boost 1");
+        commands.add("setprop debug.inputflinger.fling_boost 1");
+        commands.add("setprop debug.input.boost_time_ms 5000");
+        commands.add("setprop touch.motion_filter.enable 0");
+        commands.add("setprop persist.sys.touch.edge_filter 0");
+        commands.add("setprop persist.vendor.touch.edge_reject 0");
+        commands.add("setprop persist.sys.touch.corner_filter 0");
+        commands.add("setprop touch.pressure.scale 0.0001");
+        commands.add("setprop touch.size.calibration geometric");
+        commands.add("setprop touch.pressure.calibration physical");
+        commands.add("setprop touch.distance.scale 0");
+        commands.add("setprop touch.size.bias 0");
+        commands.add("setprop debug.sensor.gyro.sample_rate 1000");
+        commands.add("setprop debug.sensor.motion.rate 1000");
+        commands.add("setprop debug.sensor.gyro.smooth 1");
+        commands.add("setprop debug.sensor.gyro.stabilization 1");
+        commands.add("setprop persist.sys.gyro.delay 0");
 
         // SurfaceFlinger Presentation
         commands.add("setprop ro.surface_flinger.set_touch_timer_ms 0");
@@ -217,41 +155,10 @@ public class TouchLatencyChannel {
                 "echo 1000 > \"$dev/report_rate\" 2>/dev/null; " +
                 "done");
 
-        if (ShizukuExecutor.hasShizukuPermission()) {
-            ShizukuExecutor.executeShizukuCommands(commands.toArray(new String[0]));
-        } else {
-            for (String cmd : commands) {
-                CommandExecutor.executeSystemCommand(cmd);
-            }
-        }
+        CommandExecutor.executeBatch(commands);
     }
 
     public static boolean restoreDefaultTouchResponse() {
-        boolean ok = true;
-        ok &= CommandExecutor.setSystemSetting("system", "touch_slop_reduction", "0");
-        ok &= CommandExecutor.setSystemSetting("system", "pointer_speed", "0");
-        ok &= CommandExecutor.setSystemSetting("system", "touch_sensitivity", "0");
-        ok &= CommandExecutor.setSystemSetting("system", "game_mode_touch", "0");
-        ok &= CommandExecutor.setSystemSetting("secure", "long_press_timeout", "400");
-        ok &= CommandExecutor.setSystemSetting("secure", "multi_press_timeout", "300");
-        ok &= CommandExecutor.setSystemSetting("secure", "edge_rejection_mode", "1");
-        ok &= CommandExecutor.setSystemProperty("view.touch_slop", "8");
-        ok &= CommandExecutor.setSystemProperty("view.scroll_friction", "0.015");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.input.resampling", "1");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.resampling", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.input.velocitytracker.strategy", "lsq2");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.report_rate", "120");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.touch.sampling_rate", "120");
-        ok &= CommandExecutor.setSystemProperty("debug.touch.sampling_rate", "120");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.gamemode.touch", "0");
-        ok &= CommandExecutor.setSystemProperty("vendor.touch.game_mode", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.touch_boost", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.inputflinger.fling_boost", "0");
-        ok &= CommandExecutor.setSystemProperty("debug.input.max_events_per_sec", "120");
-        ok &= CommandExecutor.setSystemProperty("debug.hwui.input_latency_timeout", "500");
-        ok &= CommandExecutor.setSystemProperty("persist.sys.touch.edge_filter", "1");
-        ok &= CommandExecutor.setSystemProperty("persist.vendor.touch.edge_reject", "1");
-
         List<String> restoreCmds = new ArrayList<>();
         restoreCmds.add("settings put system touch_slop_reduction 0");
         restoreCmds.add("settings put system pointer_speed 0");
@@ -264,6 +171,7 @@ public class TouchLatencyChannel {
         restoreCmds.add("setprop view.scroll_friction 0.015");
         restoreCmds.add("setprop persist.sys.input.resampling 1");
         restoreCmds.add("setprop debug.inputflinger.resampling 1");
+        restoreCmds.add("setprop persist.input.velocitytracker.strategy lsq2");
         restoreCmds.add("setprop persist.sys.touch.report_rate 120");
         restoreCmds.add("setprop persist.vendor.touch.sampling_rate 120");
         restoreCmds.add("setprop debug.touch.sampling_rate 120");
@@ -276,13 +184,6 @@ public class TouchLatencyChannel {
         restoreCmds.add("setprop persist.sys.touch.edge_filter 1");
         restoreCmds.add("setprop persist.vendor.touch.edge_reject 1");
 
-        if (ShizukuExecutor.hasShizukuPermission()) {
-            ShizukuExecutor.executeShizukuCommands(restoreCmds.toArray(new String[0]));
-        } else {
-            for (String cmd : restoreCmds) {
-                CommandExecutor.executeSystemCommand(cmd);
-            }
-        }
-        return ok;
+        return CommandExecutor.executeBatch(restoreCmds);
     }
 }

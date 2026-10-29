@@ -134,20 +134,28 @@ public class HomeGamesAdapter extends RecyclerView.Adapter<HomeGamesAdapter.Game
 
         // Tap anywhere on card = instant game launch with full optimizations & overdrive
         View.OnClickListener launchListener = v -> {
-            Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
-            if (actionListener != null) {
-                actionListener.onLaunch(game);
-            } else {
-                com.gamebooster.app.games.GameLauncherHelper.autoLaunchGame(ctx, game);
+            try {
+                Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
+                if (actionListener != null) {
+                    actionListener.onLaunch(game);
+                } else {
+                    com.gamebooster.app.games.GameLauncherHelper.autoLaunchGame(ctx, game);
+                }
+            } catch (Throwable t) {
+                android.util.Log.e("HomeGamesAdapter", "Error launching game: " + t.getMessage(), t);
             }
         };
         // Long press anywhere on card or PLAY button = Game options menu (Tune, CFG Mod Studio, App Info, etc.)
         View.OnLongClickListener optionsListener = v -> {
-            if (actionListener != null) {
-                actionListener.onMoreOptions(game, v);
-            } else {
-                Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
-                PreLaunchGameDialog.show(ctx, game);
+            try {
+                if (actionListener != null) {
+                    actionListener.onMoreOptions(game, v);
+                } else {
+                    Context ctx = (v != null && v.getContext() != null) ? v.getContext() : context;
+                    PreLaunchGameDialog.show(ctx, game);
+                }
+            } catch (Throwable t) {
+                android.util.Log.e("HomeGamesAdapter", "Error opening options: " + t.getMessage(), t);
             }
             return true;
         };

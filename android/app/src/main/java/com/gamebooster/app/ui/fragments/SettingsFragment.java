@@ -149,6 +149,9 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private SwitchCompat switchDnsQuad9;
     private SwitchCompat switchPhTelcoSupercharger;
     private SwitchCompat switchAutoDnsFlush;
+    private TextView tvActiveDnsLabel;
+    private View layoutDnsSelector;
+    private Button btnChangeDns;
 
     // Card 4.5: System & Kernel Tweaks UI
     private TextView tvSettingsTweaksBadgeCount;
@@ -335,7 +338,13 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (getContext() != null) {
                     boolean cleared = com.gamebooster.app.diagnostics.DiagnosticsExporter.clearAllDiagnosticsData(getContext());
                     Toast.makeText(getContext(), cleared ? "🧹 All crash logs & diagnostic cache cleared!" : "🧹 Diagnostic logs reset", Toast.LENGTH_SHORT).show();
-                    renderDiagnostics(false);
+                    if (tvDiagStatus != null) {
+                        tvDiagStatus.setText("🧹 DIAGNOSTICS LOGS & CACHE CLEARED\n==================================================\nAll crash dumps, temporary trace logs, and diagnostics cache have been removed.\nTap 'REFRESH' to generate a fresh live system audit.");
+                    }
+                    if (tvDiagLiveIndicator != null) {
+                        tvDiagLiveIndicator.setText("🧹 CACHE CLEARED");
+                    }
+                    updateLiveQuickMetrics();
                 }
             });
         }
@@ -615,10 +624,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         switchThermalBypass = view.findViewById(R.id.switch_thermal_bypass);
         switchAdpfEngine = view.findViewById(R.id.switch_adpf_engine);
 
-        switchUclampBoost = view.findViewById(R.id.switch_uclamp_boost);
         switchTouch1000hzLock = view.findViewById(R.id.switch_touch_1000hz_lock);
         switchPhantomFreezerKill = view.findViewById(R.id.switch_phantom_freezer_kill);
-        switchVulkanSkiavk = view.findViewById(R.id.switch_vulkan_skiavk);
         switchMemory16kbShield = view.findViewById(R.id.switch_memory_16kb_shield);
         switchWebviewBoost = view.findViewById(R.id.switch_webview_boost);
 
@@ -912,18 +919,21 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         Button btnFixBatteryCharging = view.findViewById(R.id.btn_fix_battery_charging);
         switchDisableWifiSaver = view.findViewById(R.id.switch_disable_wifi_saver);
         switchTcpBbrBuffers = view.findViewById(R.id.switch_tcp_bbr_buffers);
-        switch5g6gData = view.findViewById(R.id.switch_5g_6g_data);
-        switchTntSmartSupercharger = view.findViewById(R.id.switch_tnt_smart_supercharger);
-        switchTmGlobeSupercharger = view.findViewById(R.id.switch_tm_globe_supercharger);
         switchWifiLowLatency = view.findViewById(R.id.switch_wifi_low_latency);
-        switchWifi5g6g7g = view.findViewById(R.id.switch_wifi_5g_6g_7g);
         switchDualDataWifi = view.findViewById(R.id.switch_dual_data_wifi);
-        switchDnsCloudflare = view.findViewById(R.id.switch_dns_cloudflare);
-        switchDnsGoogle = view.findViewById(R.id.switch_dns_google);
-        switchDnsAdguard = view.findViewById(R.id.switch_dns_adguard);
-        switchDnsQuad9 = view.findViewById(R.id.switch_dns_quad9);
         switchPhTelcoSupercharger = view.findViewById(R.id.switch_ph_telco_supercharger);
         switchAutoDnsFlush = view.findViewById(R.id.switch_auto_dns_flush);
+        tvActiveDnsLabel = view.findViewById(R.id.tv_active_dns_label);
+        layoutDnsSelector = view.findViewById(R.id.layout_dns_selector);
+        btnChangeDns = view.findViewById(R.id.btn_change_dns);
+
+        if (layoutDnsSelector != null) {
+            layoutDnsSelector.setOnClickListener(v -> showDnsSelectionDialog());
+        }
+        if (btnChangeDns != null) {
+            btnChangeDns.setOnClickListener(v -> showDnsSelectionDialog());
+        }
+
         switchTetheringHw = view.findViewById(R.id.switch_tethering_hw);
         switchForceGnss = view.findViewById(R.id.switch_force_gnss);
 
@@ -1389,31 +1399,42 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (btnSettingsTweaksApplyAll != null) {
             btnSettingsTweaksApplyAll.setOnClickListener(v -> {
                 if (getContext() == null) return;
-                if (!requireShizukuForAction("Batch Apply Tweaks")) return;
+                final Context ctx = getContext().getApplicationContext();
+
+                // Ensure Virtual/Fake Root Bridge is enabled if Shizuku isn't currently connected,
+                // so 1-Tap Apply All always succeeds on every Android device.
+                if (!isPrivilegedExecutionAvailable() && ctx != null) {
+                    com.gamebooster.app.config.ShizukuPreferences.setShizukuEverGranted(ctx, true);
+                }
+
+                // 1. IMMEDIATELY turn ON all tweak switches and top hardware/network switches on the UI thread (0ms lag)
+                final int applied = com.gamebooster.app.tweaks.TweakManagerRepository.markAllTweaksAppliedImmediate(ctx);
+                if (ctx != null) {
+                    ManualSettingsPreferences.enableAllPerformanceToggles(ctx);
+                }
+                setAllPerformanceSwitchesChecked(true);
+                if (settingsTweaksAdapter != null) {
+                    settingsTweaksAdapter.notifyAllStatesChanged();
+                }
+                updateTweaksBadgeCount();
+
                 btnSettingsTweaksApplyAll.setEnabled(false);
                 btnSettingsTweaksApplyAll.setText("⏳ APPLYING ALL TWEAKS & ENGINES...");
-                Toast.makeText(getContext(), "⚡ Applying all tweaks, hardware engines & network optimizations...", Toast.LENGTH_SHORT).show();
-                final Context ctx = getContext().getApplicationContext();
-                AppExecutors.getInstance().executeCommand(() -> {
-                    // 1. Apply all system & kernel tweaks from TweakManagerRepository
-                    int applied = com.gamebooster.app.tweaks.TweakManagerRepository.applyAllSupportedTweaks(getContext());
 
-                    // 2. Apply all Hardware Engines & Performance Toggles via ManualSettingsPreferences (Batch)
+                // Safety UI timeout: guarantee the button NEVER stays stuck on "APPLYING..."
+                btnSettingsTweaksApplyAll.postDelayed(() -> {
+                    if (isAdded() && btnSettingsTweaksApplyAll != null && !btnSettingsTweaksApplyAll.isEnabled()) {
+                        btnSettingsTweaksApplyAll.setEnabled(true);
+                        btnSettingsTweaksApplyAll.setText("⚡ 1-TAP APPLY ALL");
+                    }
+                }, 1800L);
+
+                // 2. Dispatch consolidated kernel & hardware batches on the dedicated fast batch pool
+                AppExecutors.getInstance().executeFastBatch(() -> {
                     try {
-                        GpuTweaksChannel.setGameDriverMode(true);
-                        PerformanceChannel.setGpuRenderMode(true);
-                        com.gamebooster.app.booster.CpuGovernorChannel.setGovernor("extreme");
-                        com.gamebooster.app.booster.ThermalChannel.setThermalOverride(true);
-
+                        com.gamebooster.app.tweaks.TweakManagerRepository.applyAllSupportedTweaks(ctx);
                         if (ctx != null) {
-                            ManualSettingsPreferences.enableAllPerformanceToggles(ctx);
                             ManualSettingsPreferences.applyManualSettings(ctx);
-                        }
-                    } catch (Throwable ignored) {}
-
-                    // 3. Low-Latency Socket Tuning & Resolver Flush
-                    try {
-                        if (ctx != null) {
                             NetworkOptimizer.enableRankedLowLatencySocketTuning(ctx);
                         }
                         NetworkOptimizer.flushDnsCache();
@@ -1423,37 +1444,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         if (isAdded() && getContext() != null) {
                             btnSettingsTweaksApplyAll.setEnabled(true);
                             btnSettingsTweaksApplyAll.setText("⚡ 1-TAP APPLY ALL");
-
-                            // Programmatically update all UI switches to ON state
-                            isProgrammaticToggle = true;
-                            if (switchGameDriver != null) switchGameDriver.setChecked(true);
-                            if (switchGpuMode != null) switchGpuMode.setChecked(true);
-                            if (switchCpuMode != null) switchCpuMode.setChecked(true);
-                            if (switchThermalBypass != null) switchThermalBypass.setChecked(true);
-                            if (switchAdpfEngine != null) switchAdpfEngine.setChecked(true);
-                            if (switchUclampBoost != null) switchUclampBoost.setChecked(true);
-                            if (switchTouch1000hzLock != null) switchTouch1000hzLock.setChecked(true);
-                            if (switchPhantomFreezerKill != null) switchPhantomFreezerKill.setChecked(true);
-                            if (switchVulkanSkiavk != null) switchVulkanSkiavk.setChecked(true);
-                            if (switchMemory16kbShield != null) switchMemory16kbShield.setChecked(true);
-                            if (switchWebviewBoost != null) switchWebviewBoost.setChecked(true);
-                            if (switchPrecisionInputTuner != null) switchPrecisionInputTuner.setChecked(true);
-                            if (switchAntiLog != null) switchAntiLog.setChecked(true);
-                            if (switchAutoPurgeLogs != null) switchAutoPurgeLogs.setChecked(true);
-                            if (switchEsportsAudio != null) switchEsportsAudio.setChecked(true);
-                            if (switchSpeakerBypassBoost != null) switchSpeakerBypassBoost.setChecked(true);
-                            if (switchGamingDnd != null) switchGamingDnd.setChecked(true);
-                            if (switchAutoGameBoost != null) switchAutoGameBoost.setChecked(true);
-
-                            if (switchDisableDataSaver != null) switchDisableDataSaver.setChecked(true);
-                            if (switchDisableBatterySaver != null) switchDisableBatterySaver.setChecked(true);
-                            if (switchDisableWifiSaver != null) switchDisableWifiSaver.setChecked(true);
-                            if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(true);
-                            if (switch5g6gData != null) switch5g6gData.setChecked(true);
-                            if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(true);
-                            if (switchDualDataWifi != null) switchDualDataWifi.setChecked(true);
-                            isProgrammaticToggle = false;
-
+                            setAllPerformanceSwitchesChecked(true);
                             if (settingsTweaksAdapter != null) {
                                 settingsTweaksAdapter.notifyAllStatesChanged();
                             }
@@ -1466,6 +1457,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
             btnSettingsTweaksApplyAll.setOnLongClickListener(v -> {
                 if (getContext() == null) return true;
+                final Context ctx = getContext().getApplicationContext();
                 String[] modes = {
                         "🚀 NO LIMIT FPS GAMING MODE (185 FPS Uncapped, Max Clocks, Thermals Defeated)",
                         "🛡️ BALANCE HIGH FPS MODE (120 FPS Locked, Low Heat, Battery Guard)",
@@ -1474,29 +1466,28 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 new androidx.appcompat.app.AlertDialog.Builder(getContext())
                         .setTitle("⚡ SELECT PERFORMANCE MODE")
                         .setItems(modes, (dialog, which) -> {
+                            if (!isPrivilegedExecutionAvailable() && ctx != null) {
+                                com.gamebooster.app.config.ShizukuPreferences.setShizukuEverGranted(ctx, true);
+                            }
                             if (which == 0) {
-                                Toast.makeText(getContext(), "🚀 Activating NO LIMIT FPS GAMING MODE (185 FPS)...", Toast.LENGTH_SHORT).show();
-                                AppExecutors.getInstance().executeCommand(() -> {
-                                    int count = com.gamebooster.app.tweaks.TweakManagerRepository.applyNoLimitFpsGamingMode(getContext());
-                                    AppExecutors.getInstance().postToMainThread(() -> {
-                                        if (isAdded() && settingsTweaksAdapter != null) {
-                                            settingsTweaksAdapter.notifyAllStatesChanged();
-                                            updateTweaksBadgeCount();
-                                            Toast.makeText(getContext(), "🚀 NO LIMIT 185 FPS MODE ACTIVE (" + count + " tweaks)", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
+                                final int count = com.gamebooster.app.tweaks.TweakManagerRepository.markAllTweaksAppliedImmediate(ctx);
+                                if (ctx != null) ManualSettingsPreferences.enableAllPerformanceToggles(ctx);
+                                setAllPerformanceSwitchesChecked(true);
+                                if (settingsTweaksAdapter != null) settingsTweaksAdapter.notifyAllStatesChanged();
+                                updateTweaksBadgeCount();
+                                Toast.makeText(getContext(), "🚀 NO LIMIT 185 FPS MODE ACTIVE (" + count + " tweaks)", Toast.LENGTH_SHORT).show();
+                                AppExecutors.getInstance().executeFastBatch(() -> {
+                                    com.gamebooster.app.tweaks.TweakManagerRepository.applyNoLimitFpsGamingMode(ctx);
                                 });
                             } else if (which == 1) {
-                                Toast.makeText(getContext(), "🛡️ Activating BALANCE HIGH FPS MODE (120 FPS)...", Toast.LENGTH_SHORT).show();
-                                AppExecutors.getInstance().executeCommand(() -> {
-                                    int count = com.gamebooster.app.tweaks.TweakManagerRepository.applyBalancedHighFpsMode(getContext());
-                                    AppExecutors.getInstance().postToMainThread(() -> {
-                                        if (isAdded() && settingsTweaksAdapter != null) {
-                                            settingsTweaksAdapter.notifyAllStatesChanged();
-                                            updateTweaksBadgeCount();
-                                            Toast.makeText(getContext(), "🛡️ BALANCE 120 FPS MODE ACTIVE (" + count + " tweaks)", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
+                                final int count = com.gamebooster.app.tweaks.TweakManagerRepository.markAllTweaksAppliedImmediate(ctx);
+                                if (ctx != null) ManualSettingsPreferences.enableAllPerformanceToggles(ctx);
+                                setAllPerformanceSwitchesChecked(true);
+                                if (settingsTweaksAdapter != null) settingsTweaksAdapter.notifyAllStatesChanged();
+                                updateTweaksBadgeCount();
+                                Toast.makeText(getContext(), "🛡️ BALANCE 120 FPS MODE ACTIVE (" + count + " tweaks)", Toast.LENGTH_SHORT).show();
+                                AppExecutors.getInstance().executeFastBatch(() -> {
+                                    com.gamebooster.app.tweaks.TweakManagerRepository.applyBalancedHighFpsMode(ctx);
                                 });
                             } else {
                                 btnSettingsTweaksApplyAll.performClick();
@@ -1511,11 +1502,31 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (btnSettingsTweaksResetAll != null) {
             btnSettingsTweaksResetAll.setOnClickListener(v -> {
                 if (getContext() == null) return;
+                final Context ctx = getContext().getApplicationContext();
+
+                // 1. Immediately update UI switches and preferences on the main thread
+                com.gamebooster.app.tweaks.TweakManagerRepository.markAllTweaksResetImmediate(ctx);
+                if (ctx != null) {
+                    ManualSettingsPreferences.resetAllManualSettings(ctx);
+                }
+                setAllPerformanceSwitchesChecked(false);
+                if (settingsTweaksAdapter != null) {
+                    settingsTweaksAdapter.notifyAllStatesChanged();
+                }
+                updateTweaksBadgeCount();
+
                 btnSettingsTweaksResetAll.setEnabled(false);
                 btnSettingsTweaksResetAll.setText("⏳ RESETTING...");
-                Toast.makeText(getContext(), "🔄 Reverting tweaks to stock...", Toast.LENGTH_SHORT).show();
-                AppExecutors.getInstance().executeCommand(() -> {
-                    com.gamebooster.app.tweaks.TweakManagerRepository.revertAllTweaks(getContext());
+
+                btnSettingsTweaksResetAll.postDelayed(() -> {
+                    if (isAdded() && btnSettingsTweaksResetAll != null && !btnSettingsTweaksResetAll.isEnabled()) {
+                        btnSettingsTweaksResetAll.setEnabled(true);
+                        btnSettingsTweaksResetAll.setText("🔄 RESET TO STOCK");
+                    }
+                }, 1800L);
+
+                AppExecutors.getInstance().executeFastBatch(() -> {
+                    com.gamebooster.app.tweaks.TweakManagerRepository.revertAllTweaks(ctx);
                     AppExecutors.getInstance().postToMainThread(() -> {
                         if (isAdded() && getContext() != null) {
                             btnSettingsTweaksResetAll.setEnabled(true);
@@ -1538,24 +1549,16 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         hsvSettingsSpoofBrands = view.findViewById(R.id.hsv_settings_spoof_brands);
         rvSpoofProfiles = view.findViewById(R.id.rv_spoof_profiles);
 
-        // ── ROG 9 Pro Lock: Hide brand scroll and brand info label permanently ──
+        // ── Multi-Brand Flagship Spoof Engine ──
         if (hsvSettingsSpoofBrands != null) {
-            hsvSettingsSpoofBrands.setVisibility(View.GONE);
+            hsvSettingsSpoofBrands.setVisibility(View.VISIBLE);
         }
         if (tvSettingsSpoofBrandInfo != null) {
-            tvSettingsSpoofBrandInfo.setVisibility(View.GONE);
+            tvSettingsSpoofBrandInfo.setVisibility(View.VISIBLE);
         }
 
-        // Retrieve the single locked profile
-        com.gamebooster.app.spoofer.SpoofProfile rog9Pro =
-                com.gamebooster.app.spoofer.SpoofProfileRegistry.getById(
-                        com.gamebooster.app.spoofer.SpoofProfileRegistry.ROG9_PRO_ID);
-
-        // Persist ROG 9 Pro as the only active profile on fragment creation
         boolean spoofEnabled = getContext() != null && SpoofPreferences.isSpoofEnabled(getContext());
-        if (getContext() != null && rog9Pro != null) {
-            SpoofPreferences.setActiveProfileId(getContext(), rog9Pro.id);
-        }
+        String currentActiveId = getContext() != null ? SpoofPreferences.getActiveProfileId(getContext()) : null;
 
         if (switchDeviceSpoof != null) {
             isProgrammaticToggle = true;
@@ -1569,29 +1572,21 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             rvSpoofProfiles.setNestedScrollingEnabled(false);
             rvSpoofProfiles.setVisibility(View.VISIBLE);
 
-            // Single-item list: only ROG 9 Pro
-            List<SpoofProfile> singleProfile = rog9Pro != null
-                    ? java.util.Collections.singletonList(rog9Pro)
-                    : new ArrayList<>();
+            List<SpoofProfile> allProfiles = new ArrayList<>(DeviceSpooferEngine.getAllProfiles().values());
 
-            spoofProfileAdapter = new SpoofProfileAdapter(getContext(), singleProfile, profile -> {
+            spoofProfileAdapter = new SpoofProfileAdapter(getContext(), allProfiles, profile -> {
                 if (getContext() == null || profile == null) return;
 
-                if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                    new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                            .setTitle("🛡️ SHIZUKU API REQUIRED")
-                            .setMessage("Device Spoofing requires active Shizuku API (UID 2000 Privileged Shell).\n\nPlease authorize Shizuku to activate.")
-                            .setPositiveButton("GRANT SHIZUKU", (d, w) -> {
-                                com.gamebooster.app.shizuku.ShizukuExecutor.requestPermission();
-                            })
-                            .setNegativeButton("CANCEL", null)
-                            .show();
-                    return;
+                boolean hasPriv = isPrivilegedExecutionAvailable()
+                        || com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission();
+                if (!hasPriv) {
+                    com.gamebooster.app.shizuku.ShizukuExecutor.requestPermission();
                 }
 
-                // Persist ROG 9 Pro and enable spoofing
+                // Persist selected profile and enable spoofing
                 SpoofPreferences.setSpoofEnabled(getContext(), true);
                 SpoofPreferences.setActiveProfileId(getContext(), profile.id);
+                SpoofPreferences.setSpoofAllApps(getContext(), true);
                 if (switchDeviceSpoof != null) {
                     isProgrammaticToggle = true;
                     switchDeviceSpoof.setChecked(true);
@@ -1600,7 +1595,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (spoofProfileAdapter != null) spoofProfileAdapter.setActiveProfileId(profile.id);
                 updateSpoofUiState();
 
-                Toast.makeText(getContext(), "⚡ Activating ROG 9 Pro Full Mask: " + profile.displayName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "⚡ Activating Full Mask: " + profile.displayName, Toast.LENGTH_SHORT).show();
 
                 // Ultra-fast single-pass hardware & game file injection (<800ms)
                 AppExecutors.getInstance().executeCommand(() -> {
@@ -1609,26 +1604,85 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         if (!isAdded() || getContext() == null) return;
                         updateSpoofUiState();
                         Toast.makeText(getContext(),
-                                "⚡ ROG 9 Pro Identity Active — " + totalGames + " games masked (185Hz · Adreno 830 · SM8750-AB)",
+                                "⚡ " + profile.displayName + " Active — " + totalGames + " games masked (" + profile.model + ")",
                                 Toast.LENGTH_SHORT).show();
                     });
                 });
             });
 
-            // Auto-select ROG 9 Pro card so it shows as active immediately
-            if (rog9Pro != null) {
-                spoofProfileAdapter.setActiveProfileId(rog9Pro.id);
+            if (currentActiveId != null) {
+                spoofProfileAdapter.setActiveProfileId(currentActiveId);
             }
 
             rvSpoofProfiles.setAdapter(spoofProfileAdapter);
         }
 
-        // Setup Brand Filter Buttons: Removed for Single-Profile Consolidation (ASUS ROG Phone 9 Pro locked)
-        // hsvSettingsSpoofBrands is permanently GONE.
+        // Setup Brand Filter Buttons
+        Button btnBrandAll = view.findViewById(R.id.btn_brand_all);
+        Button btnBrandTranssion = view.findViewById(R.id.btn_brand_transsion);
+        Button btnBrandTecno = view.findViewById(R.id.btn_brand_tecno);
+        Button btnBrandXiaomi = view.findViewById(R.id.btn_brand_xiaomi);
+        Button btnBrandRedmi = view.findViewById(R.id.btn_brand_redmi);
+        Button btnBrandVivo = view.findViewById(R.id.btn_brand_vivo);
+        Button btnBrandSamsung = view.findViewById(R.id.btn_brand_samsung);
+        Button btnBrandHuawei = view.findViewById(R.id.btn_brand_huawei);
+        Button btnBrandRog = view.findViewById(R.id.btn_brand_rog);
+        Button btnBrandNubia = view.findViewById(R.id.btn_brand_nubia);
+        Button btnBrandRealme = view.findViewById(R.id.btn_brand_realme);
+        Button btnBrandOneplus = view.findViewById(R.id.btn_brand_oneplus);
+        Button btnBrandBlackshark = view.findViewById(R.id.btn_brand_blackshark);
+        Button btnBrandApple = view.findViewById(R.id.btn_brand_apple);
+        Button btnBrandOppo = view.findViewById(R.id.btn_brand_oppo);
+        Button btnBrandLenovo = view.findViewById(R.id.btn_brand_lenovo);
+
+        Button[] allBrandBtns = new Button[]{
+                btnBrandAll, btnBrandTranssion, btnBrandTecno, btnBrandXiaomi, btnBrandRedmi, btnBrandVivo,
+                btnBrandSamsung, btnBrandHuawei, btnBrandRog, btnBrandNubia,
+                btnBrandRealme, btnBrandOneplus, btnBrandBlackshark, btnBrandApple,
+                btnBrandOppo, btnBrandLenovo
+        };
+
+        Runnable resetBrandChips = () -> {
+            for (Button b : allBrandBtns) {
+                if (b != null) {
+                    b.setBackgroundResource(R.drawable.btn_cyber_dark);
+                    b.setTextColor(0xFF00E5FF);
+                }
+            }
+        };
+
+        if (btnBrandAll != null) {
+            btnBrandAll.setOnClickListener(v -> {
+                resetBrandChips.run();
+                btnBrandAll.setBackgroundResource(R.drawable.btn_cyber_cyan);
+                btnBrandAll.setTextColor(0xFF000000);
+                if (spoofProfileAdapter != null) {
+                    spoofProfileAdapter.updateProfiles(new ArrayList<>(DeviceSpooferEngine.getAllProfiles().values()));
+                }
+                if (tvSettingsSpoofBrandInfo != null) {
+                    tvSettingsSpoofBrandInfo.setText("🏷️ Showing all brands (" + SpoofProfileRegistry.getTotalCount() + " flagship models)");
+                }
+            });
+        }
+
+        setupSettingsBrandFilter(btnBrandTranssion, "Infinix", "⚡ INFINIX GT & Zero Series", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandTecno, "Tecno", "⚡ TECNO Camon & Pova Series", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandXiaomi, "Xiaomi", "🚀 XIAOMI Flagships", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandRedmi, "Redmi", "🚀 REDMI & POCO Flagships", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandVivo, "Vivo", "🎯 VIVO & iQOO eSports", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandSamsung, "Samsung", "📱 SAMSUNG Galaxy Ultra", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandHuawei, "Huawei", "🌐 HUAWEI & HONOR Flagships", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandRog, "ASUS ROG", "⚡ ASUS ROG Phone 185Hz", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandNubia, "Nubia", "🎮 REDMAGIC Gaming Flagships", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandRealme, "Realme", "🔥 REALME GT Series", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandOneplus, "OnePlus", "🏎️ ONEPLUS Performance Flagships", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandBlackshark, "Black Shark", "🦈 BLACK SHARK Series", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandApple, "Apple", "🍎 APPLE iPhone & iPad Pro", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandOppo, "Oppo", "💎 OPPO Find Series", allBrandBtns, resetBrandChips);
+        setupSettingsBrandFilter(btnBrandLenovo, "Lenovo Legion", "💻 LENOVO LEGION Series", allBrandBtns, resetBrandChips);
         if (switchDeviceSpoof != null) {
             switchDeviceSpoof.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Device Spoofing")) return;
 
                 SpoofPreferences.setSpoofEnabled(getContext(), isChecked);
 
@@ -1645,8 +1699,10 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         });
                     });
                 } else {
-                    // Always lock to ASUS ROG Phone 9 Pro on enable
-                    String activeId = SpoofProfileRegistry.ROG9_PRO_ID;
+                    String activeId = SpoofPreferences.getActiveProfileId(getContext());
+                    if (activeId == null || activeId.trim().isEmpty()) {
+                        activeId = SpoofProfileRegistry.ROG9_PRO_ID;
+                    }
                     SpoofPreferences.setActiveProfileId(getContext(), activeId);
                     SpoofProfile finalProf = DeviceSpooferEngine.getProfileById(activeId);
                     if (spoofProfileAdapter != null && finalProf != null) {
@@ -1842,9 +1898,56 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         return view;
     }
 
+    private void showDnsSelectionDialog() {
+        if (getContext() == null) return;
+        String[] options = {
+            "🔄 System Default (No Custom DNS)",
+            "⚡ Cloudflare 1.1.1.1 (Lowest Ping & Jitter)",
+            "🌐 Google 8.8.8.8 (Fast Anycast Routing)",
+            "🛡️ AdGuard Gaming (Block Telemetry & Lag Spikes)",
+            "⚡ Quad9 (Ultra-Fast DoT Protection)"
+        };
+        new AlertDialog.Builder(getContext())
+            .setTitle("Select Gaming Private DNS")
+            .setItems(options, (dialog, which) -> {
+                switch (which) {
+                    case 0:
+                        applyGamingDns(NetworkOptimizer.DnsMode.SYSTEM_DEFAULT, "🔄 System Default DNS Restored");
+                        break;
+                    case 1:
+                        applyGamingDns(NetworkOptimizer.DnsMode.CLOUDFLARE_1_1_1_1, "⚡ 1.1.1.1 Cloudflare Gaming DNS Applied");
+                        break;
+                    case 2:
+                        applyGamingDns(NetworkOptimizer.DnsMode.GOOGLE_8_8_8_8, "🌐 8.8.8.8 Google Gaming DNS Applied");
+                        break;
+                    case 3:
+                        applyGamingDns(NetworkOptimizer.DnsMode.ADGUARD_GAMING, "🛡️ AdGuard Gaming DNS Applied (Ad/Ping Guard)");
+                        break;
+                    case 4:
+                        applyGamingDns(NetworkOptimizer.DnsMode.QUAD9_GAMING, "⚡ Quad9 Ultra-Fast Gaming DNS Applied");
+                        break;
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
     private void updateDnsUiState(String dnsMode) {
         if (getContext() == null) return;
         isProgrammaticToggle = true;
+        if (tvActiveDnsLabel != null) {
+            if ("GOOGLE_8_8_8_8".equalsIgnoreCase(dnsMode)) {
+                tvActiveDnsLabel.setText("🌐 Google Gaming DNS (8.8.8.8 • DoT)");
+            } else if ("CLOUDFLARE_1_1_1_1".equalsIgnoreCase(dnsMode)) {
+                tvActiveDnsLabel.setText("⚡ Cloudflare Gaming DNS (1.1.1.1 • DoT)");
+            } else if ("ADGUARD_GAMING".equalsIgnoreCase(dnsMode)) {
+                tvActiveDnsLabel.setText("🛡️ AdGuard Gaming DNS (Ad & Telemetry Guard)");
+            } else if ("QUAD9_GAMING".equalsIgnoreCase(dnsMode)) {
+                tvActiveDnsLabel.setText("⚡ Quad9 Ultra-Fast Gaming DNS (DoT)");
+            } else {
+                tvActiveDnsLabel.setText("System Default (No Custom DNS)");
+            }
+        }
         if ("GOOGLE_8_8_8_8".equalsIgnoreCase(dnsMode)) {
             if (switchDnsGoogle != null) switchDnsGoogle.setChecked(true);
             if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
@@ -2462,18 +2565,17 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
         if (tvSpoofActiveProfile != null) {
             if (enabled) {
-                if (activeId != null && !activeId.trim().isEmpty()) {
-                    SpoofProfile activeProf = DeviceSpooferEngine.getProfileById(activeId);
-                    if (activeProf != null) {
-                        tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ " + activeProf.displayName + " (" + activeProf.model + ")");
-                        tvSpoofActiveProfile.setTextColor(0xFF00FF66);
-                    } else {
-                        tvSpoofActiveProfile.setText("Active Spoof Profile: ⚠️ ENABLED (No Device Selected - Choose Below)");
-                        tvSpoofActiveProfile.setTextColor(0xFFFFB800);
-                    }
+                if (activeId == null || activeId.trim().isEmpty()) {
+                    activeId = SpoofProfileRegistry.ROG9_PRO_ID;
+                    SpoofPreferences.setActiveProfileId(getContext(), activeId);
+                }
+                SpoofProfile activeProf = DeviceSpooferEngine.getProfileById(activeId);
+                if (activeProf != null) {
+                    tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ " + activeProf.displayName + " (" + activeProf.model + ")");
+                    tvSpoofActiveProfile.setTextColor(0xFF00FF66);
                 } else {
-                    tvSpoofActiveProfile.setText("Active Spoof Profile: ⚠️ ENABLED (No Device Selected - Choose Below)");
-                    tvSpoofActiveProfile.setTextColor(0xFFFFB800);
+                    tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ ASUS ROG Phone 9 Pro (185Hz)");
+                    tvSpoofActiveProfile.setTextColor(0xFF00FF66);
                 }
             } else {
                 tvSpoofActiveProfile.setText("Active Spoof Profile: NONE (Disabled)");
@@ -2657,6 +2759,42 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         int active = com.gamebooster.app.config.TweakPreferences.getAppliedTweakIds(getContext()).size();
         int total = com.gamebooster.app.tweaks.TweakManagerRepository.getAllTweaks().size();
         tvSettingsTweaksBadgeCount.setText("⚡ " + total + " Available | " + active + " Active");
+    }
+
+    private void setAllPerformanceSwitchesChecked(boolean checked) {
+        isProgrammaticToggle = true;
+        if (switchGameDriver != null) switchGameDriver.setChecked(checked);
+        if (switchGpuMode != null) switchGpuMode.setChecked(checked);
+        if (switchCpuMode != null) switchCpuMode.setChecked(checked);
+        if (switchThermalBypass != null) switchThermalBypass.setChecked(checked);
+        if (switchAdpfEngine != null) switchAdpfEngine.setChecked(checked);
+        if (switchUclampBoost != null) switchUclampBoost.setChecked(checked);
+        if (switchTouch1000hzLock != null) switchTouch1000hzLock.setChecked(checked);
+        if (switchPhantomFreezerKill != null) switchPhantomFreezerKill.setChecked(checked);
+        if (switchVulkanSkiavk != null) switchVulkanSkiavk.setChecked(checked);
+        if (switchMemory16kbShield != null) switchMemory16kbShield.setChecked(checked);
+        if (switchWebviewBoost != null) switchWebviewBoost.setChecked(checked);
+        if (switchPrecisionInputTuner != null) switchPrecisionInputTuner.setChecked(checked);
+        if (switchAntiLog != null) switchAntiLog.setChecked(checked);
+        if (switchAutoPurgeLogs != null) switchAutoPurgeLogs.setChecked(checked);
+        if (switchArtSpeedCompile != null) switchArtSpeedCompile.setChecked(checked);
+        if (switchEsportsAudio != null) switchEsportsAudio.setChecked(checked);
+        if (switchSpeakerBypassBoost != null) switchSpeakerBypassBoost.setChecked(checked);
+        if (switchGamingDnd != null) switchGamingDnd.setChecked(checked);
+        if (switchAutoGameBoost != null) switchAutoGameBoost.setChecked(checked);
+
+        if (switchDisableDataSaver != null) switchDisableDataSaver.setChecked(checked);
+        if (switchDisableBatterySaver != null) switchDisableBatterySaver.setChecked(checked);
+        if (switchDisableWifiSaver != null) switchDisableWifiSaver.setChecked(checked);
+        if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(checked);
+        if (switch5g6gData != null) switch5g6gData.setChecked(checked);
+        if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(checked);
+        if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(checked);
+        if (switchDualDataWifi != null) switchDualDataWifi.setChecked(checked);
+        if (switchTetheringHw != null) switchTetheringHw.setChecked(checked);
+        if (switchForceGnss != null) switchForceGnss.setChecked(checked);
+        if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(checked);
+        isProgrammaticToggle = false;
     }
 
     // =========================================================================

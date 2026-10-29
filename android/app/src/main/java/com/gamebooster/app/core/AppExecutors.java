@@ -15,6 +15,7 @@ public class AppExecutors {
     private static final AppExecutors INSTANCE = new AppExecutors();
 
     private final ExecutorService commandIO;
+    private final ExecutorService fastBatchIO;
     private final ExecutorService settingsIO;
     private final ExecutorService scanIO;
     private final ScheduledExecutorService scheduledIO;
@@ -22,17 +23,25 @@ public class AppExecutors {
 
     private AppExecutors() {
         this.commandIO = new java.util.concurrent.ThreadPoolExecutor(
-                2, 6, 30L, TimeUnit.SECONDS,
+                6, 12, 30L, TimeUnit.SECONDS,
                 new java.util.concurrent.LinkedBlockingQueue<>(),
                 r -> {
                     Thread t = new Thread(() -> {
-                        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT);
                         r.run();
                     }, "GameBooster-CommandIO");
                     t.setDaemon(true);
                     return t;
                 }
         );
+        this.fastBatchIO = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(() -> {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY);
+                r.run();
+            }, "GameBooster-FastBatchIO");
+            t.setDaemon(true);
+            return t;
+        });
         this.settingsIO = Executors.newFixedThreadPool(4, r -> {
             Thread t = new Thread(() -> {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
@@ -92,6 +101,17 @@ public class AppExecutors {
                 runnable.run();
             } catch (Throwable t) {
                 Log.e(TAG, "Command execution error: " + t.getMessage(), t);
+            }
+        });
+    }
+
+    public void executeFastBatch(Runnable runnable) {
+        if (runnable == null) return;
+        fastBatchIO.execute(() -> {
+            try {
+                runnable.run();
+            } catch (Throwable t) {
+                Log.e(TAG, "FastBatch execution error: " + t.getMessage(), t);
             }
         });
     }

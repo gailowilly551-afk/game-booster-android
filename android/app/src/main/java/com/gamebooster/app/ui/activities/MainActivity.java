@@ -144,12 +144,17 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
                     ShizukuExecutor.grantAppPermissionsViaShizuku(getApplicationContext());
                     com.gamebooster.app.shizuku.ShizukuFileManager.grantAllStoragePermissions(getApplicationContext());
 
-                    // Enforce Device & Hardware Spoofing across registered games ONLY IF enabled by user
+                    // Enforce Device & Hardware Spoofing across registered games
                     try {
-                        if (com.gamebooster.app.spoofer.SpoofPreferences.isSpoofEnabled(getApplicationContext())) {
-                            com.gamebooster.app.spoofer.DeviceSpooferEngine.applyActiveProfileToAllGames(getApplicationContext());
-                            com.gamebooster.app.spoofer.HardwareMaskEngine.maskAllInstalledApplications(getApplicationContext());
+                        if (!com.gamebooster.app.spoofer.SpoofPreferences.isSpoofEnabled(getApplicationContext())) {
+                            com.gamebooster.app.spoofer.SpoofPreferences.setSpoofEnabled(getApplicationContext(), true);
                         }
+                        if (com.gamebooster.app.spoofer.SpoofPreferences.getActiveProfileId(getApplicationContext()) == null) {
+                            com.gamebooster.app.spoofer.SpoofProfile def = com.gamebooster.app.spoofer.DeviceSpooferEngine.getDefaultProfile();
+                            com.gamebooster.app.spoofer.SpoofPreferences.setActiveProfileId(getApplicationContext(), def != null ? def.id : com.gamebooster.app.spoofer.SpoofProfileRegistry.ROG9_PRO_ID);
+                        }
+                        com.gamebooster.app.spoofer.DeviceSpooferEngine.applyActiveProfileToAllGames(getApplicationContext());
+                        com.gamebooster.app.spoofer.HardwareMaskEngine.maskAllInstalledApplications(getApplicationContext());
                     } catch (Throwable t) {
                         Log.w("MainActivity", "Startup device spoofing warning: " + t.getMessage());
                     }

@@ -81,12 +81,16 @@ public final class MlbbHardwareMasker {
                 }
             }
 
-            // 5. Deploy directly to Dragon2017 Document folders
+            // 5. Deploy directly to Dragon2017 and dragon2017 Document folders
             String[] docRoots = {
                 "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document",
                 "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/Document/android",
+                "/storage/emulated/0/Android/data/" + pkg + "/files/Dragon2017/assets/Document",
+                "/storage/emulated/0/Android/data/" + pkg + "/files/Dragon2017/assets/Document/android",
                 "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document",
-                "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android"
+                "/sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android",
+                "/sdcard/Android/data/" + pkg + "/files/Dragon2017/assets/Document",
+                "/sdcard/Android/data/" + pkg + "/files/Dragon2017/assets/Document/android"
             };
 
             for (String docRoot : docRoots) {
@@ -102,26 +106,134 @@ public final class MlbbHardwareMasker {
                 }
             }
 
-            // 6. Elevated Shizuku shell write fallback
+            // 5b. Deploy into dynamically discovered MLBB mini-patch slots so in-game updates never bypass hardware spoofing
+            try {
+                List<String> miniPatchSlots = MlbbDroneViewPatcher.discoverActiveMiniPatchSlots(pkg);
+                for (String slot : miniPatchSlots) {
+                    String slotDoc = slot + "/assets/Document";
+                    String slotDocAndroid = slot + "/assets/Document/android";
+                    ShizukuFileManager.ensureParentDirectory(slotDocAndroid + "/DeviceHardware.ini");
+                    ShizukuFileManager.writeFile(slotDoc + "/DeviceHardware.ini", mlbbIni, "666");
+                    ShizukuFileManager.writeFile(slotDocAndroid + "/DeviceHardware.ini", mlbbIni, "666");
+                    ShizukuFileManager.writeFile(slotDoc + "/QualityConfig.json", jsonProfile, "666");
+                    ShizukuFileManager.writeFile(slotDocAndroid + "/QualityConfig.json", jsonProfile, "666");
+                    ShizukuFileManager.writeFile(slotDoc + "/GraphicSetting.json", jsonProfile, "666");
+                    ShizukuFileManager.writeFile(slotDocAndroid + "/GraphicSetting.json", jsonProfile, "666");
+                    ShizukuFileManager.writeFile(slotDoc + "/HighFPSConfig.json", jsonProfile, "666");
+                    ShizukuFileManager.writeFile(slotDocAndroid + "/HighFPSConfig.json", jsonProfile, "666");
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "miniPatchSlots write warning: " + t.getMessage());
+            }
+
+            // 6. Elevated Shizuku shell write fallback across both case variants
             try {
                 byte[] iniBytes = mlbbIni.getBytes(StandardCharsets.UTF_8);
                 String iniB64 = Base64.encodeToString(iniBytes, Base64.NO_WRAP).replace("\n", "").replace("\r", "");
                 byte[] jsonBytes = jsonProfile.getBytes(StandardCharsets.UTF_8);
                 String jsonB64 = Base64.encodeToString(jsonBytes, Base64.NO_WRAP).replace("\n", "").replace("\r", "");
 
-                String shizukuFallbackCmd =
-                    "mkdir -p /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android 2>/dev/null; " +
-                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/DeviceHardware.ini 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/DeviceHardware.ini 2>/dev/null; " +
-                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/DeviceHardware.ini 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/android/DeviceHardware.ini 2>/dev/null; " +
-                    "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/GraphicSetting.json 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/GraphicSetting.json 2>/dev/null; " +
-                    "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/HighFPSConfig.json 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/HighFPSConfig.json 2>/dev/null; " +
-                    "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/ResolutionConfig.json 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/dragon2017/assets/Document/ResolutionConfig.json 2>/dev/null";
-                ShizukuExecutor.executeShizukuCommand(shizukuFallbackCmd);
+                String prefsInt =
+                    "HighFPSMode:3\n" +
+                    "high_fps_mode:3\n" +
+                    "HighFPSEnable:1\n" +
+                    "FrameRateLevel:3\n" +
+                    "__FrameRateLevel__:3\n" +
+                    "__MaxFrameRateLevel__:3\n" +
+                    "fps_level:3\n" +
+                    "UltraFrameRate:1\n" +
+                    "SuperFrameRate:1\n" +
+                    "HighFrameRate:1\n" +
+                    "Unlock185Hz:1\n" +
+                    "Unlock165Hz:1\n" +
+                    "Unlock144Hz:1\n" +
+                    "Unlock120Hz:1\n" +
+                    "Unlock90Hz:1\n" +
+                    "FPS:" + targetFps + "\n" +
+                    "MaxFPS:" + targetFps + "\n" +
+                    "TargetFPS:" + targetFps + "\n" +
+                    "FrameRateLimit:" + targetFps + "\n" +
+                    "QualitySetting:3\n" +
+                    "GraphicLevel:3\n" +
+                    "QualityLevel:3\n" +
+                    "GraphicsQuality:3\n" +
+                    "ShadowQuality:2\n" +
+                    "HDMode:1\n" +
+                    "CreepOutline:1\n";
+                String prefsB64 = Base64.encodeToString(prefsInt.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP).replace("\n", "").replace("\r", "");
+
+                StringBuilder shizukuCmd = new StringBuilder();
+                String[] basePrefixes = {
+                    "/storage/emulated/0/Android/data/" + pkg + "/files",
+                    "/sdcard/Android/data/" + pkg + "/files"
+                };
+
+                for (String base : basePrefixes) {
+                    for (String dName : new String[]{"dragon2017", "Dragon2017"}) {
+                        String docAnd = base + "/" + dName + "/assets/Document/android";
+                        String doc = base + "/" + dName + "/assets/Document";
+                        String ast = base + "/" + dName + "/assets";
+
+                        shizukuCmd.append("mkdir -p '").append(docAnd).append("' '").append(doc).append("' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(iniB64).append("' | base64 -d > '").append(doc).append("/DeviceHardware.ini' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(doc).append("/DeviceHardware.ini' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(iniB64).append("' | base64 -d > '").append(docAnd).append("/DeviceHardware.ini' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(docAnd).append("/DeviceHardware.ini' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(doc).append("/GraphicSetting.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(doc).append("/GraphicSetting.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(docAnd).append("/GraphicSetting.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(docAnd).append("/GraphicSetting.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(doc).append("/HighFPSConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(doc).append("/HighFPSConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(docAnd).append("/HighFPSConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(docAnd).append("/HighFPSConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(doc).append("/QualityConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(doc).append("/QualityConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(jsonB64).append("' | base64 -d > '").append(docAnd).append("/QualityConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(docAnd).append("/QualityConfig.json' 2>/dev/null; ");
+                        shizukuCmd.append("echo '").append(prefsB64).append("' | base64 -d > '").append(ast).append("/prefs_int' 2>/dev/null; ");
+                        shizukuCmd.append("chmod 666 '").append(ast).append("/prefs_int' 2>/dev/null; ");
+                    }
+                }
+
+                // Patch playerprefs XML in both /data/data and /sdcard/Android/data
+                String[] prefFiles = {
+                    "/data/data/" + pkg + "/shared_prefs/" + pkg + ".v2.playerprefs.xml",
+                    "/data/data/" + pkg + "/shared_prefs/" + pkg + ".xml",
+                    "/storage/emulated/0/Android/data/" + pkg + "/files/shared_prefs/" + pkg + ".v2.playerprefs.xml",
+                    "/sdcard/Android/data/" + pkg + "/files/shared_prefs/" + pkg + ".v2.playerprefs.xml"
+                };
+                String[] mlbbXmlKeys = {
+                    "<string name=\"SystemInfo_deviceModel\">" + profile.model + "</string>",
+                    "<string name=\"SystemInfo_graphicsDeviceName\">" + profile.glRenderer + "</string>",
+                    "<string name=\"SystemInfo_graphicsDeviceVendor\">" + profile.glVendor + "</string>",
+                    "<string name=\"SystemInfo_processorType\">" + profile.socModel + "</string>",
+                    "<string name=\"DeviceModel\">" + profile.model + "</string>",
+                    "<int name=\"HighFpsMode\" value=\"3\" />",
+                    "<int name=\"HighFPSMode\" value=\"3\" />",
+                    "<int name=\"high_fps_mode\" value=\"3\" />",
+                    "<int name=\"FrameRateLevel\" value=\"3\" />",
+                    "<int name=\"__FrameRateLevel__\" value=\"3\" />",
+                    "<int name=\"__MaxFrameRateLevel__\" value=\"3\" />",
+                    "<int name=\"FPS\" value=\"" + targetFps + "\" />",
+                    "<int name=\"TargetFrameRate\" value=\"" + targetFps + "\" />",
+                    "<int name=\"GraphicLevel\" value=\"3\" />",
+                    "<int name=\"QualitySetting\" value=\"3\" />"
+                };
+                for (String pref : prefFiles) {
+                    try {
+                        com.gamebooster.app.config.ConfigFileHelper.patchKeys(pref, mlbbXmlKeys, "<map>");
+                    } catch (Throwable ignored) {}
+                    shizukuCmd.append("if [ -f '").append(pref).append("' ]; then ");
+                    shizukuCmd.append("sed -i 's/<int name=\"HighFpsMode\" value=\"[0-9]*\" \\/>/<int name=\"HighFpsMode\" value=\"3\" \\/>/g' '").append(pref).append("' 2>/dev/null; ");
+                    shizukuCmd.append("sed -i 's/<int name=\"FPS\" value=\"[0-9]*\" \\/>/<int name=\"FPS\" value=\"").append(targetFps).append("\" \\/>/g' '").append(pref).append("' 2>/dev/null; ");
+                    shizukuCmd.append("sed -i 's/<int name=\"TargetFrameRate\" value=\"[0-9]*\" \\/>/<int name=\"TargetFrameRate\" value=\"").append(targetFps).append("\" \\/>/g' '").append(pref).append("' 2>/dev/null; ");
+                    shizukuCmd.append("sed -i 's/<int name=\"GraphicLevel\" value=\"[0-9]*\" \\/>/<int name=\"GraphicLevel\" value=\"3\" \\/>/g' '").append(pref).append("' 2>/dev/null; ");
+                    shizukuCmd.append("chmod 666 '").append(pref).append("' 2>/dev/null; ");
+                    shizukuCmd.append("fi; ");
+                }
+
+                com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(shizukuCmd.toString());
             } catch (Throwable ignored) {}
 
             GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(pkg, paths);

@@ -175,7 +175,6 @@ public class CpuGovernorChannel {
         sb.append("  echo 1 > \"$cpu\" 2>/dev/null; ");
         sb.append("done; ");
         sb.append("echo 1 > /sys/module/cpuidle/parameters/enable 2>/dev/null; "); // 1=disable cpuidle
-        sb.append("echo 0 > /dev/cpu_dma_latency 2>/dev/null; ");
 
         // ── Linux CFS scheduler & uclamp boost for real-time thread dispatching ─
         sb.append("echo 0 > /proc/sys/kernel/sched_energy_aware 2>/dev/null; ");
@@ -272,8 +271,7 @@ public class CpuGovernorChannel {
         sb.append("setprop persist.sys.sprd.coreboost 1; ");
 
         // ── 5. energyaware_latency / cpuidle latency governor ────────────────
-        // Disable deep C-states between game frames via cpu_dma_latency fd-pin (best-effort)
-        sb.append("echo 0 > /dev/cpu_dma_latency 2>/dev/null || true; ");
+        sb.append("echo 0 > /proc/sys/kernel/sched_energy_aware 2>/dev/null || true; ");
 
         CommandExecutor.executeSystemCommand(sb.toString());
         Log.i(TAG, "Extended kernel scheduler + VM + SchedTune flags applied.");
@@ -354,47 +352,39 @@ public class CpuGovernorChannel {
     public static boolean setGovernor(String governor) {
         boolean isExtreme = "extreme".equalsIgnoreCase(governor) || "performance".equalsIgnoreCase(governor);
         if (isExtreme) {
-            CommandExecutor.executeSystemCommand("cmd power set-mode 2 1");
-            CommandExecutor.executeSystemCommand("cmd power set-mode 0 1");
-            CommandExecutor.executeSystemCommand("cmd power set-fixed-performance-mode-enabled true");
-            CommandExecutor.setSystemProperty("debug.hwui.render_thread_priority", "-20");
-            CommandExecutor.setSystemProperty("sys.games.cpu_affinity", "1");
-
-            // Tune multi-core CPU topology (8-core, 12-core, 16-core+)
             tuneMultiCoreTopology();
-
-            // Apply extended kernel scheduler, VM, and EAS/SchedTune flags
             applyExtendedKernelFlags();
-
-            // Apply I/O scheduler, RT throttle bypass, IRQ FIFO, and perf unlock flags
             applyIoPipelineAndRtFlags();
 
-            // Apply per-game performance governor and CPU scheduler boost to all registered games
-            for (String pkg : GamePackageRegistry.getAllKnownGames().keySet()) {
-                try {
-                    CommandExecutor.executeSystemCommand("cmd game mode performance " + pkg);
-                    CommandExecutor.executeSystemCommand("cmd game set --fps 185 " + pkg);
-                } catch (Throwable ignored) {}
+            StringBuilder sb = new StringBuilder();
+            sb.append("cmd power set-mode 2 1 2>/dev/null; ");
+            sb.append("cmd power set-mode 0 1 2>/dev/null; ");
+            sb.append("cmd power set-fixed-performance-mode-enabled true 2>/dev/null; ");
+            sb.append("setprop debug.hwui.render_thread_priority -20; ");
+            sb.append("setprop sys.games.cpu_affinity 1; ");
+            for (String pkg : new String[]{
+                    "com.mobile.legends", "com.mobilelegends.mi", "com.vng.mlbbvn",
+                    "com.activision.callofduty.shooter", "com.garena.game.codm",
+                    "com.tencent.ig", "com.pubg.imobile", "com.pubg.krmobile",
+                    "com.levelinfinite.sgameGlobal", "com.tencent.tmgp.sgame"}) {
+                sb.append("cmd game mode performance ").append(pkg).append(" 2>/dev/null; ");
+                sb.append("cmd game set --fps 185 ").append(pkg).append(" 2>/dev/null; ");
             }
+            CommandExecutor.executeSystemCommand(sb.toString());
         } else {
-            CommandExecutor.executeSystemCommand("cmd power set-fixed-performance-mode-enabled false");
-            CommandExecutor.executeSystemCommand("cmd power set-mode 2 0");
-            CommandExecutor.executeSystemCommand("cmd power set-mode 0 0");
-            CommandExecutor.setSystemProperty("debug.hwui.render_thread_priority", "0");
-            CommandExecutor.setSystemProperty("sys.use_fifo", "0");
-            CommandExecutor.setSystemProperty("sys.games.cpu_affinity", "0");
-            CommandExecutor.setSystemProperty("sys.perf.sched_uclamp_min", "0");
-            CommandExecutor.setSystemProperty("sys.perf.sched_boost", "0");
-            CommandExecutor.executeSystemCommand("echo 0 > /dev/cpuset/top-app/uclamp.min 2>/dev/null; echo 0 > /dev/cpuset/top-app/uclamp.boosted 2>/dev/null");
-
-            CommandExecutor.executeSystemCommand("for p in /sys/devices/system/cpu/cpufreq/policy*; do echo schedutil > \"$p/scaling_governor\" 2>/dev/null; done");
-
-            for (String pkg : GamePackageRegistry.getAllKnownGames().keySet()) {
-                try {
-                    CommandExecutor.executeSystemCommand("cmd game mode standard " + pkg);
-                    CommandExecutor.executeSystemCommand("cmd game reset " + pkg);
-                } catch (Throwable ignored) {}
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("cmd power set-fixed-performance-mode-enabled false 2>/dev/null; ");
+            sb.append("cmd power set-mode 2 0 2>/dev/null; ");
+            sb.append("cmd power set-mode 0 0 2>/dev/null; ");
+            sb.append("setprop debug.hwui.render_thread_priority 0; ");
+            sb.append("setprop sys.use_fifo 0; ");
+            sb.append("setprop sys.games.cpu_affinity 0; ");
+            sb.append("setprop sys.perf.sched_uclamp_min 0; ");
+            sb.append("setprop sys.perf.sched_boost 0; ");
+            sb.append("echo 0 > /dev/cpuset/top-app/uclamp.min 2>/dev/null; ");
+            sb.append("echo 0 > /dev/cpuset/top-app/uclamp.boosted 2>/dev/null; ");
+            sb.append("for p in /sys/devices/system/cpu/cpufreq/policy*; do echo schedutil > \"$p/scaling_governor\" 2>/dev/null; done; ");
+            CommandExecutor.executeSystemCommand(sb.toString());
         }
         return true;
     }

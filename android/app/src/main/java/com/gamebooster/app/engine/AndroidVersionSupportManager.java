@@ -23,13 +23,20 @@ public class AndroidVersionSupportManager {
 
     private static final String TAG = "AndroidVersionManager";
 
+    public static final int API_ANDROID_12 = 31;
+    public static final int API_ANDROID_12_L = 32;
     public static final int API_ANDROID_13 = 33;
     public static final int API_ANDROID_14 = 34;
     public static final int API_ANDROID_15 = 35;
     public static final int API_ANDROID_16 = 36;
 
-    // Bug #5 fixed: removed isAndroid13OrHigher() — minSdk=34 makes it permanently true.
-    // Use isAndroid14OrHigher() as the minimum meaningful gate.
+    public static boolean isAndroid12OrHigher() {
+        return Build.VERSION.SDK_INT >= API_ANDROID_12;
+    }
+
+    public static boolean isAndroid13OrHigher() {
+        return Build.VERSION.SDK_INT >= API_ANDROID_13;
+    }
 
     public static boolean isAndroid14OrHigher() {
         return Build.VERSION.SDK_INT >= API_ANDROID_14;
@@ -49,6 +56,7 @@ public class AndroidVersionSupportManager {
         if (sdk >= API_ANDROID_15) return "Android 15 (Vanilla Ice Cream • API " + sdk + ")";
         if (sdk >= API_ANDROID_14) return "Android 14 (Upside Down Cake • API " + sdk + ")";
         if (sdk >= API_ANDROID_13) return "Android 13 (Tiramisu • API " + sdk + ")";
+        if (sdk >= API_ANDROID_12) return "Android 12 / 12L (Snow Cone • API " + sdk + ")";
         return "Android (API " + sdk + ")";
     }
 
@@ -62,8 +70,13 @@ public class AndroidVersionSupportManager {
 
         List<String> commands = new ArrayList<>();
 
-        // Layer 1: Android 13 Baseline (API 33+)
-        applyAndroid13Optimizations(pkg, hz, commands);
+        // Layer 0: Android 12 Baseline (API 31/32)
+        applyAndroid12Optimizations(pkg, hz, commands);
+
+        // Layer 1: Android 13 Enhancements (API 33+)
+        if (isAndroid13OrHigher()) {
+            applyAndroid13Optimizations(pkg, hz, commands);
+        }
 
         // Layer 2: Android 14 Enhancements (API 34+)
         if (isAndroid14OrHigher()) {
@@ -86,6 +99,20 @@ public class AndroidVersionSupportManager {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Android 12 (API 31/32):
+     * - Game Mode API Baseline (GameManager performance mode 2)
+     * - Device Config Game Overlay downscale factor & FPS target
+     * - SurfaceFlinger dynamic FPS release
+     */
+    public static void applyAndroid12Optimizations(String pkg, int targetHz, List<String> cmds) {
+        if (pkg == null || cmds == null) return;
+        cmds.add("cmd game mode 2 " + pkg + " 2>/dev/null");
+        cmds.add("device_config put game_overlay " + pkg + " mode=2,fps=" + targetHz + ",downscaleFactor=1.0 2>/dev/null");
+        cmds.add("settings put system peak_refresh_rate " + targetHz + ".0 2>/dev/null");
+        cmds.add("settings put system min_refresh_rate " + targetHz + ".0 2>/dev/null");
     }
 
     /**

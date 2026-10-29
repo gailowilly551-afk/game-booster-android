@@ -110,7 +110,24 @@ public class GameLauncherHelper {
                 pkg = resolvedPkg;
             }
 
-            if (!HomeGameScanner.isPackageInstalled(pm, pkg)) {
+            // Check if installed or launchable before concluding it's missing
+            boolean isInstalled = HomeGameScanner.isPackageInstalled(pm, pkg);
+            if (!isInstalled) {
+                try {
+                    isInstalled = (pm.getLaunchIntentForPackage(pkg) != null);
+                } catch (Throwable ignored) {}
+            }
+            if (!isInstalled) {
+                try {
+                    Intent checkMain = new Intent(Intent.ACTION_MAIN);
+                    checkMain.addCategory(Intent.CATEGORY_LAUNCHER);
+                    checkMain.setPackage(pkg);
+                    java.util.List<android.content.pm.ResolveInfo> matches = pm.queryIntentActivities(checkMain, 0);
+                    isInstalled = (matches != null && !matches.isEmpty());
+                } catch (Throwable ignored) {}
+            }
+
+            if (!isInstalled) {
                 String title = game.getLabel() != null ? game.getLabel() : pkg;
                 Toast.makeText(context, "❌ " + title + " is not installed on this device.", Toast.LENGTH_SHORT).show();
                 try {

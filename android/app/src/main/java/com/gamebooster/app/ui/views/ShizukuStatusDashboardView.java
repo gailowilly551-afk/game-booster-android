@@ -70,6 +70,24 @@ public class ShizukuStatusDashboardView extends LinearLayout {
         setFocusable(true);
         setOnClickListener(v -> handleActionClick());
         btnAction.setOnClickListener(v -> handleActionClick());
+
+        android.widget.Button btnRog10 = findViewById(R.id.btn_shizuku_spoof_rog10);
+        if (btnRog10 != null) {
+            btnRog10.setOnClickListener(v -> {
+                android.widget.Toast.makeText(getContext(), "🔥 Injecting ROG 10 Pro+ (165Hz)...", android.widget.Toast.LENGTH_SHORT).show();
+                com.android.support.shizuku.MlbbModInjector.applyRog10ProSpoof(getContext(), true, new com.android.support.shizuku.MlbbModInjector.Callback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        android.widget.Toast.makeText(getContext(), "✅ " + message, android.widget.Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        android.widget.Toast.makeText(getContext(), "❌ " + error, android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+        }
     }
 
     /**

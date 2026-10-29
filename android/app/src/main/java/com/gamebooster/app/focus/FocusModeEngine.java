@@ -81,7 +81,9 @@ public class FocusModeEngine {
             "com.oneplus.launcher",
             "com.discord",
             "com.google.android.tts",
+            "com.android.providers.media",
             "com.android.providers.media.module",
+            "com.google.android.providers.media.module",
             "com.android.permissioncontroller",
             "com.google.android.permissioncontroller"
     ));

@@ -13,6 +13,7 @@ public enum GameFamily {
     MLBB("Mobile Legends: Bang Bang", "com.mobile.legends"),
     CODM("Call of Duty: Mobile", "com.garena.game.codm"),
     PUBGM("PUBG Mobile", "com.tencent.ig"),
+    HOK("Honor of Kings", "com.levelinfinite.sgameGlobal"),
     FREE_FIRE("Free Fire", "com.dts.freefireth"),
     OTHER("Other", "");
 
@@ -47,6 +48,12 @@ public enum GameFamily {
                 || pkg.contains("bgmi") || pkg.contains("iglite")) {
             return PUBGM;
         }
+        if (pkg.contains("sgame") || pkg.contains("levelinfinite")
+                || pkg.contains("arenaofvalor") || pkg.contains("kgtw")
+                || pkg.contains("kgvn") || pkg.contains("kgid")
+                || pkg.contains("honorofkings") || pkg.contains("hok")) {
+            return HOK;
+        }
         if (pkg.contains("freefire") || pkg.contains("dts.freefire")) {
             return FREE_FIRE;
         }
@@ -59,6 +66,7 @@ public enum GameFamily {
             case MLBB:
             case CODM:
             case PUBGM:
+            case HOK:
                 return 185;
             case FREE_FIRE:
                 return 120;
@@ -68,6 +76,6 @@ public enum GameFamily {
     }
 
     public static GameFamily[] supportedFamilies() {
-        return new GameFamily[]{MLBB, CODM, PUBGM, FREE_FIRE};
+        return new GameFamily[]{MLBB, CODM, PUBGM, HOK, FREE_FIRE};
     }
 }

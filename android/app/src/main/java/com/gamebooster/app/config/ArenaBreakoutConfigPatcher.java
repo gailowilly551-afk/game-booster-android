@@ -257,7 +257,7 @@ public class ArenaBreakoutConfigPatcher {
                 "[UserCustom DeviceProfile]\n" +
                 "+CVars=r.FrameRateLimit=" + forcedFps + "\n" +
                 "+CVars=r.MobileFPSLimit=" + forcedFps + "\n" +
-                "+CVars=r.PUBGDeviceFPS=" + fpsLevel + "\n" +
+                "+CVars=r.PUBGDeviceFPS=" + Math.min(fpsLevel, 7) + "\n" +
                 "+CVars=r.Unlock120Hz=1\n" +
                 "+CVars=r.Unlock144Hz=1\n" +
                 "+CVars=r.Unlock165Hz=1\n" +
@@ -356,7 +356,7 @@ public class ArenaBreakoutConfigPatcher {
             "FrameRateLevel=" + fpsLevel,
             "+CVars=r.FrameRateLimit=" + forcedFps,
             "+CVars=r.MobileFPSLimit=" + forcedFps,
-            "+CVars=r.PUBGDeviceFPS=" + fpsLevel,
+            "+CVars=r.PUBGDeviceFPS=" + Math.min(fpsLevel, 7),
             "+CVars=r.Unlock120Hz=1",
             "+CVars=r.Unlock144Hz=1",
             "+CVars=r.Unlock165Hz=1",

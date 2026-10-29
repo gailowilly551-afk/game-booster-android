@@ -211,16 +211,14 @@ public class HardwareMaskEngine {
                 }
             }
 
-            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-                List<String> resetpropCmds = buildResetpropCommands(profile);
-                batchCommands.addAll(resetpropCmds);
-            }
+            // Execute root resetprop directly if SU or resetprop is present
+            executeRootResetprop(profile);
 
-            // Execute elevated commands via Shizuku
-            List<String> execResults = ShizukuExecutor.executeShizukuCommandsWithResults(new ArrayList<>(batchCommands));
+            // Execute elevated commands via PrivilegeBridgeEngine (Root / Shizuku / Local Shell)
+            List<String> execResults = com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivilegedBatch(new ArrayList<>(batchCommands));
             boolean commandsExecuted = execResults != null && !execResults.isEmpty();
             if (!commandsExecuted) {
-                Log.w(TAG, "No elevated Shizuku channel available — ensure Shizuku permission is granted.");
+                Log.w(TAG, "No elevated privileged channel available — ensure Root or Shizuku permission is granted.");
             } else {
                 Log.i(TAG, "Elevated batch executed: " + execResults.size() + " command(s) for profile " + profile.displayName);
             }
@@ -304,14 +302,10 @@ public class HardwareMaskEngine {
         if (profile.socManufacturer != null && !profile.socManufacturer.isEmpty()) {
             cmds.add("resetprop ro.soc.manufacturer \"" + profile.socManufacturer + "\"");
         }
-        if (profile.fingerprint != null && !profile.fingerprint.isEmpty()) {
-            cmds.add("resetprop ro.build.fingerprint \"" + profile.fingerprint + "\"");
-            cmds.add("resetprop ro.system.build.fingerprint \"" + profile.fingerprint + "\"");
-            cmds.add("resetprop ro.vendor.build.fingerprint \"" + profile.fingerprint + "\"");
-        }
-        if (profile.displayId != null && !profile.displayId.isEmpty()) {
-            cmds.add("resetprop ro.build.display.id \"" + profile.displayId + "\"");
-        }
+        // NOTE: Global ro.build.fingerprint and ro.build.display.id are intentionally NOT altered via resetprop
+        // at runtime to prevent Android system framework services (MediaProvider / PhotoPicker, Keystore)
+        // from throwing schema migration or signature crashes ("Media picker has stopped").
+        // Game-specific fingerprint is safely injected via in-app reflection & tailored config files.
         return cmds;
     }
 
@@ -353,23 +347,156 @@ public class HardwareMaskEngine {
         if (snap.socManufacturer != null && !snap.socManufacturer.isEmpty()) {
             cmds.add("resetprop ro.soc.manufacturer \"" + snap.socManufacturer + "\"");
         }
-        if (snap.fingerprint != null && !snap.fingerprint.isEmpty()) {
-            cmds.add("resetprop ro.build.fingerprint \"" + snap.fingerprint + "\"");
-            cmds.add("resetprop ro.system.build.fingerprint \"" + snap.fingerprint + "\"");
-        }
-        if (snap.display != null && !snap.display.isEmpty()) {
-            cmds.add("resetprop ro.build.display.id \"" + snap.display + "\"");
-        }
+        // Fingerprint & display.id are left untouched to prevent system service disruption
         return cmds;
     }
 
     /**
-     * Injects hardware profile into all known and registered games on the device.
+     * Executes root resetprop directly via KernelSU, APatch, or Magisk superuser binary.
+     * Guarantees true OS-level property modifications so all target games read the spoofed flagship model.
+     */
+    public static boolean executeRootResetprop(SpoofProfile profile) {
+        if (profile == null) return false;
+        List<String> resetCmds = buildResetpropCommands(profile);
+        if (resetCmds.isEmpty()) return false;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("RESETPROP=\"\"; ");
+        sb.append("for b in /data/adb/magisk/resetprop /data/adb/ksu/bin/resetprop /data/adb/ap/bin/resetprop $(which resetprop 2>/dev/null); do ");
+        sb.append("if [ -x \"$b\" ] || [ -f \"$b\" ]; then RESETPROP=\"$b\"; break; fi; done; ");
+        sb.append("if [ -n \"$RESETPROP\" ]; then ");
+        for (String cmd : resetCmds) {
+            String stripped = cmd.startsWith("resetprop ") ? cmd.substring(10) : cmd;
+            sb.append("$RESETPROP ").append(stripped).append("; ");
+        }
+        sb.append("echo 'RESETPROP_SUCCESS'; else ");
+        for (String cmd : resetCmds) {
+            sb.append(cmd).append(" 2>/dev/null; ");
+        }
+        sb.append("fi");
+
+        String script = sb.toString();
+        try {
+            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+                com.gamebooster.app.engine.ShellExecutor.CommandResult res = com.gamebooster.app.engine.ShellExecutor.executeSuCommand(script);
+                if (res != null && res.isSuccess()) {
+                    Log.i(TAG, "Root resetprop properties injected via SU for " + profile.displayName);
+                    return true;
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Root resetprop SU failed: " + t.getMessage());
+        }
+
+        try {
+            String res = com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(script);
+            if (res != null && res.contains("RESETPROP_SUCCESS")) {
+                Log.i(TAG, "Root resetprop properties injected via PrivilegeBridge for " + profile.displayName);
+                return true;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Root resetprop PrivilegeBridge failed: " + t.getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Restores pristine host device system properties via root resetprop.
+     */
+    public static boolean executeRootResetpropRestore(DeviceSpooferEngine.DeviceIdentitySnapshot snap) {
+        if (snap == null) return false;
+        List<String> restoreCmds = buildResetpropRestoreCommands(snap);
+        if (restoreCmds.isEmpty()) return false;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("RESETPROP=\"\"; ");
+        sb.append("for b in /data/adb/magisk/resetprop /data/adb/ksu/bin/resetprop /data/adb/ap/bin/resetprop $(which resetprop 2>/dev/null); do ");
+        sb.append("if [ -x \"$b\" ] || [ -f \"$b\" ]; then RESETPROP=\"$b\"; break; fi; done; ");
+        sb.append("if [ -n \"$RESETPROP\" ]; then ");
+        for (String cmd : restoreCmds) {
+            String stripped = cmd.startsWith("resetprop ") ? cmd.substring(10) : cmd;
+            sb.append("$RESETPROP ").append(stripped).append("; ");
+        }
+        sb.append("echo 'RESETPROP_RESTORE_SUCCESS'; else ");
+        for (String cmd : restoreCmds) {
+            sb.append(cmd).append(" 2>/dev/null; ");
+        }
+        sb.append("fi");
+
+        String script = sb.toString();
+        try {
+            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+                com.gamebooster.app.engine.ShellExecutor.CommandResult res = com.gamebooster.app.engine.ShellExecutor.executeSuCommand(script);
+                return res != null && res.isSuccess();
+            } else {
+                com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(script);
+                return true;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Root resetprop restore failed: " + t.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean isPackageInstalled(String packageName) {
+        if (packageName == null || packageName.isEmpty()) return false;
+        String cleanPkg = packageName.trim();
+        try {
+            android.content.Context ctx = com.gamebooster.app.GameBoosterApp.getInstance();
+            if (ctx == null) ctx = com.gamebooster.app.config.ConfigBackupManager.getAppContext();
+            if (ctx != null) {
+                if (com.gamebooster.app.games.HomeGameScanner.isPackageInstalled(ctx.getPackageManager(), cleanPkg)) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {}
+        try {
+            String res = com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged("pm path " + cleanPkg);
+            if (res != null && res.contains("package:")) {
+                return true;
+            }
+        } catch (Throwable ignored) {}
+        try {
+            java.io.File dir = new java.io.File("/sdcard/Android/data/" + cleanPkg);
+            if (dir.exists()) return true;
+            java.io.File dir2 = new java.io.File("/storage/emulated/0/Android/data/" + cleanPkg);
+            if (dir2.exists()) return true;
+        } catch (Throwable ignored) {}
+        try {
+            String res = com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(
+                "test -d /storage/emulated/0/Android/data/" + cleanPkg + " -o -d /data/data/" + cleanPkg + " && echo EXISTS");
+            if (res != null && res.contains("EXISTS")) return true;
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    /**
+     * Injects hardware profile into all known and registered games installed on the device.
      */
     public static void injectAllInstalledGamesHardwareProfile(SpoofProfile profile) {
         if (profile == null) return;
         try {
-            for (String pkg : com.gamebooster.app.games.GamePackageRegistry.getAllKnownGames().keySet()) {
+            Set<String> allTargets = new LinkedHashSet<>();
+            allTargets.addAll(com.gamebooster.app.games.GamePackageRegistry.getAllKnownGames().keySet());
+            // Guaranteed inclusion for major competitive eSports titles
+            allTargets.add("com.mobile.legends");
+            allTargets.add("com.garena.game.codm");
+            allTargets.add("com.activision.callofduty.shooter");
+            allTargets.add("com.vng.codmvn");
+            allTargets.add("com.tencent.ig");
+            allTargets.add("com.pubg.krmobile");
+            allTargets.add("com.pubg.imobile");
+            allTargets.add("com.vng.pubgmobile");
+            allTargets.add("com.krafton.bgmi");
+            allTargets.add("com.levelinfinite.sgameGlobal");
+            allTargets.add("com.tencent.tmgp.sgame");
+            allTargets.add("com.dts.freefireth");
+            allTargets.add("com.dts.freefiremax");
+            allTargets.add("com.riotgames.league.wildrift");
+
+            for (String pkg : allTargets) {
+                Log.i(TAG, "⚡ Injecting tailored hardware mask for: " + pkg + " with profile " + profile.displayName);
                 injectTailoredGameHardwareConfigs(pkg, profile);
             }
         } catch (Throwable t) {
@@ -449,15 +576,10 @@ public class HardwareMaskEngine {
             } catch (Throwable ignored) {}
 
             // Root resetprop restore if physical root UID 0 is available
-            if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
-                List<String> restoreCmds = buildResetpropRestoreCommands(snap);
-                for (String cmd : restoreCmds) {
-                    com.gamebooster.app.engine.CommandExecutor.executeSystemCommand(cmd + " 2>/dev/null || true");
-                }
-                try {
-                    com.gamebooster.app.engine.CommandExecutor.executeSystemCommand("umount /proc/cpuinfo 2>/dev/null || true");
-                } catch (Throwable ignored) {}
-            }
+            executeRootResetpropRestore(snap);
+            try {
+                com.gamebooster.app.engine.CommandExecutor.executeSystemCommand("umount /proc/cpuinfo 2>/dev/null || true");
+            } catch (Throwable ignored) {}
 
             Log.d(TAG, "Host Build reflection restored: " + snap.model);
         } catch (Throwable t) {
@@ -1027,6 +1149,28 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop debug.game.spoofed_oaid \"" + profile.getOaid() + "\"");
             batchCommands.add("setprop debug.game.spoofed_widevine \"" + profile.getWidevineDeviceId() + "\"");
 
+            // 1.5 Persistent System Properties read by games & Unity/UE4/Vulkan engines
+            batchCommands.add("setprop persist.sys.device.model \"" + profile.model + "\"");
+            batchCommands.add("setprop persist.sys.device.brand \"" + profile.brand + "\"");
+            batchCommands.add("setprop persist.sys.device.manufacturer \"" + profile.manufacturer + "\"");
+            batchCommands.add("setprop persist.sys.device.hardware \"" + profile.hardware + "\"");
+            batchCommands.add("setprop persist.sys.device.soc \"" + profile.socModel + "\"");
+            batchCommands.add("setprop persist.sys.game.model \"" + profile.model + "\"");
+            batchCommands.add("setprop persist.sys.game.brand \"" + profile.brand + "\"");
+            batchCommands.add("setprop persist.sys.game.device \"" + profile.device + "\"");
+            batchCommands.add("setprop persist.sys.game.manufacturer \"" + profile.manufacturer + "\"");
+            batchCommands.add("setprop persist.sys.game.hardware \"" + profile.hardware + "\"");
+            batchCommands.add("setprop persist.sys.game.gpu \"" + profile.glRenderer + "\"");
+            batchCommands.add("setprop persist.sys.game.soc \"" + profile.socModel + "\"");
+            batchCommands.add("setprop persist.sys.game.vulkan.driver \"" + profile.vulkanDriverVersion + "\"");
+            batchCommands.add("setprop persist.vendor.display.device_name \"" + profile.displayName + "\"");
+            batchCommands.add("setprop ro.product.model \"" + profile.model + "\" 2>/dev/null");
+            batchCommands.add("setprop ro.product.brand \"" + profile.brand + "\" 2>/dev/null");
+            batchCommands.add("setprop ro.product.manufacturer \"" + profile.manufacturer + "\" 2>/dev/null");
+            batchCommands.add("setprop ro.product.device \"" + profile.device + "\" 2>/dev/null");
+            batchCommands.add("setprop ro.hardware \"" + profile.hardware + "\" 2>/dev/null");
+            batchCommands.add("setprop ro.soc.model \"" + profile.socModel + "\" 2>/dev/null");
+
             // 2. Display & SF FPS Limit
             batchCommands.add("settings put system peak_refresh_rate " + targetHz + ".0");
             batchCommands.add("settings put system min_refresh_rate " + targetHz + ".0");
@@ -1048,6 +1192,22 @@ public class HardwareMaskEngine {
 
             // 5. Scan target games
             Set<String> targetGames = new LinkedHashSet<>();
+            // Guaranteed major competitive titles
+            targetGames.add("com.mobile.legends");
+            targetGames.add("com.garena.game.codm");
+            targetGames.add("com.activision.callofduty.shooter");
+            targetGames.add("com.vng.codmvn");
+            targetGames.add("com.tencent.ig");
+            targetGames.add("com.pubg.krmobile");
+            targetGames.add("com.pubg.imobile");
+            targetGames.add("com.vng.pubgmobile");
+            targetGames.add("com.krafton.bgmi");
+            targetGames.add("com.levelinfinite.sgameGlobal");
+            targetGames.add("com.tencent.tmgp.sgame");
+            targetGames.add("com.dts.freefireth");
+            targetGames.add("com.dts.freefiremax");
+            targetGames.add("com.riotgames.league.wildrift");
+
             if (context != null) {
                 List<com.gamebooster.app.games.GameAppInfo> scanned = com.gamebooster.app.games.HomeGameScanner.scanTargetGames(context);
                 if (scanned != null) {
@@ -1058,21 +1218,7 @@ public class HardwareMaskEngine {
             }
             for (String known : com.gamebooster.app.games.GamePackageRegistry.getAllKnownGames().keySet()) {
                 if (known != null && !known.trim().isEmpty()) {
-                    String cleanKnown = known.trim();
-                    boolean found = false;
-                    if (context != null) {
-                        try {
-                            context.getPackageManager().getPackageInfo(cleanKnown, 0);
-                            targetGames.add(cleanKnown);
-                            found = true;
-                        } catch (Throwable ignored) {}
-                    }
-                    if (!found) {
-                        File dir = new File("/storage/emulated/0/Android/data/" + cleanKnown);
-                        if (dir.exists()) {
-                            targetGames.add(cleanKnown);
-                        }
-                    }
+                    targetGames.add(known.trim());
                 }
             }
 
@@ -1102,8 +1248,11 @@ public class HardwareMaskEngine {
             batchCommands.add("settings put secure limit_ad_tracking 1");
             batchCommands.add("settings put secure ad_id \"" + profile.getAdvertisingId() + "\"");
 
-            // Execute in 1 Consolidated Shizuku Batch (Sub-second!)
-            ShizukuExecutor.executeShizukuCommandsWithResults(new ArrayList<>(batchCommands));
+            // Execute root resetprop directly if SU or resetprop is present
+            executeRootResetprop(profile);
+
+            // Execute in 1 Consolidated Privileged Batch (Sub-second!)
+            com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivilegedBatch(new ArrayList<>(batchCommands));
 
             // Force Refresh Rate & In-App Reflection
             if (targetHz > 60) {
@@ -1152,100 +1301,7 @@ public class HardwareMaskEngine {
 
     public static int maskAllInstalledApplications(Context context, SpoofProfile profile) {
         if (context == null || profile == null) return 0;
-
-        int count = 0;
-        try {
-            List<com.gamebooster.app.games.GameAppInfo> installedGames =
-                    com.gamebooster.app.games.GameManagerRepository.getInstalledGames(context);
-            Set<String> batchCmds = new LinkedHashSet<>();
-
-            int requestedHz = profile.maxRefreshRateHz > 0 ? profile.maxRefreshRateHz : 185;
-            int targetHz = requestedHz;
-
-            Set<String> gamePkgs = new LinkedHashSet<>();
-            if (installedGames != null) {
-                for (com.gamebooster.app.games.GameAppInfo game : installedGames) {
-                    if (game == null || game.getPackageName() == null) continue;
-                    String pkg = game.getPackageName();
-                    if (pkg.equalsIgnoreCase(context.getPackageName())) continue;
-                    gamePkgs.add(pkg);
-                }
-            }
-
-            // Also include known game packages if installed or stored on device
-            for (String known : com.gamebooster.app.games.GamePackageRegistry.getAllKnownGames().keySet()) {
-                if (known != null && !known.trim().isEmpty()) {
-                    String cleanKnown = known.trim();
-                    boolean found = false;
-                    try {
-                        context.getPackageManager().getPackageInfo(cleanKnown, 0);
-                        gamePkgs.add(cleanKnown);
-                        found = true;
-                    } catch (Throwable ignored) {}
-                    if (!found) {
-                        File dir = new File("/storage/emulated/0/Android/data/" + cleanKnown);
-                        if (dir.exists()) {
-                            gamePkgs.add(cleanKnown);
-                        }
-                    }
-                }
-            }
-
-            for (String pkg : gamePkgs) {
-                if (pkg == null || pkg.trim().isEmpty() || pkg.equalsIgnoreCase(context.getPackageName())) continue;
-
-                // Android 13-16 GameMode & Overlay (Isolated strictly to target games)
-                batchCmds.add("cmd game mode performance " + pkg + " 2>/dev/null");
-                batchCmds.add("cmd game set --fps " + targetHz + " " + pkg + " 2>/dev/null");
-                batchCmds.add("cmd window set-app-refresh-rate " + pkg + " " + targetHz + " 2>/dev/null");
-                batchCmds.add("device_config put game_overlay " + pkg + " mode=2,useAngle=false,fps=" + targetHz + ",downscaleFactor=1.0 2>/dev/null");
-
-                // Inject hardware profile into target game data dir
-                injectTailoredGameHardwareConfigs(pkg, profile);
-                applyAppOpsShieldForPackage(batchCmds, pkg);
-                count++;
-            }
-
-            // Global Android Driver Enforcements (Strictly MLBB, CODM, PUBGM only; ANGLE Purged)
-            List<String> eligibleGameDriverPkgs = new ArrayList<>();
-            for (String p : gamePkgs) {
-                if (com.gamebooster.app.booster.GpuTweaksChannel.isGameDriverEligible(p)) {
-                    eligibleGameDriverPkgs.add(p);
-                }
-            }
-            String gameDriverCsv = String.join(",", eligibleGameDriverPkgs);
-            batchCmds.add("settings put global game_driver_all_apps 0 2>/dev/null");
-            batchCmds.add("settings put global updatable_driver_all_apps 0 2>/dev/null");
-            batchCmds.add("settings put global game_driver_opt_in_apps \"" + gameDriverCsv + "\"");
-            batchCmds.add("settings put global game_driver_prerelease_opt_in_apps \"" + gameDriverCsv + "\"");
-            batchCmds.add("settings put global updatable_driver_production_opt_in_apps \"\" 2>/dev/null");
-            batchCmds.add("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null");
-            batchCmds.add("settings delete global angle_gl_driver_selection_values 2>/dev/null");
-            batchCmds.add("settings delete global angle_enabled_pkgs 2>/dev/null");
-            batchCmds.add("settings put global angle_gl_driver_all_angle 0 2>/dev/null");
-            batchCmds.add("setprop debug.angle.backend 0");
-
-            if (ShizukuExecutor.hasShizukuPermission()) {
-                ShizukuExecutor.executeShizukuCommands(new ArrayList<>(batchCmds));
-            }
-
-            // Global Build reflection
-            applyInAppReflectionMask(profile);
-
-            // Staged procfs mock payloads
-            exportMockProcfsPayloads(profile);
-
-            SpoofPreferences.setSpoofEnabled(context, true);
-            SpoofPreferences.setActiveProfileId(context, profile.id);
-            SpoofPreferences.setSpoofAllApps(context, true);
-
-            com.gamebooster.app.gamemanager.GameManagerStatus.getInstance().setMaskedAppsCount(count);
-            Log.i(TAG, "⚡ Masked " + count + " game applications with profile: " + profile.displayName);
-
-        } catch (Throwable t) {
-            Log.e(TAG, "Error masking installed games", t);
-        }
-        return count;
+        return applyFastHardwareMaskAll(context, profile);
     }
 
     /**

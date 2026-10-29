@@ -31,6 +31,8 @@ public final class GameHardwareMaskCoordinator {
                 return CodmHardwareMasker.inject(packageName, profile);
             case PUBGM:
                 return PubgmHardwareMasker.inject(packageName, profile);
+            case HOK:
+                return HokHardwareMasker.inject(packageName, profile);
             default:
                 Log.d(TAG, "No dedicated per-game masker required for family: " + family);
                 return false;

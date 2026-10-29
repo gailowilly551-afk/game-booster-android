@@ -462,11 +462,10 @@ public class SpoofProfile {
 
     public String[] generateUe4DeviceProfileKeys(int targetFps) {
         int clampedFps = Math.max(60, Math.min(185, targetFps > 0 ? targetFps : 185));
-        int effectiveLevel = (clampedFps >= 185) ? 10
-                : ((clampedFps >= 165) ? 9
-                : ((clampedFps >= 144) ? 8
-                : ((clampedFps >= 120) ? 7
-                : ((clampedFps >= 90) ? 6 : 5))));
+        // UE4 EFPSLevel: 7=120fps Extreme+/Ultra Extreme, 6=90fps, 5=60fps Extreme.
+        // Levels 8, 9, 10 do NOT exist in the PUBGM UE4 binary and cause enum parsing failure.
+        int effectiveLevel = (clampedFps >= 120) ? 7
+                : ((clampedFps >= 90) ? 6 : 5);
         return new String[] {
             "DeviceName=" + model,
             "DeviceBrand=" + brand,
@@ -522,7 +521,6 @@ public class SpoofProfile {
             "+CVars=r.ShadowQuality=4",
             "+CVars=r.MaxAnisotropy=16",
             "+CVars=r.Tonemapper.Quality=4",
-            "+CVars=r.Streaming.PoolSize=4096",
             "+CVars=r.Android.DisableProgramBinaryCache=0",
             "+CVars=r.MobileContentScaleFactor=1.0",
             "+CVars=r.TemporalAA.Upscale=1",
@@ -590,8 +588,10 @@ public class SpoofProfile {
 
     public String generateJsonHardwareProfile(int targetFps) {
         int safeFps = targetFps > 0 ? Math.min(185, targetFps) : 185;
-        int highFpsMode = 6; // Ultra Extreme 2026
-        int frameRateLevel = com.gamebooster.app.config.FpsUnlockTier.getCodmFrameRateLevel(safeFps);
+        // In CODM, FrameRateLevel 5 is "Ultra" (120 FPS). Higher numbers are rejected by CODM's engine.
+        // QualitySetting must be 1 (Low/Medium) for CODM to allow Ultra 120 FPS toggle.
+        int frameRateLevel = (safeFps >= 120) ? 5 : (safeFps >= 90 ? 4 : 3);
+        int highFpsMode = frameRateLevel;
         return "{\n" +
                 "  \"DeviceModel\": \"" + model + "\",\n" +
                 "  \"DeviceBrand\": \"" + brand + "\",\n" +
@@ -611,11 +611,11 @@ public class SpoofProfile {
                 "  \"TargetFPS\": " + safeFps + ",\n" +
                 "  \"HighFPSMode\": " + highFpsMode + ",\n" +
                 "  \"FrameRateLevel\": " + frameRateLevel + ",\n" +
-                "  \"QualitySetting\": 3,\n" +
-                "  \"GraphicLevel\": 3,\n" +
-                "  \"GraphicQuality\": 4,\n" +
-                "  \"QualityLevel\": 3,\n" +
-                "  \"GraphicsPreset\": 5,\n" +
+                "  \"QualitySetting\": 1,\n" +
+                "  \"GraphicLevel\": 1,\n" +
+                "  \"GraphicQuality\": 1,\n" +
+                "  \"QualityLevel\": 1,\n" +
+                "  \"GraphicsPreset\": 1,\n" +
                 "  \"UltraExtreme\": 1,\n" +
                 "  \"UnlockUltraHighFPS\": true,\n" +
                 "  \"Unlock185Hz\": true,\n" +
@@ -628,12 +628,15 @@ public class SpoofProfile {
     }
 
     public String generateMlbbDeviceConfig(int targetFps) {
-        int fps = targetFps > 0 ? targetFps : 185;
-        int highFpsMode = 6; // Ultra Max 2026
-        int frameRateLevel = fps >= 185 ? 7 : (fps >= 165 ? 6 : (fps >= 144 ? 5 : (fps >= 120 ? 4 : (fps >= 90 ? 3 : 2))));
-        return "[Hardware]\n" +
+        int fps = targetFps > 0 ? targetFps : 144;
+        // In MLBB Unity UI: 0=Low, 1=High, 2=Super (90fps), 3=Ultra (120fps/144fps).
+        int highFpsMode = (fps >= 120) ? 3 : (fps >= 90 ? 2 : 1);
+        int frameRateLevel = (fps >= 120) ? 3 : (fps >= 90 ? 2 : 1);
+        String body =
                 "DeviceModel=" + model + "\n" +
                 "DeviceBrand=" + brand + "\n" +
+                "Manufacturer=" + manufacturer + "\n" +
+                "Hardware=" + hardware + "\n" +
                 "GPU=" + glRenderer + "\n" +
                 "GPUVendor=" + glVendor + "\n" +
                 "SoC=" + socModel + "\n" +
@@ -642,20 +645,23 @@ public class SpoofProfile {
                 "FrameRateLevel=" + frameRateLevel + "\n" +
                 "UltraFrameRate=1\n" +
                 "SuperFrameRate=1\n" +
+                "HighFrameRate=1\n" +
                 "Unlock185Hz=1\n" +
                 "Unlock165Hz=1\n" +
                 "Unlock144Hz=1\n" +
                 "Unlock120Hz=1\n" +
+                "Unlock90Hz=1\n" +
                 "TargetFPS=" + fps + "\n" +
                 "FPS=" + fps + "\n" +
                 "MaxFPS=" + fps + "\n" +
                 "QualitySetting=3\n" +
                 "GraphicLevel=3\n" +
                 "QualityLevel=3\n" +
-                "GraphicsQuality=4\n" +
-                "ShadowQuality=3\n" +
+                "GraphicsQuality=3\n" +
+                "ShadowQuality=2\n" +
                 "HDMode=1\n" +
                 "CreepOutline=1\n";
+        return "[Hardware]\n" + body + "\n[DeviceHardware]\n" + body;
     }
 
     public String generateFreeFireDeviceConfig(int targetFps) {
@@ -690,16 +696,32 @@ public class SpoofProfile {
     }
 
     public String generateHokDeviceConfig(int targetFps) {
-        return "[DeviceConfig]\n" +
+        int safeFps = targetFps > 0 ? targetFps : 120;
+        int frameRateLevel = (safeFps >= 120) ? 4 : (safeFps >= 90 ? 3 : 2);
+        String body =
                 "Model=" + model + "\n" +
                 "Brand=" + brand + "\n" +
+                "DeviceName=" + model + "\n" +
+                "Manufacturer=" + manufacturer + "\n" +
                 "GPU=" + glRenderer + "\n" +
+                "GpuRenderer=" + glRenderer + "\n" +
                 "SoC=" + socModel + "\n" +
+                "CpuModel=" + socModel + "\n" +
                 "RAM=" + ramTotalMb + "\n" +
                 "HighFrameRate=1\n" +
                 "UltraFrameRate=1\n" +
                 "ExtremeFrameRate=1\n" +
-                "FPS=" + targetFps + "\n";
+                "FrameRateLevel=" + frameRateLevel + "\n" +
+                "HighFPSMode=" + frameRateLevel + "\n" +
+                "Unlock185Hz=1\n" +
+                "Unlock165Hz=1\n" +
+                "Unlock144Hz=1\n" +
+                "Unlock120Hz=1\n" +
+                "Unlock90Hz=1\n" +
+                "TargetFPS=" + safeFps + "\n" +
+                "MaxFPS=" + safeFps + "\n" +
+                "FPS=" + safeFps + "\n";
+        return "[DeviceConfig]\n" + body + "\n[HardwareProfile]\n" + body + "\n[SystemConfig]\n" + body + "\n[Graphics]\n" + body;
     }
 
     public String generateStandoff2DeviceConfig(int targetFps) {

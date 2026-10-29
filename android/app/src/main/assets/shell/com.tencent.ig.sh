@@ -67,5 +67,19 @@ sysctl -w net.ipv4.tcp_mtu_probing=1 2>/dev/null
 # Safe Network Resolver Flush (Never wipe OUTPUT iptables!)
 ndc resolver flushdefaultif 2>/dev/null
 
+# Clean stale lock files & unlock permissions to prevent infinite loading screen
+BASE_UE4="/storage/emulated/0/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra"
+for S_DIR in "${BASE_UE4}/ShadowTrackerExtra/Saved" "${BASE_UE4}/Saved"; do
+  if [ -d "$S_DIR" ]; then
+    rm -f "$S_DIR"/*.tmp* "$S_DIR"/*lock* 2>/dev/null
+    rm -f "$S_DIR"/SaveGames/*.tmp* 2>/dev/null
+    rm -f "$S_DIR"/Pandora/*.tmp* 2>/dev/null
+    rm -f "$S_DIR"/Pandora/.nomedia "$S_DIR"/SaveGames/.nomedia "$S_DIR"/.nomedia 2>/dev/null
+    rm -rf "$S_DIR"/Logs/* "$S_DIR"/Crashes/* "$S_DIR"/Tmp/* 2>/dev/null
+  fi
+done
+chattr -R -i "/storage/emulated/0/Android/data/com.tencent.ig/files" 2>/dev/null
+chmod -R 777 "/storage/emulated/0/Android/data/com.tencent.ig/files" 2>/dev/null
+
 # GameMode API clamp removal for PUBGM
 cmd game set --mode 2 --user 0 com.tencent.ig 2>/dev/null

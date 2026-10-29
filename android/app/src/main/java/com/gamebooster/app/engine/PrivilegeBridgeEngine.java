@@ -177,6 +177,7 @@ public class PrivilegeBridgeEngine {
 
     /**
      * Executes batch commands across the highest available privileged channel.
+     * Uses 80-command chunking to minimize process spawn overhead and eliminate UI stalls.
      */
     public static List<String> executePrivilegedBatch(List<String> commands) {
         if (commands == null || commands.isEmpty()) {
@@ -187,23 +188,27 @@ public class PrivilegeBridgeEngine {
             return Collections.singletonList("SUCCESS");
         }
 
-        if (ShellExecutor.isRootSuAvailable()) {
-            String combined = String.join("; ", commands);
-            ShellExecutor.CommandResult rootRes = ShellExecutor.executeSuCommand(combined);
-            if (rootRes.isSuccess()) {
-                return Collections.singletonList(rootRes.stdout.isEmpty() ? "SUCCESS" : rootRes.stdout);
+        List<String> allResults = new java.util.ArrayList<>();
+        final int chunkSize = 80;
+
+        for (int i = 0; i < commands.size(); i += chunkSize) {
+            List<String> chunk = commands.subList(i, Math.min(i + chunkSize, commands.size()));
+            String combined = String.join("; ", chunk);
+
+            if (ShellExecutor.isRootSuAvailable()) {
+                ShellExecutor.CommandResult rootRes = ShellExecutor.executeSuCommand(combined);
+                allResults.add(rootRes.isSuccess() ? (rootRes.stdout.isEmpty() ? "SUCCESS" : rootRes.stdout) : "ERROR: " + rootRes.stderr);
+            } else if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
+                allResults.addAll(ShizukuUserServiceConnector.getInstance().execBatchCommands(chunk));
+            } else if (ShizukuExecutor.hasShizukuPermission()) {
+                String result = ShizukuExecutor.executeShizukuCommand(combined);
+                allResults.add(result != null ? result : "SUCCESS");
+            } else {
+                ShellExecutor.CommandResult localRes = ShellExecutor.executeCommand(combined, false);
+                allResults.add(localRes.isSuccess() ? "SUCCESS" : "ERROR: " + localRes.stderr);
             }
         }
 
-        if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-            return ShizukuUserServiceConnector.getInstance().execBatchCommands(commands);
-        } else if (ShizukuExecutor.hasShizukuPermission()) {
-            String combined = String.join("; ", commands);
-            String result = ShizukuExecutor.executeShizukuCommand(combined);
-            return Collections.singletonList(result != null ? result : "ERROR: no output");
-        } else {
-            String combined = String.join("; ", commands);
-            return Collections.singletonList(executePrivileged(combined));
-        }
+        return allResults;
     }
 }

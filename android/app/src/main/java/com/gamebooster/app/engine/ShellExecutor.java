@@ -56,14 +56,14 @@ public class ShellExecutor {
             boolean suFileExists = false;
             for (String path : SU_PATHS) {
                 File f = new File(path);
-                if (f.exists() && f.canExecute()) {
+                if (f.exists()) {
                     suFileExists = true;
                     break;
                 }
             }
-            if (suFileExists) {
-                sRootAvailable = true;
-                return true;
+            if (!suFileExists) {
+                sRootAvailable = false;
+                return false;
             }
 
             // If called on main UI thread, NEVER run blocking process execution (su/sh) — return fast false
@@ -82,19 +82,11 @@ public class ShellExecutor {
             if (sRootAvailable != null) {
                 return sRootAvailable;
             }
-            // 2. Also try executing 'su -c id' with 1-second timeout to verify grant from Magisk / KernelSU / APatch
+            // Verify actual root grant ('uid=0') with fast 1-second timeout.
+            // Never assume root is granted just because '/system/bin/su' or 'which su' exists on disk!
             try {
                 CommandResult res = executeInternal("su", "id", 1);
-                if (res.isSuccess() && res.stdout.contains("uid=0")) {
-                    sRootAvailable = true;
-                    return true;
-                }
-            } catch (Throwable ignored) {}
-
-            // 3. Check 'which su' with 1-second timeout
-            try {
-                CommandResult whichRes = executeInternal("sh", "which su", 1);
-                if (whichRes.isSuccess() && whichRes.stdout.length() > 0 && !whichRes.stdout.contains("not found")) {
+                if (res.isSuccess() && res.stdout != null && res.stdout.contains("uid=0")) {
                     sRootAvailable = true;
                     return true;
                 }
@@ -156,31 +148,56 @@ public class ShellExecutor {
     }
 
     private static CommandResult executeInternal(String shellBinary, String command) {
-        return executeInternal(shellBinary, command, 5);
+        return executeInternal(shellBinary, command, 3);
     }
 
     private static CommandResult executeInternal(String shellBinary, String command, int timeoutSeconds) {
         Process process = null;
-        BufferedReader reader = null;
+        java.io.InputStream in = null;
 
         try {
             ProcessBuilder pb = new ProcessBuilder(shellBinary, "-c", command);
             pb.redirectErrorStream(true);
             process = pb.start();
 
+            // Close stdin immediately so su/sh never blocks waiting for input
+            try {
+                process.getOutputStream().close();
+            } catch (Exception ignored) {}
+
+            in = process.getInputStream();
             StringBuilder output = new StringBuilder(512);
-            reader = new BufferedReader(new InputStreamReader(process.getInputStream()), 8192);
+            byte[] buf = new byte[4096];
+            long deadlineMs = System.currentTimeMillis() + Math.max(1, timeoutSeconds) * 1000L;
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append('\n');
+            while (true) {
+                while (in.available() > 0) {
+                    int n = in.read(buf, 0, Math.min(buf.length, in.available()));
+                    if (n <= 0) break;
+                    if (output.length() < 65536) {
+                        output.append(new String(buf, 0, n, java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                }
+                if (process.waitFor(15, TimeUnit.MILLISECONDS)) {
+                    // Drain any remaining bytes that arrived right as process exited
+                    while (in.available() > 0) {
+                        int n = in.read(buf, 0, Math.min(buf.length, in.available()));
+                        if (n <= 0) break;
+                        if (output.length() < 65536) {
+                            output.append(new String(buf, 0, n, java.nio.charset.StandardCharsets.UTF_8));
+                        }
+                    }
+                    break;
+                }
+                if (System.currentTimeMillis() >= deadlineMs) {
+                    process.destroyForcibly();
+                    if ("su".equals(shellBinary)) {
+                        sRootAvailable = false;
+                    }
+                    return new CommandResult(-1, output.toString().trim(), "Command timed out after " + timeoutSeconds + "s");
+                }
             }
 
-            boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                return new CommandResult(-1, "", "Command timed out after " + timeoutSeconds + "s");
-            }
             int exitCode = process.exitValue();
             return new CommandResult(exitCode, output.toString().trim(), "");
 
@@ -188,8 +205,10 @@ public class ShellExecutor {
             return new CommandResult(-1, "", e.getMessage() != null ? e.getMessage() : "Execution exception");
         } finally {
             try {
-                if (reader != null) reader.close();
-                if (process != null) process.destroy();
+                if (in != null) in.close();
+            } catch (Exception ignored) {}
+            try {
+                if (process != null) process.destroyForcibly();
             } catch (Exception ignored) {}
         }
     }

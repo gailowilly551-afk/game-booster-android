@@ -57,6 +57,7 @@ public class GamePackageRegistry {
 
         // Honor of Kings (HOK) / Arena of Valor (AoV)
         KNOWN_GAMES.put("com.levelinfinite.sgameGlobal", new GameInfoSpec("Honor of Kings (Global)", "MOBA", 185));
+        KNOWN_GAMES.put("com.levelinfinite.sgameglobal", new GameInfoSpec("Honor of Kings (Global)", "MOBA", 185));
         KNOWN_GAMES.put("com.levelinfinite.sgameGlobal.gpkg", new GameInfoSpec("Honor of Kings (Global GP)", "MOBA", 185));
         KNOWN_GAMES.put("com.tencent.tmgp.sgame", new GameInfoSpec("Honor of Kings (CN)", "MOBA", 185));
         KNOWN_GAMES.put("com.garena.game.kgtw", new GameInfoSpec("Arena of Valor (TW)", "MOBA", 185));

@@ -44,9 +44,13 @@ import com.gamebooster.app.config.MlbbDroneViewPatcher;
 import com.gamebooster.app.config.NativeConfigInjector;
 import com.gamebooster.app.config.PubgConfigPatcher;
 import com.gamebooster.app.core.AppExecutors;
+import com.gamebooster.app.engine.CodmCombatDamageInjector;
 import com.gamebooster.app.engine.CodmCombatOverdriveEngine;
+import com.gamebooster.app.engine.HokCombatOverdriveEngine;
+import com.gamebooster.app.engine.MlbbCombatDamageInjector;
 import com.gamebooster.app.engine.MlbbCombatOverdriveEngine;
 import com.gamebooster.app.engine.PlayIntegrityBypassEngine;
+import com.gamebooster.app.engine.PubgmCombatDamageInjector;
 import com.gamebooster.app.engine.PubgmCombatOverdriveEngine;
 import com.gamebooster.app.games.ForegroundGameDetector;
 import com.gamebooster.app.games.GameFamily;
@@ -174,7 +178,11 @@ public class InGameTrainerOverlayService extends Service {
             return START_STICKY;
         }
 
-        startForeground(NOTIF_ID, buildNotification());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIF_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        } else {
+            startForeground(NOTIF_ID, buildNotification());
+        }
 
         String extraPkg = (intent != null) ? intent.getStringExtra(EXTRA_PACKAGE_NAME) : null;
         if (extraPkg != null && !extraPkg.trim().isEmpty()) {
@@ -226,6 +234,9 @@ public class InGameTrainerOverlayService extends Service {
                 break;
             case PUBGM:
                 name = "PUBGM / BGMI OVERDRIVE";
+                break;
+            case HOK:
+                name = "HONOR OF KINGS 2026";
                 break;
             case FREE_FIRE:
                 name = "FREE FIRE COMBAT GOD";
@@ -521,6 +532,32 @@ public class InGameTrainerOverlayService extends Service {
         mBtnDroneCycle.setOnClickListener(v -> cycleAdaptiveFov());
         content.addView(mBtnDroneCycle);
 
+        // ── 7.5. Dedicated ROG 10 PRO+ (165Hz) Spoof Button ──
+        Button btnRog10Spoof = new Button(this);
+        btnRog10Spoof.setText("🔥 SPOOF ROG 10 PRO+ (165Hz)");
+        btnRog10Spoof.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        btnRog10Spoof.setTextColor(Color.parseColor("#FF9100"));
+        btnRog10Spoof.setTypeface(null, android.graphics.Typeface.BOLD);
+        applyCyberBtnStyle(btnRog10Spoof);
+        btnRog10Spoof.setOnClickListener(v -> {
+            showNeonToast("🔥 Applying ROG 10 Pro+ (165Hz) Live Mask...");
+            com.android.support.shizuku.MlbbModInjector.applyRog10ProSpoof(getApplicationContext(), true, new com.android.support.shizuku.MlbbModInjector.Callback() {
+                @Override
+                public void onSuccess(String message) {
+                    showNeonToast("✅ " + message);
+                }
+
+                @Override
+                public void onError(String error) {
+                    showNeonToast("❌ " + error);
+                }
+            });
+        });
+        LinearLayout.LayoutParams rog10Lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(34));
+        rog10Lp.setMargins(0, dp(6), 0, 0);
+        content.addView(btnRog10Spoof, rog10Lp);
+
         // ── 8. Instant Live Re-Inject Button ──
         Button btnReInject = new Button(this);
         btnReInject.setText("🔄 LIVE RE-INJECT NOW");
@@ -549,6 +586,12 @@ public class InGameTrainerOverlayService extends Service {
                         getSharedPreferences("mlbb_drone_prefs", MODE_PRIVATE)
                                 .getInt("drone_tier", MlbbDroneViewPatcher.DEFAULT_TIER));
                 mBtnDroneCycle.setText("🦅 MLBB Drone View: " + MlbbDroneViewPatcher.getTierLabel(curTier) + " ▾");
+                break;
+            }
+            case HOK: {
+                boolean isDrone = getSharedPreferences("hok_drone_prefs", MODE_PRIVATE)
+                        .getBoolean("drone_view_" + mCurrentGamePkg, true);
+                mBtnDroneCycle.setText(isDrone ? "🦅 HOK Drone View: Ultra Max FOV (ON)" : "🦅 HOK Drone View: Stock View");
                 break;
             }
             case PUBGM: {
@@ -581,6 +624,9 @@ public class InGameTrainerOverlayService extends Service {
         switch (family) {
             case MLBB:
                 cycleDroneViewTierMlbb();
+                break;
+            case HOK:
+                toggleHokDroneFov();
                 break;
             case PUBGM:
                 togglePubgmIpadFov();
@@ -620,6 +666,23 @@ public class InGameTrainerOverlayService extends Service {
         AppExecutors.getInstance().executeCommand(() -> {
             MlbbDroneViewPatcher.applyNewMapUpdate(getApplicationContext(), mCurrentGamePkg, targetTier);
             showNeonToast("🎯 MLBB Drone View switched to " + MlbbDroneViewPatcher.getTierLabel(targetTier));
+        });
+    }
+
+    private void toggleHokDroneFov() {
+        SharedPreferences sp = getSharedPreferences("hok_drone_prefs", MODE_PRIVATE);
+        boolean current = sp.getBoolean("drone_view_" + mCurrentGamePkg, true);
+        boolean next = !current;
+        sp.edit().putBoolean("drone_view_" + mCurrentGamePkg, next).apply();
+        updateFovButtonLabel();
+
+        AppExecutors.getInstance().executeCommand(() -> {
+            if (next) {
+                com.gamebooster.app.config.HokConfigPatcher.applyDroneViewUltraConfig(mCurrentGamePkg);
+            } else {
+                com.gamebooster.app.config.HokConfigPatcher.applyDroneViewConfig(mCurrentGamePkg);
+            }
+            showNeonToast(next ? "🦅 HOK Drone View 2.5x Ultra Max Engaged!" : "HOK Drone View Reset to Standard");
         });
     }
 
@@ -733,6 +796,7 @@ public class InGameTrainerOverlayService extends Service {
                 case MLBB:
                     MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.dmg", val);
                     if (enable) {
+                        MlbbCombatDamageInjector.injectCombatDamage(getApplicationContext(), mCurrentGamePkg);
                         MlbbCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
                     } else {
                         revertDamageForMlbb();
@@ -741,6 +805,7 @@ public class InGameTrainerOverlayService extends Service {
                 case CODM:
                     CodmCombatOverdriveEngine.setprop("gamebooster.codm.dmg", val);
                     if (enable) {
+                        CodmCombatDamageInjector.injectCombatDamage(getApplicationContext(), mCurrentGamePkg);
                         CodmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
                     } else {
                         revertDamageForCodm();
@@ -749,9 +814,18 @@ public class InGameTrainerOverlayService extends Service {
                 case PUBGM:
                     PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.dmg", val);
                     if (enable) {
+                        PubgmCombatDamageInjector.injectCombatDamage(getApplicationContext(), mCurrentGamePkg);
                         PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
                     } else {
                         revertDamageForPubgm();
+                    }
+                    break;
+                case HOK:
+                    HokCombatOverdriveEngine.setprop("gamebooster.hok.dmg", val);
+                    if (enable) {
+                        HokCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    } else {
+                        revertDamageForHok();
                     }
                     break;
                 case FREE_FIRE:
@@ -810,6 +884,18 @@ public class InGameTrainerOverlayService extends Service {
         } catch (Throwable ignored) {}
     }
 
+    private void revertDamageForHok() {
+        try {
+            List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
+            for (String p : paths) {
+                ConfigFileHelper.patchKeys(p, new String[]{
+                        "PhysicalAttackMultiplier=1.0", "SpellPowerMultiplier=1.0",
+                        "DamageMultiplier=1.0", "DamageLockMax=0"
+                }, "[HokCombatOverdrive]");
+            }
+        } catch (Throwable ignored) {}
+    }
+
     private void revertDamageForFreeFire() {
         try {
             List<String> paths = GameConfigPathResolver.getPathsForGame(mCurrentGamePkg);
@@ -842,6 +928,14 @@ public class InGameTrainerOverlayService extends Service {
                     PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.speed", val);
                     if (enable) {
                         PubgConfigPatcher.applySpeedBoostConfig(mCurrentGamePkg);
+                    }
+                    break;
+                case HOK:
+                    HokCombatOverdriveEngine.setprop("gamebooster.hok.speed", val);
+                    HokCombatOverdriveEngine.setprop("gamebooster.hok.aspd", enable ? "5.0" : "1.0");
+                    if (enable) {
+                        com.gamebooster.app.config.HokConfigPatcher.applySpeedBoostConfig(mCurrentGamePkg);
+                        com.gamebooster.app.config.HokConfigPatcher.applySuperFastTouch(mCurrentGamePkg);
                     }
                     break;
                 case FREE_FIRE:
@@ -940,6 +1034,12 @@ public class InGameTrainerOverlayService extends Service {
                         com.gamebooster.app.config.MlbbConfigPatcher.applyHeroAimLockConfig(mCurrentGamePkg);
                     }
                     break;
+                case HOK:
+                    if (enable) {
+                        com.gamebooster.app.config.HokConfigPatcher.applyAimAssistLockMax(mCurrentGamePkg);
+                        com.gamebooster.app.config.HokConfigPatcher.applyAutoSmiteObjective(mCurrentGamePkg);
+                    }
+                    break;
                 default:
                     break;
             }
@@ -953,6 +1053,7 @@ public class InGameTrainerOverlayService extends Service {
             MlbbCombatOverdriveEngine.setprop("gamebooster.mlbb.antiban", val);
             CodmCombatOverdriveEngine.setprop("gamebooster.codm.antiban", val);
             PubgmCombatOverdriveEngine.setprop("gamebooster.pubgm.antiban", val);
+            HokCombatOverdriveEngine.setprop("gamebooster.hok.antiban", val);
 
             if (enable) {
                 PlayIntegrityBypassEngine.applyFullBypassSuite(getApplicationContext(), mCurrentGamePkg);
@@ -979,6 +1080,10 @@ public class InGameTrainerOverlayService extends Service {
                 case PUBGM:
                     PubgmCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
                     PubgConfigPatcher.patch(mCurrentGamePkg, 185);
+                    break;
+                case HOK:
+                    HokCombatOverdriveEngine.applyCombatOverdrive(getApplicationContext(), mCurrentGamePkg);
+                    com.gamebooster.app.config.HokConfigPatcher.applyHokMasterSuite(mCurrentGamePkg);
                     break;
                 case FREE_FIRE:
                     FreeFireConfigPatcher.applyFreeFireMasterSuite(mCurrentGamePkg);

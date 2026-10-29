@@ -41,37 +41,21 @@ public final class PubgmHardwareMasker {
             // 1. Generate UE4 DeviceProfile keys
             String[] profileKeys = profile.generateUe4DeviceProfileKeys(targetFps);
 
-            // 2. Discover and patch dynamic UE4 INI paths
+            // 2. Discover and patch dynamic UE4 INI paths (strictly safe files per FIX_PUBGM.md)
             List<String> paths = GameConfigPathResolver.getPathsForGame(pkg);
             for (String p : paths) {
                 if (p.endsWith("UserCustom.ini") || p.endsWith("ChineseUserCustom.ini")) {
                     ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[UserCustom DeviceProfile]");
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[Android DeviceProfile]");
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[Android_Vulkan DeviceProfile]");
                 } else if (p.endsWith("EnjoyCJZC.ini") || p.endsWith("EnjoyCJ.ini") || p.endsWith("BGMIEnjoyCJZC.ini") ||
                            p.endsWith("KREnjoyCJZC.ini") || p.endsWith("VNGEnjoyCJZC.ini") || p.endsWith("TWEnjoyCJZC.ini")) {
                     ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[EnjoyCJZC DeviceProfile]");
                     ConfigFileHelper.patchKeys(p, profileKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
-                } else if (p.endsWith("DeviceProfile.ini") || p.endsWith("BaseDeviceProfile.ini") || p.endsWith("CompatibilityProfile.ini")) {
-                    ShizukuFileManager.ensureParentDirectory(p);
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[DeviceProfile]");
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[Android DeviceProfile]");
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[Android_Vulkan DeviceProfile]");
                 } else if (p.endsWith("GameUserSettings.ini")) {
                     ShizukuFileManager.ensureParentDirectory(p);
                     ConfigFileHelper.patchKeys(p, profileKeys, "[/Script/ShadowTrackerExtra.UserSetting]");
-                } else if (p.endsWith("SettingInfo.ini")) {
-                    ShizukuFileManager.ensureParentDirectory(p);
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[SettingInfo]");
-                } else if (p.endsWith("Quality.ini")) {
-                    ShizukuFileManager.ensureParentDirectory(p);
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[Quality]");
-                } else if (p.endsWith("Engine.ini")) {
-                    ShizukuFileManager.ensureParentDirectory(p);
-                    ConfigFileHelper.patchKeys(p, profileKeys, "[SystemSettings]");
-                } else if (p.endsWith(".xml")) {
+                } else if (p.endsWith(".xml") && (p.contains("/shared_prefs/") || p.contains("/data/"))) {
                     ShizukuFileManager.ensureParentDirectory(p);
                     NativeConfigInjector.injectHardwareMaskProfile(p, profile, targetFps);
                 }
@@ -79,6 +63,12 @@ public final class PubgmHardwareMasker {
 
             // 3. Binary patching of Active.sav & PAK deployment
             try {
+                // Ensure Active.sav template is deployed from assets if missing on device
+                android.content.Context appCtx = com.gamebooster.app.GameBoosterApp.getInstance();
+                if (appCtx != null) {
+                    PubgConfigPatcher.deployPubgmAssets(appCtx, pkg);
+                }
+
                 if (targetFps >= 185) {
                     PubgConfigPatcher.patchSuperSmooth185(pkg);
                 } else if (targetFps >= 165) {
@@ -96,24 +86,40 @@ public final class PubgmHardwareMasker {
                 Log.w(TAG, "PUBGM binary patch warning: " + t.getMessage());
             }
 
-            // 4. Guaranteed Shizuku elevated shell write fallback for PUBGM UE4 DeviceProfile
+            // 4. Guaranteed elevated shell write fallback for PUBGM UE4 UserCustom.ini (and remove bad Engine.ini/DeviceProfile.ini)
             try {
                 String ue4Ini = profile.generateUe4DeviceProfile(targetFps);
                 byte[] iniBytes = ue4Ini.getBytes(StandardCharsets.UTF_8);
                 String iniB64 = Base64.encodeToString(iniBytes, Base64.NO_WRAP).replace("\n", "").replace("\r", "");
                 String pubgFallbackCmd =
+                    "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; " +
+                    "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; " +
+                    "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/Engine.ini 2>/dev/null; " +
+                    "rm -f /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/Engine.ini 2>/dev/null; " +
+                    "mkdir -p /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android 2>/dev/null; " +
+                    "mkdir -p /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android 2>/dev/null; " +
                     "mkdir -p /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android 2>/dev/null; " +
                     "mkdir -p /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android 2>/dev/null; " +
-                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; " +
-                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/DeviceProfile.ini 2>/dev/null; ";
-                ShizukuExecutor.executeShizukuCommand(pubgFallbackCmd);
+                    "echo '" + iniB64 + "' | base64 -d > /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "echo '" + iniB64 + "' | base64 -d > /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "echo '" + iniB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; " +
+                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini 2>/dev/null; ";
+                com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(pubgFallbackCmd);
+
                 // Safe non-destructive patching of UserCustom.ini so combat overrides are retained
-                String uc1 = "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini";
-                String uc2 = "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini";
-                ConfigFileHelper.patchKeys(uc1, profileKeys, "[UserCustom DeviceProfile]");
-                ConfigFileHelper.patchKeys(uc2, profileKeys, "[UserCustom DeviceProfile]");
+                String[] ucPaths = {
+                    "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+                    "/storage/emulated/0/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+                    "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini",
+                    "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini"
+                };
+                for (String uc : ucPaths) {
+                    ConfigFileHelper.patchKeys(uc, profileKeys, "[UserCustom DeviceProfile]");
+                }
             } catch (Throwable ignored) {}
 
             GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(pkg, paths);

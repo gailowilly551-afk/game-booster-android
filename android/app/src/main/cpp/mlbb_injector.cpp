@@ -1932,16 +1932,24 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     struct stat stBefore;
     bool hasStat = (stat(path, &stBefore) == 0);
 
-    int fps = (targetFps >= 120) ? targetFps : 165;
+    int fps = (targetFps >= 120) ? targetFps : 144;
     int q = (qualityLevel > 0) ? qualityLevel : 3;
     std::string fpsStr = std::to_string(fps);
     std::string qStr = std::to_string(q);
+    // In MLBB Unity UI: 0=Low, 1=High, 2=Super(90fps), 3=Ultra(120fps/144fps).
+    std::string levelStr = (fps >= 120) ? "3" : (fps >= 90 ? "2" : "1");
 
     // XML PlayerPrefs keys for MLBB
     std::vector<std::pair<std::string, std::string>> intKeys = {
-        {"HighFPSMode", "6"},
+        {"HighFPSMode", levelStr},
+        {"high_fps_mode", levelStr},
         {"HighFPSEnable", "1"},
-        {"FrameRateLevel", "6"},
+        {"FrameRateLevel", levelStr},
+        {"__FrameRateLevel__", levelStr},
+        {"__MaxFrameRateLevel__", levelStr},
+        {"fps_level", levelStr},
+        {"UltraFrameRate", "1"},
+        {"SuperFrameRate", "1"},
         {"QualityLevel", qStr},
         {"GraphicsQuality", qStr},
         {"TextureQuality", qStr},
@@ -2015,7 +2023,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     // Handle JSON Document files safely: NEVER write XML into .json files!
     if (pathStr.rfind(".json") != std::string::npos) {
         if (content.empty() || content.find('{') == std::string::npos || content.find("<map>") != std::string::npos) {
-            content = "{\n  \"HighFPSMode\": 6,\n  \"HighFPSEnable\": 1,\n  \"FrameRateLevel\": 6,\n  \"QualityLevel\": 3\n}\n";
+            content = "{\n  \"HighFPSMode\": " + levelStr + ",\n  \"HighFPSEnable\": 1,\n  \"FrameRateLevel\": " + levelStr + ",\n  \"QualityLevel\": 3\n}\n";
         }
         for (const auto &kv : intKeys) {
             patch_json_node(content, kv.first, kv.second, true);

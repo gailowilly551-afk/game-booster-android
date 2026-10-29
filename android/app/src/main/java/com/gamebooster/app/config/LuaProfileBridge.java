@@ -155,15 +155,14 @@ public class LuaProfileBridge {
             } catch (Throwable ignored) {}
 
             // Fix L5: wire DeviceSpooferEngine after successful Lua config inject.
-            // Picks the best-fit hardware mask (flagship GPU/SoC spoof) for the game.
-            // Respects sanity checks and risk tiers internally.
+            // Uses the user's selected effective hardware profile (or recommended fallback if none set).
             if (injectedAny && context != null) {
                 try {
-                    SpoofProfile recommendedProfile = DeviceSpooferEngine.getRecommendedProfile(pkg);
-                    if (recommendedProfile != null) {
-                        boolean applied = DeviceSpooferEngine.applyProfile(context, recommendedProfile, pkg);
+                    SpoofProfile effectiveProfile = DeviceSpooferEngine.getEffectiveProfile(context, pkg);
+                    if (effectiveProfile != null) {
+                        boolean applied = DeviceSpooferEngine.applyProfile(context, effectiveProfile, pkg);
                         if (applied) {
-                            Log.i(TAG, "⚡ HardwareMask [" + recommendedProfile.displayName + "] applied via LuaProfileBridge for " + pkg);
+                            Log.i(TAG, "⚡ HardwareMask [" + effectiveProfile.displayName + "] applied via LuaProfileBridge for " + pkg);
                         } else {
                             Log.d(TAG, "HardwareMask skipped or advisory-blocked for " + pkg);
                         }

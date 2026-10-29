@@ -130,105 +130,97 @@ public class GpuTweaksChannel {
     }
 
     public static boolean enableVulkanRenderer() {
-        CommandExecutor.setSystemProperty("debug.hwui.renderer", "skiavk");
-        CommandExecutor.setSystemProperty("debug.renderengine.backend", "vulkan");
-        CommandExecutor.setSystemProperty("debug.renderengine.skia_pipeline", "true");
-        CommandExecutor.setSystemProperty("debug.hwui.use_gpu_pixel_buffers", "true");
-        CommandExecutor.setSystemProperty("debug.hwui.render_thread_priority", "-20");
-        CommandExecutor.setSystemProperty("debug.hwui.skip_empty_damage", "true");
-        CommandExecutor.setSystemProperty("debug.sf.latch_unsignaled", "0");
-        CommandExecutor.setSystemProperty("debug.sf.auto_latch_unsignaled", "0");
-        CommandExecutor.setSystemProperty("debug.sf.disable_backpressure", "1");
-        CommandExecutor.setSystemProperty("debug.sf.enable_gl_backpressure", "0");
-        CommandExecutor.setSystemProperty("debug.sf.predict_hwc_composition_strategy", "1");
-        purgeAngleDriver();
+        StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.hwui.renderer skiavk; ");
+        sb.append("setprop debug.renderengine.backend vulkan; ");
+        sb.append("setprop debug.renderengine.skia_pipeline true; ");
+        sb.append("setprop debug.hwui.use_gpu_pixel_buffers true; ");
+        sb.append("setprop debug.hwui.render_thread_priority -20; ");
+        sb.append("setprop debug.hwui.skip_empty_damage true; ");
+        sb.append("setprop debug.sf.latch_unsignaled 0; ");
+        sb.append("setprop debug.sf.auto_latch_unsignaled 0; ");
+        sb.append("setprop debug.sf.disable_backpressure 1; ");
+        sb.append("setprop debug.sf.enable_gl_backpressure 0; ");
+        sb.append("setprop debug.sf.predict_hwc_composition_strategy 1; ");
+        sb.append("setprop debug.angle.backend 0; ");
+        sb.append("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null; ");
+        sb.append("settings delete global angle_gl_driver_selection_values 2>/dev/null; ");
+        sb.append("settings delete global angle_enabled_pkgs 2>/dev/null; ");
+        sb.append("settings delete global angle_defer_init 2>/dev/null; ");
+        sb.append("settings put global angle_gl_driver_all_angle 0 2>/dev/null; ");
 
-        // Apply Vulkan Game Overlay to all registered games on Android 13+
-        for (String pkg : GamePackageRegistry.getAllKnownGames().keySet()) {
-            try {
-                CommandExecutor.executeSystemCommand("device_config put game_overlay " + pkg + " mode=2,useAngle=false,fps=185:mode=3,useAngle=false,fps=185");
-            } catch (Throwable ignored) {}
+        // Apply Vulkan Game Overlay to target esports games in a single batched command
+        for (String pkg : new String[]{
+                "com.mobile.legends", "com.mobilelegends.mi", "com.vng.mlbbvn",
+                "com.activision.callofduty.shooter", "com.garena.game.codm",
+                "com.tencent.ig", "com.pubg.imobile", "com.pubg.krmobile",
+                "com.levelinfinite.sgameGlobal", "com.tencent.tmgp.sgame"}) {
+            sb.append("device_config put game_overlay ").append(pkg)
+              .append(" mode=2,useAngle=false,fps=185:mode=3,useAngle=false,fps=185 2>/dev/null; ");
         }
+        CommandExecutor.executeSystemCommand(sb.toString());
         return true;
     }
 
     public static boolean enableAdrenoTurbo() {
-        CommandExecutor.setSystemProperty("debug.adreno.turbo", "1");
-        CommandExecutor.setSystemProperty("debug.adreno.perf_level", "0");
-        CommandExecutor.setSystemProperty("debug.qualcomm.sns.hal", "0");
-        CommandExecutor.setSystemProperty("vendor.perf.gestureFlingBoost", "1");
-        CommandExecutor.setSystemProperty("persist.vendor.qti.games.gt.enable", "1");
-        CommandExecutor.setSystemProperty("vendor.gpu.power_mode", "1");
-        CommandExecutor.setSystemProperty("debug.adreno.cframe_hint", "1");
-        CommandExecutor.setSystemProperty("debug.adreno.preemption", "1");
-
-        // Sysfs GPU devfreq clock and power rail locks for Adreno (Snapdragon)
         StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.adreno.turbo 1; ");
+        sb.append("setprop debug.adreno.perf_level 0; ");
+        sb.append("setprop debug.qualcomm.sns.hal 0; ");
+        sb.append("setprop vendor.perf.gestureFlingBoost 1; ");
+        sb.append("setprop persist.vendor.qti.games.gt.enable 1; ");
+        sb.append("setprop vendor.gpu.power_mode 1; ");
+        sb.append("setprop debug.adreno.cframe_hint 1; ");
+        sb.append("setprop debug.adreno.preemption 1; ");
+        sb.append("setprop vendor.qti.hardware.gpu.perf 1 2>/dev/null; ");
+        sb.append("setprop vendor.display.comp_mask 0 2>/dev/null; ");
         sb.append("echo performance > /sys/class/kgsl/kgsl-3d0/devfreq/governor 2>/dev/null; ");
         sb.append("echo 0 > /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null; ");
         sb.append("echo 1 > /sys/class/kgsl/kgsl-3d0/force_bus_on 2>/dev/null; ");
         sb.append("echo 1 > /sys/class/kgsl/kgsl-3d0/force_clk_on 2>/dev/null; ");
         sb.append("echo 1 > /sys/class/kgsl/kgsl-3d0/force_rail_on 2>/dev/null; ");
-        // Lock GPU clock: min_freq = max_freq
         sb.append("MAX_GPU_FREQ=$(cat /sys/class/kgsl/kgsl-3d0/devfreq/max_freq 2>/dev/null); ");
         sb.append("[ -n \"$MAX_GPU_FREQ\" ] && echo $MAX_GPU_FREQ > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq 2>/dev/null; ");
-        // Pin P-state: max_pwrlevel=0, thermal_pwrlevel=0
         sb.append("echo 0 > /sys/class/kgsl/kgsl-3d0/max_pwrlevel 2>/dev/null; ");
         sb.append("echo 0 > /sys/class/kgsl/kgsl-3d0/thermal_pwrlevel 2>/dev/null; ");
-        // Disable DCVS dispatch queue
         sb.append("echo 0 > /sys/class/kgsl/kgsl-3d0/dispatch_queue_length 2>/dev/null; ");
         sb.append("echo 1 > /sys/class/kgsl/kgsl-3d0/perfcounter 2>/dev/null; ");
         CommandExecutor.executeSystemCommand(sb.toString());
-
-        // QTI GPU sustained performance HAL hint via Shizuku
-        com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommands(
-            "setprop vendor.qti.hardware.gpu.perf 1 2>/dev/null",
-            "setprop vendor.display.comp_mask 0 2>/dev/null",
-            "setprop debug.adreno.cframe_hint 1 2>/dev/null",
-            "setprop debug.adreno.preemption 1 2>/dev/null"
-        );
         return true;
     }
 
     public static boolean enableMediaTekGedBoost() {
-        CommandExecutor.setSystemProperty("debug.mali.sched.priority", "-20");
-        CommandExecutor.setSystemProperty("debug.mali.force_gpu_boost", "1");
-        CommandExecutor.setSystemProperty("debug.mali.realtime", "1");
-        CommandExecutor.setSystemProperty("persist.vendor.ged.boost", "1");
-        CommandExecutor.setSystemProperty("persist.vendor.dpt.enable", "1");
-        CommandExecutor.setSystemProperty("vendor.ppt.boost", "1");
-        CommandExecutor.setSystemProperty("debug.mali.gralloc.shared", "1");
-        CommandExecutor.setSystemProperty("persist.vendor.mtkgpu.use_power_limit", "0");
-
-        // MediaTek GPU Engine Driver (GED) kernel game mode & PID boost
         StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.mali.sched.priority -20; ");
+        sb.append("setprop debug.mali.force_gpu_boost 1; ");
+        sb.append("setprop debug.mali.realtime 1; ");
+        sb.append("setprop persist.vendor.ged.boost 1; ");
+        sb.append("setprop persist.vendor.dpt.enable 1; ");
+        sb.append("setprop vendor.ppt.boost 1; ");
+        sb.append("setprop debug.mali.gralloc.shared 1; ");
+        sb.append("setprop persist.vendor.mtkgpu.use_power_limit 0; ");
         sb.append("echo 0 > /sys/class/misc/mali0/device/dvfs_enable 2>/dev/null; ");
         sb.append("echo 1 > /sys/module/ged/parameters/gx_game_mode 2>/dev/null; ");
         sb.append("echo 1 > /sys/module/ged/parameters/gx_boost_on 2>/dev/null; ");
         sb.append("echo 1 > /sys/module/ged/parameters/gx_force_cpu_boost 2>/dev/null; ");
         sb.append("echo 100 > /sys/module/ged/parameters/gx_top_app_pid_boost 2>/dev/null; ");
-        // Extended GED flags
         sb.append("echo 0 > /sys/module/ged/parameters/gx_fps_cap_margin 2>/dev/null; ");
         sb.append("echo 100 > /sys/module/ged/parameters/gx_max_cpu_loading 2>/dev/null; ");
         sb.append("echo 1 > /sys/module/ged/parameters/gx_is_GED_KPI_enabled 2>/dev/null; ");
         sb.append("echo 0 > /sys/module/ged/parameters/gx_dvfs_margin_mode 2>/dev/null; ");
-        // GPU devfreq governor + clock lock
         sb.append("for g in /sys/class/devfreq/*gpu*/governor; do echo performance > \"$g\" 2>/dev/null; done; ");
         sb.append("MAX_MTK_GPU=$(cat /sys/class/devfreq/*gpu*/max_freq 2>/dev/null | head -1); ");
         sb.append("[ -n \"$MAX_MTK_GPU\" ] && echo $MAX_MTK_GPU > /sys/class/devfreq/*gpu*/min_freq 2>/dev/null; ");
-        // MTK PPM game scenario
         sb.append("echo 1 > /proc/ppm/policy/ut_ppm_game_cfg 2>/dev/null; ");
         CommandExecutor.executeSystemCommand(sb.toString());
         return true;
     }
 
     public static boolean enableTensorBoost() {
-        CommandExecutor.setSystemProperty("debug.tensor.gpu.boost", "1");
-        CommandExecutor.setSystemProperty("debug.sf.use_phase_offsets_as_durations", "1");
-        CommandExecutor.setSystemProperty("vendor.perf.perfhal.enable", "1");
-
-        // Tensor Mali GPU devfreq governor + clock lock
         StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.tensor.gpu.boost 1; ");
+        sb.append("setprop debug.sf.use_phase_offsets_as_durations 1; ");
+        sb.append("setprop vendor.perf.perfhal.enable 1; ");
         sb.append("for f in /sys/class/devfreq/18000000.mali/governor; do echo performance > \"$f\" 2>/dev/null; done; ");
         sb.append("for f in /sys/class/devfreq/*mali*/governor; do echo performance > \"$f\" 2>/dev/null; done; ");
         sb.append("MAX_TENSOR_GPU=$(cat /sys/class/devfreq/18000000.mali/max_freq 2>/dev/null); ");
@@ -239,13 +231,11 @@ public class GpuTweaksChannel {
     }
 
     public static boolean enableExynosXclipseBoost() {
-        CommandExecutor.setSystemProperty("debug.exynos.performance.mode", "1");
-        CommandExecutor.setSystemProperty("debug.xclipse.gpu.boost", "1");
-        CommandExecutor.setSystemProperty("debug.xclipse.driver.mode", "1");
-        CommandExecutor.setSystemProperty("debug.exynos.gos.disable", "1");
-
-        // Exynos GPU devfreq governor + clock lock + power control
         StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.exynos.performance.mode 1; ");
+        sb.append("setprop debug.xclipse.gpu.boost 1; ");
+        sb.append("setprop debug.xclipse.driver.mode 1; ");
+        sb.append("setprop debug.exynos.gos.disable 1; ");
         sb.append("for f in /sys/devices/platform/17000000.gpu/devfreq/*/governor; do echo performance > \"$f\" 2>/dev/null; done; ");
         sb.append("for f in /sys/class/devfreq/*gpu*/governor; do echo performance > \"$f\" 2>/dev/null; done; ");
         sb.append("echo on > /sys/devices/platform/17000000.gpu/power/control 2>/dev/null; ");
@@ -471,17 +461,9 @@ public class GpuTweaksChannel {
     public static boolean setGpuMaxPerformance() {
         enableVulkanRenderer();
         enableAdrenoTurbo();
-        applyExtendedAdrenoFlags();
         enableMediaTekGedBoost();
-        applyExtendedMediaTekFlags();
         enableTensorBoost();
-        applyExtendedTensorFlags();
         enableExynosXclipseBoost();
-        applyExtendedExynosFlags();
-        enableKirinBoost();
-        applyExtendedKirinFlags();
-        enableUnisocBoost();
-        applyExtendedUnisocFlags();
         enableForceMsaa();
         return true;
     }
@@ -494,34 +476,40 @@ public class GpuTweaksChannel {
         if (packageName == null || packageName.trim().isEmpty()) return false;
         String pkg = packageName.trim();
 
-        // Always purge global ANGLE switches to prevent game crashes & latency
-        purgeAngleDriver();
-        CommandExecutor.executeSystemCommand("settings put global game_driver_all_apps 0 2>/dev/null");
-        CommandExecutor.executeSystemCommand("settings put global updatable_driver_all_apps 0 2>/dev/null");
+        StringBuilder sb = new StringBuilder();
+        sb.append("setprop debug.angle.backend 0; ");
+        sb.append("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null; ");
+        sb.append("settings delete global angle_gl_driver_selection_values 2>/dev/null; ");
+        sb.append("settings delete global angle_enabled_pkgs 2>/dev/null; ");
+        sb.append("settings delete global angle_defer_init 2>/dev/null; ");
+        sb.append("settings put global angle_gl_driver_all_angle 0 2>/dev/null; ");
+        sb.append("settings put global game_driver_all_apps 0 2>/dev/null; ");
+        sb.append("settings put global updatable_driver_all_apps 0 2>/dev/null; ");
 
         if (driverType == GraphicsDriverType.GAME_DRIVER && isGameDriverEligible(pkg)) {
-            CommandExecutor.executeSystemCommand("settings put global game_driver_opt_in_apps " + pkg);
-            CommandExecutor.executeSystemCommand("settings put global game_driver_prerelease_opt_in_apps " + pkg);
-            CommandExecutor.executeSystemCommand("settings put global updatable_driver_production_opt_in_apps \"\"");
-            return true;
+            sb.append("settings put global game_driver_opt_in_apps ").append(pkg).append("; ");
+            sb.append("settings put global game_driver_prerelease_opt_in_apps ").append(pkg).append("; ");
+            sb.append("settings put global updatable_driver_production_opt_in_apps \"\"; ");
         } else {
-            // Revert back to default system driver for non-eligible or default-selected
-            CommandExecutor.executeSystemCommand("settings put global game_driver_opt_in_apps \"\"");
-            CommandExecutor.executeSystemCommand("settings put global updatable_driver_production_opt_in_apps \"\"");
-            return true;
+            sb.append("settings put global game_driver_opt_in_apps \"\"; ");
+            sb.append("settings put global updatable_driver_production_opt_in_apps \"\"; ");
         }
+        CommandExecutor.executeSystemCommand(sb.toString());
+        return true;
     }
 
     /**
      * Purges and neutralizes ANGLE across the Android system globally.
      */
     public static boolean purgeAngleDriver() {
-        CommandExecutor.setSystemProperty("debug.angle.backend", "0");
-        CommandExecutor.executeSystemCommand("settings delete global angle_gl_driver_selection_pkgs 2>/dev/null");
-        CommandExecutor.executeSystemCommand("settings delete global angle_gl_driver_selection_values 2>/dev/null");
-        CommandExecutor.executeSystemCommand("settings delete global angle_enabled_pkgs 2>/dev/null");
-        CommandExecutor.executeSystemCommand("settings delete global angle_defer_init 2>/dev/null");
-        CommandExecutor.executeSystemCommand("settings put global angle_gl_driver_all_angle 0 2>/dev/null");
+        CommandExecutor.executeSystemCommand(
+                "setprop debug.angle.backend 0; " +
+                "settings delete global angle_gl_driver_selection_pkgs 2>/dev/null; " +
+                "settings delete global angle_gl_driver_selection_values 2>/dev/null; " +
+                "settings delete global angle_enabled_pkgs 2>/dev/null; " +
+                "settings delete global angle_defer_init 2>/dev/null; " +
+                "settings put global angle_gl_driver_all_angle 0 2>/dev/null"
+        );
         return true;
     }
 
@@ -532,21 +520,20 @@ public class GpuTweaksChannel {
 
     public static boolean setGameDriverMode(boolean enabled) {
         String targetCsv = getTargetGamesCsv();
-        // Never allow global game driver to prevent crashing system apps
-        CommandExecutor.executeSystemCommand("settings put global game_driver_all_apps 0");
-        CommandExecutor.executeSystemCommand("settings put global updatable_driver_all_apps 0");
-
+        StringBuilder sb = new StringBuilder();
+        sb.append("settings put global game_driver_all_apps 0 2>/dev/null; ");
+        sb.append("settings put global updatable_driver_all_apps 0 2>/dev/null; ");
         if (enabled) {
-            CommandExecutor.executeSystemCommand("settings put global game_driver_opt_in_apps " + targetCsv);
-            CommandExecutor.executeSystemCommand("settings put global game_driver_prerelease_opt_in_apps " + targetCsv);
-            String res = CommandExecutor.executeSystemCommand("settings put global updatable_driver_production_opt_in_apps \"\"");
-            return CommandExecutor.isSuccessOutput(res);
+            sb.append("settings put global game_driver_opt_in_apps ").append(targetCsv).append(" 2>/dev/null; ");
+            sb.append("settings put global game_driver_prerelease_opt_in_apps ").append(targetCsv).append(" 2>/dev/null; ");
+            sb.append("settings put global updatable_driver_production_opt_in_apps \"\" 2>/dev/null");
         } else {
-            CommandExecutor.executeSystemCommand("settings put global game_driver_opt_in_apps \"\"");
-            CommandExecutor.executeSystemCommand("settings put global game_driver_prerelease_opt_in_apps \"\"");
-            String res = CommandExecutor.executeSystemCommand("settings put global updatable_driver_production_opt_in_apps \"\"");
-            return CommandExecutor.isSuccessOutput(res);
+            sb.append("settings put global game_driver_opt_in_apps \"\" 2>/dev/null; ");
+            sb.append("settings put global game_driver_prerelease_opt_in_apps \"\" 2>/dev/null; ");
+            sb.append("settings put global updatable_driver_production_opt_in_apps \"\" 2>/dev/null");
         }
+        String res = CommandExecutor.executeSystemCommand(sb.toString());
+        return CommandExecutor.isSuccessOutput(res);
     }
 
     /**

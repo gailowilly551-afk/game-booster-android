@@ -24,6 +24,7 @@ add_library(
     mem_proc_patch_engine.cpp      # /proc/self/mem ARM64 patcher (no mprotect)
     ace_cloak_engine.cpp           # Tencent ACE in-process cloak engine
     il2cpp_direct_scanner.cpp      # libil2cpp direct memory pattern scanner
+    ../jni/memhook/memhook.cpp     # Live RAM identity masker & ROG 10 Pro+ daemon
 )
 
 target_compile_options(
@@ -40,6 +41,7 @@ target_compile_options(
     -fomit-frame-pointer
     # Fix N4: NDEBUG suppresses assert() in release; Wall+Wextra surface silent bugs
     -DNDEBUG
+    -DMEMHOOK_AS_LIBRARY=1
     -Wall
     -Wextra
     -Wno-unused-parameter

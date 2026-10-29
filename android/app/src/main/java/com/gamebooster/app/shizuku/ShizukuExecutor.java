@@ -79,8 +79,30 @@ public class ShizukuExecutor {
             return "ERROR: No elevated channel available (Shizuku binder dead)";
         }
 
-        // Tier 1: IShizukuService AIDL direct remote process execution (v11/v12/v13/v13.6 compatible)
+        // Tier 1: Shizuku.newProcess direct execution via reflection (Official Shizuku API)
         if (hasShizukuPermission()) {
+            // Prefer already-bound AIDL UserService first (zero process-spawn reflection overhead)
+            if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
+                String aidlRes = ShizukuUserServiceConnector.getInstance().executeCommandDirect(command);
+                if (aidlRes != null && !aidlRes.startsWith("ERROR")) {
+                    return aidlRes;
+                }
+            }
+
+            try {
+                java.lang.reflect.Method m = Shizuku.class.getDeclaredMethod("newProcess", String[].class, String[].class, String.class);
+                m.setAccessible(true);
+                Process proc = (Process) m.invoke(null, new String[]{"sh", "-c", command}, null, null);
+                if (proc != null) {
+                    String res = readProcessOutput(proc, 3000L);
+                    if (res != null && !res.startsWith("ERROR: Command timed out")) {
+                        return res;
+                    }
+                }
+            } catch (Throwable e) {
+                Log.w(TAG, "Shizuku.newProcess execution failed: " + e.getMessage());
+            }
+
             IBinder binder = Shizuku.getBinder();
             if (binder != null && binder.isBinderAlive()) {
                 IRemoteProcess remoteProcess = null;
@@ -89,7 +111,7 @@ public class ShizukuExecutor {
                     if (service != null) {
                         remoteProcess = service.newProcess(new String[]{"sh", "-c", command}, null, null);
                         if (remoteProcess != null) {
-                            String res = readRemoteProcessOutput(remoteProcess, 8000L);
+                            String res = readRemoteProcessOutput(remoteProcess, 3000L);
                             if (res != null && !res.startsWith("ERROR: Command timed out")) {
                                 return res;
                             }
@@ -103,14 +125,6 @@ public class ShizukuExecutor {
                             remoteProcess.destroy();
                         } catch (Throwable ignored) {}
                     }
-                }
-            }
-
-            // Fallback: AIDL UserService if already connected
-            if (ShizukuUserServiceConnector.getInstance().isServiceConnected()) {
-                String aidlRes = ShizukuUserServiceConnector.getInstance().executeCommandDirect(command);
-                if (aidlRes != null && !aidlRes.startsWith("ERROR")) {
-                    return aidlRes;
                 }
             }
         }
@@ -278,9 +292,13 @@ public class ShizukuExecutor {
         }
 
         try {
-            outFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
-            errFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            outFuture.get(80, java.util.concurrent.TimeUnit.MILLISECONDS);
         } catch (Throwable ignored) {}
+        try {
+            errFuture.get(50, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (Throwable ignored) {}
+        outFuture.cancel(true);
+        errFuture.cancel(true);
 
         String stdoutStr = stdout.toString().trim();
         String stderrStr = stderr.toString().trim();
@@ -297,6 +315,9 @@ public class ShizukuExecutor {
 
     public static String readProcessOutput(Process process, long timeoutMs) {
         if (process == null) return "ERROR: Process is null";
+        try {
+            process.getOutputStream().close();
+        } catch (Throwable ignored) {}
         final StringBuffer stdout = new StringBuffer();
         final StringBuffer stderr = new StringBuffer();
 
@@ -329,7 +350,7 @@ public class ShizukuExecutor {
             waitFuture.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
         } catch (java.util.concurrent.TimeoutException te) {
             try {
-                process.destroy();
+                process.destroyForcibly();
             } catch (Throwable ignored) {}
             outFuture.cancel(true);
             errFuture.cancel(true);
@@ -337,15 +358,19 @@ public class ShizukuExecutor {
             return "ERROR: Command timed out after " + timeoutMs + "ms";
         } catch (Throwable t) {
             try {
-                process.destroy();
+                process.destroyForcibly();
             } catch (Throwable ignored) {}
             return "ERROR: " + t.getMessage();
         }
 
         try {
-            outFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
-            errFuture.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+            outFuture.get(80, java.util.concurrent.TimeUnit.MILLISECONDS);
         } catch (Throwable ignored) {}
+        try {
+            errFuture.get(50, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (Throwable ignored) {}
+        outFuture.cancel(true);
+        errFuture.cancel(true);
 
         String stdoutStr = stdout.toString().trim();
         String stderrStr = stderr.toString().trim();

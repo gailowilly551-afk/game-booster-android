@@ -293,6 +293,12 @@ public final class GameAutoInjectDispatcher {
                         } catch (Throwable modErr) {
                             Log.w(TAG, "MLBB Mod Profile injection warning: " + modErr.getMessage());
                         }
+                        // Final-pass hardware spoof re-apply so selected SpoofProfile has the last word on all MLBB configs
+                        try {
+                            com.gamebooster.app.spoofer.DeviceSpooferEngine.autoApplyOptimalProfileForGame(fCtx, fPkg);
+                        } catch (Throwable spoofErr) {
+                            Log.w(TAG, "MLBB final-pass spoof note: " + spoofErr.getMessage());
+                        }
                         Log.i(TAG, "✅ [MLBB Deferred Inject] All overrides & Latest 2026 Patch applied for " + fPkg);
                     } catch (Throwable t) {
                         Log.e(TAG, "Error in MLBB deferred injection for " + fPkg, t);
@@ -504,6 +510,17 @@ public final class GameAutoInjectDispatcher {
                 LuaProfileBridge.applyProfileForPackage(ctx, pkg);
             } catch (Throwable t) {
                 Log.w(TAG, "LuaProfileBridge note for " + pkg + ": " + t.getMessage());
+            }
+
+            // ── Final-pass Hardware Mask Re-assertion ──
+            // Ensures user's selected SpoofProfile has the final write on HardwareProfile.json,
+            // UserCustom.ini, DeviceHardware.ini, and playerprefs.xml after all config patchers finish.
+            if (!pkg.contains("mobile.legends") && !pkg.contains("mobilelegends")) {
+                try {
+                    com.gamebooster.app.spoofer.DeviceSpooferEngine.autoApplyOptimalProfileForGame(ctx, pkg);
+                } catch (Throwable t) {
+                    Log.w(TAG, "Final-pass device spoof note for " + pkg + ": " + t.getMessage());
+                }
             }
 
             GameSecurityBypassEngine.postInjectionBypassAndLock(pkg);

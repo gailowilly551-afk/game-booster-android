@@ -89,7 +89,7 @@ public class ShizukuUserServiceConnector {
         if (rebindScheduled.compareAndSet(false, true)) {
             AppExecutors.getInstance().executeCommand(() -> {
                 try {
-                    int maxAttempts = 50; // Resilient retry loop (up to ~3 minutes)
+                    int maxAttempts = 2; // Check twice, then fall back cleanly without burning CPU
                     while (consecutiveRebindFailures.get() < maxAttempts && !isServiceConnected()) {
                         int attempt = consecutiveRebindFailures.getAndIncrement();
                         long waitTime = calculateBackoffDelay(attempt);
@@ -103,7 +103,7 @@ public class ShizukuUserServiceConnector {
                         }
 
                         if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                            Log.d(TAG, "Executing hardened auto-rebind attempt " + (attempt + 1) + " for IUserService daemon (delay=" + waitTime + "ms)...");
+                            Log.d(TAG, "Executing auto-rebind attempt " + (attempt + 1) + " for IUserService daemon...");
                             bindService();
                             long checkDeadline = System.currentTimeMillis() + 500L;
                             while (System.currentTimeMillis() < checkDeadline && !isServiceConnected()) {
@@ -115,9 +115,11 @@ public class ShizukuUserServiceConnector {
                                 break;
                             }
                         } else if (!Shizuku.pingBinder()) {
-                            // If main binder itself is sleeping/dead, back off briefly
                             try { Thread.sleep(600); } catch (InterruptedException ignored) {}
                         }
+                    }
+                    if (!isServiceConnected()) {
+                        Log.i(TAG, "IUserService not hosted by OS — routing seamlessly via ShizukuExecutor remote processes.");
                     }
                 } finally {
                     rebindScheduled.set(false);
@@ -250,14 +252,19 @@ public class ShizukuUserServiceConnector {
         }
     }
 
+    private volatile long lastBindWaitMs = 0L;
+
     private void ensureBound() {
         if (!isServiceConnected()) {
             bindService();
-            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
-                int retries = 6;
+            long now = System.currentTimeMillis();
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()
+                    && (now - lastBindWaitMs) > 10000L) {
+                lastBindWaitMs = now;
+                int retries = 3;
                 while (!isServiceConnected() && retries > 0) {
                     try {
-                        Thread.sleep(40);
+                        Thread.sleep(30);
                     } catch (InterruptedException ignored) {}
                     retries--;
                 }
@@ -304,12 +311,16 @@ public class ShizukuUserServiceConnector {
                 handleRemoteException("execBatchCommands", e);
             }
         }
-        // Fallback: execute through elevated ShizukuExecutor channel so batch operations never fail silently
-        List<String> results = new java.util.ArrayList<>(commands.size());
+        // Fallback: combine commands into a single batched shell invocation instead of spawning N processes
+        StringBuilder sb = new StringBuilder();
         for (String cmd : commands) {
             if (cmd != null && !cmd.trim().isEmpty()) {
-                results.add(ShizukuExecutor.executeShizukuCommand(cmd));
+                sb.append(cmd.trim()).append("; ");
             }
+        }
+        List<String> results = new java.util.ArrayList<>(1);
+        if (sb.length() > 0) {
+            results.add(ShizukuExecutor.executeShizukuCommand(sb.toString()));
         }
         return results;
     }

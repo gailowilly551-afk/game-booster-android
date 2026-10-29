@@ -80,7 +80,11 @@ public class VirtualShoulderKeyService extends Service {
         super.onCreate();
         sIsRunning = true;
         createNotificationChannel();
-        startForeground(NOTIF_ID, createNotification());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIF_ID, createNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        } else {
+            startForeground(NOTIF_ID, createNotification());
+        }
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
     }

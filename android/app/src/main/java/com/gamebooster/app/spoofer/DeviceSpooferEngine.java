@@ -202,14 +202,30 @@ public class DeviceSpooferEngine {
     }
 
     public static String getActiveProfileId() {
+        if (activeProfileId != null && !activeProfileId.trim().isEmpty()) {
+            return activeProfileId;
+        }
+        try {
+            Context appCtx = com.gamebooster.app.GameBoosterApp.getInstance();
+            if (appCtx != null) {
+                String stored = SpoofPreferences.getActiveProfileId(appCtx);
+                if (stored != null && !stored.trim().isEmpty()) {
+                    activeProfileId = stored.trim();
+                    return activeProfileId;
+                }
+            }
+        } catch (Throwable ignored) {}
         return activeProfileId;
     }
 
     public static SpoofProfile getActiveProfile() {
-        return activeProfileId != null ? getProfileById(activeProfileId) : null;
+        String id = getActiveProfileId();
+        return id != null ? getProfileById(id) : null;
     }
 
     public static SpoofProfile getDefaultProfile() {
+        SpoofProfile active = getActiveProfile();
+        if (active != null) return active;
         return SpoofProfileRegistry.getDefaultProfile();
     }
 
@@ -218,11 +234,27 @@ public class DeviceSpooferEngine {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Returns the ASUS ROG Phone 9 Pro profile for every game package.
-     * All games (PUBGM, CODM, MLBB, and all others) now use the single locked flagship.
-     * - ASUS_AI2501_Pro · Snapdragon 8 Elite · Adreno 830 · 16GB RAM · 185Hz AMOLED
+     * Resolves the recommended flagship profile dynamically:
+     * 1. Always honors the user's currently selected active profile if one is set!
+     * 2. Otherwise falls back based on host device hardware architecture:
+     *    - MediaTek / Mali / Kirin -> Infinix GT 20 Pro 5G (Dimensity 8200 Ultimate / Mali-G610 MC6 / 144Hz)
+     *    - Qualcomm / Adreno / Snapdragon -> ASUS ROG Phone 9 Pro (Snapdragon 8 Elite / Adreno 830 / 185Hz).
      */
     public static SpoofProfile getRecommendedProfile(String packageName) {
+        SpoofProfile active = getActiveProfile();
+        if (active != null) {
+            return active;
+        }
+        try {
+            com.gamebooster.app.device.DeviceDetector.ChipsetVendor vendor =
+                    com.gamebooster.app.device.DeviceDetector.detectChipsetVendor();
+            if (vendor == com.gamebooster.app.device.DeviceDetector.ChipsetVendor.MEDIATEK
+                    || vendor == com.gamebooster.app.device.DeviceDetector.ChipsetVendor.UNISOC
+                    || vendor == com.gamebooster.app.device.DeviceDetector.ChipsetVendor.KIRIN) {
+                SpoofProfile p = SpoofProfileRegistry.getById("infinix_gt_20_pro");
+                if (p != null) return p;
+            }
+        } catch (Throwable ignored) {}
         SpoofProfile p = SpoofProfileRegistry.getById("asus_rog9_pro");
         if (p == null) p = SpoofProfileRegistry.getDefaultProfile();
         return p;
@@ -248,11 +280,21 @@ public class DeviceSpooferEngine {
 
         String activeId = SpoofPreferences.resolveProfileId(context, packageName);
         if (activeId == null || activeId.trim().isEmpty()) {
+            SpoofProfile rec = getRecommendedProfile(packageName);
+            if (rec != null) {
+                activeId = rec.id;
+                SpoofPreferences.setActiveProfileId(context, activeId);
+            }
+        }
+        if (activeId == null || activeId.trim().isEmpty()) {
             Log.d(TAG, "No active spoof profile configured by user — skipping spoofing for: " + packageName);
             return false;
         }
 
         SpoofProfile profile = getProfileById(activeId);
+        if (profile == null) {
+            profile = getRecommendedProfile(packageName);
+        }
         if (profile == null) {
             Log.w(TAG, "Configured spoof profile not found: " + activeId);
             return false;
@@ -347,14 +389,23 @@ public class DeviceSpooferEngine {
         boolean enabled = SpoofPreferences.isSpoofEnabled(context);
         if (!enabled) return false;
         String activeId = SpoofPreferences.getActiveProfileId(context);
+        if (activeId == null || activeId.trim().isEmpty()) {
+            SpoofProfile def = getDefaultProfile();
+            if (def != null) {
+                activeId = def.id;
+                SpoofPreferences.setActiveProfileId(context, activeId);
+            }
+        }
         if (activeId == null || activeId.trim().isEmpty()) return false;
         SpoofProfile profile = getProfileById(activeId);
         if (profile == null) return false;
 
         boolean anySuccess = false;
         for (String pkg : com.gamebooster.app.games.GamePackageRegistry.getAllKnownGames().keySet()) {
-            boolean ok = applyProfile(context, profile, pkg);
-            if (ok) anySuccess = true;
+            if (HardwareMaskEngine.isPackageInstalled(pkg)) {
+                boolean ok = applyProfile(context, profile, pkg);
+                if (ok) anySuccess = true;
+            }
         }
         return anySuccess;
     }
@@ -390,7 +441,8 @@ public class DeviceSpooferEngine {
             SpoofPreferences.setActiveProfileId(context, profile.id);
             SpoofPreferences.setSpoofAllApps(context, true);
         }
-        return HardwareMaskEngine.maskAllInstalledApplications(context, profile);
+        activeProfileId = profile.id;
+        return HardwareMaskEngine.applyFastHardwareMaskAll(context, profile);
     }
 
     /**
@@ -424,14 +476,16 @@ public class DeviceSpooferEngine {
         if (packageName == null || packageName.trim().isEmpty()) return false;
         String pkg = packageName.trim();
         SpoofProfile profile = null;
-        if (context != null && SpoofPreferences.isSpoofEnabled(context)) {
+        if (context != null) {
             profile = getEffectiveProfile(context, pkg);
+        }
+        if (profile == null) {
+            profile = getActiveProfile();
         }
         if (profile == null) {
             profile = getRecommendedProfile(pkg);
             if (context != null && profile != null) {
                 SpoofPreferences.setSpoofEnabled(context, true);
-                SpoofPreferences.setProfileIdForPackage(context, pkg, profile.id);
                 SpoofPreferences.setActiveProfileId(context, profile.id);
             }
         }
@@ -473,14 +527,26 @@ public class DeviceSpooferEngine {
 
     /**
      * Working Method: Direct 1-Click Game Spoofing targeting a desired FPS/Refresh Rate.
-     * All tiers ≥120 FPS resolve to the locked ROG 9 Pro (Snapdragon 8 Elite / 185Hz).
+     * Respects user-selected profile if set, otherwise recommends optimal flagship for the game.
      */
     public static boolean applyWorkingSpoofForGame(Context context, String packageName, int targetFps) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
-        // Single locked flagship: ROG 9 Pro handles all FPS tiers (120 / 144 / 165 / 185)
-        SpoofProfile targetProfile = getProfileById("asus_rog9_pro");
+        String resolvedId = null;
+        if (context != null) {
+            resolvedId = SpoofPreferences.resolveProfileId(context, packageName.trim());
+            if (resolvedId == null || resolvedId.trim().isEmpty()) {
+                resolvedId = SpoofPreferences.getActiveProfileId(context);
+            }
+        }
+        SpoofProfile targetProfile = null;
+        if (resolvedId != null && !resolvedId.trim().isEmpty()) {
+            targetProfile = getProfileById(resolvedId.trim());
+        }
         if (targetProfile == null) {
-            targetProfile = getRecommendedProfile(packageName);
+            targetProfile = getRecommendedProfile(packageName.trim());
+        }
+        if (targetProfile == null) {
+            targetProfile = getDefaultProfile();
         }
         return applyWorkingSpoofForGame(context, packageName, targetProfile != null ? targetProfile.id : null);
     }

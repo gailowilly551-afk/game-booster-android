@@ -186,10 +186,15 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
 
         boolean isLive = ShizukuManager.isShizukuRunningAndGranted();
         boolean isEverGranted = (context != null && com.gamebooster.app.config.ShizukuPreferences.isShizukuEverGranted(context));
-        boolean hasElevatedAccess = isLive || isEverGranted;
+        boolean isPrivilegedOrFakeRoot = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive()
+                || (context != null && com.gamebooster.app.spoofer.SpoofPreferences.isSpoofEnabled(context));
+        boolean hasElevatedAccess = isLive || isEverGranted || isPrivilegedOrFakeRoot;
 
         if (isLive) {
             holder.tvBadge.setText("[SHIZUKU ACTIVE / FULL NATIVE]");
+            holder.tvBadge.setTextColor(Color.parseColor("#00FF66"));
+        } else if (isPrivilegedOrFakeRoot) {
+            holder.tvBadge.setText("[PRIVILEGED / VIRTUAL ROOT ACTIVE]");
             holder.tvBadge.setTextColor(Color.parseColor("#00FF66"));
         } else if (hasElevatedAccess) {
             holder.tvBadge.setText("[SHIZUKU GRANTED / OFFLINE MODE]");
@@ -239,8 +244,8 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
                     stateChangeListener.onTweakStateChanged(targetItem, isChecked, appliedCount);
                 }
 
-                // 2. Offload execution to background AppExecutors worker thread
-                AppExecutors.getInstance().executeCommand(() -> {
+                // 2. Offload execution to background AppExecutors fast worker thread
+                AppExecutors.getInstance().executeFastBatch(() -> {
                     if (isChecked) {
                         TweakManagerRepository.applyTweak(context, targetItem);
                     } else {

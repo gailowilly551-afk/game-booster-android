@@ -293,35 +293,37 @@ public class NetworkOptimizer {
      * Sets 8MB max window sizes for burst packet transfer and zero-lag gaming.
      */
     public static void optimizeTcpBuffers() {
-        // Direct Linux Kernel sysctl & /proc writes (Active on Root & Privileged Shizuku)
-        CommandExecutor.executeSystemCommand("sysctl -w net.core.rmem_max=8388608 2>/dev/null; sysctl -w net.core.wmem_max=8388608 2>/dev/null; sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null; echo bbr > /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null; sysctl -w net.ipv4.tcp_fastopen=3 2>/dev/null; sysctl -w net.ipv4.tcp_sack=1 2>/dev/null; sysctl -w net.ipv4.tcp_window_scaling=1 2>/dev/null; sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null; sysctl -w net.ipv4.tcp_rmem=\"524288 1048576 8388608\" 2>/dev/null; sysctl -w net.ipv4.tcp_wmem=\"524288 1048576 8388608\" 2>/dev/null");
-
-        // Wi-Fi 2.4GHz / 5GHz / 6GHz (Wi-Fi 6/6E/7) TCP Buffer Tuning (min, default, max)
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.wifi 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.wifi6 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.wifi7 524288,1048576,8388608,262144,524288,4194304");
-
-        // 4G LTE-A Pro
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.lte 524288,1048576,4194304,262144,524288,2097152");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.mobile 524288,1048576,4194304,262144,524288,2097152");
-
-        // 5G & 6G NR (New Radio Standalone SA & Non-Standalone NSA) Buffer Tuning
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.5g 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.5g_sa 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.5g_nsa 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.nr 524288,1048576,8388608,262144,524288,4194304");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.buffersize.6g 524288,1048576,8388608,262144,524288,4194304");
-
-        // TCP Congestion Control & Fast Handshake
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_congestion_control bbr");
-        CommandExecutor.executeSystemCommand("setprop net.tcp.delack.mode 1"); // Immediate ACK
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_fastopen 3");
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_sack 1");
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_dsack 1");
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_window_scaling 1");
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_ecn 0"); // Disable ECN to prevent packet drops on aggressive ISP firewalls
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_timestamps 0"); // Minimal packet header overhead
-        CommandExecutor.executeSystemCommand("setprop net.ipv4.tcp_tw_reuse 1");
+        CommandExecutor.executeSystemCommand(
+                "sysctl -w net.core.rmem_max=8388608 2>/dev/null; " +
+                "sysctl -w net.core.wmem_max=8388608 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null; " +
+                "echo bbr > /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_fastopen=3 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_sack=1 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_window_scaling=1 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_rmem=\"524288 1048576 8388608\" 2>/dev/null; " +
+                "sysctl -w net.ipv4.tcp_wmem=\"524288 1048576 8388608\" 2>/dev/null; " +
+                "setprop net.tcp.buffersize.wifi 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.wifi6 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.wifi7 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.lte 524288,1048576,4194304,262144,524288,2097152; " +
+                "setprop net.tcp.buffersize.mobile 524288,1048576,4194304,262144,524288,2097152; " +
+                "setprop net.tcp.buffersize.5g 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.5g_sa 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.5g_nsa 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.nr 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.tcp.buffersize.6g 524288,1048576,8388608,262144,524288,4194304; " +
+                "setprop net.ipv4.tcp_congestion_control bbr; " +
+                "setprop net.tcp.delack.mode 1; " +
+                "setprop net.ipv4.tcp_fastopen 3; " +
+                "setprop net.ipv4.tcp_sack 1; " +
+                "setprop net.ipv4.tcp_dsack 1; " +
+                "setprop net.ipv4.tcp_window_scaling 1; " +
+                "setprop net.ipv4.tcp_ecn 0; " +
+                "setprop net.ipv4.tcp_timestamps 0; " +
+                "setprop net.ipv4.tcp_tw_reuse 1"
+        );
     }
 
     /**
@@ -330,112 +332,97 @@ public class NetworkOptimizer {
      * and sets high-priority initial receive windows.
      */
     public static boolean optimize5gAnd6gDataNetwork(boolean enabled) {
-        boolean ok = true;
         if (enabled) {
-            // Keep mobile cellular link ready for instantaneous handover / zero packet drops
-            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 1");
-            CommandExecutor.executeSystemCommand("settings put global data_stall_recovery_on_bad_network 1");
-            CommandExecutor.executeSystemCommand("settings put global tcp_default_init_rwnd 60");
-            CommandExecutor.executeSystemCommand("setprop persist.radio.add_power_save 0");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.radio.5g_mode_pref 1");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.radio.nr_disable 0");
-            CommandExecutor.executeSystemCommand("setprop persist.radio.5g_mode_pref 1");
-            CommandExecutor.executeSystemCommand("setprop persist.radio.multimode 1");
+            CommandExecutor.executeSystemCommand(
+                    "settings put global mobile_data_always_on 1 2>/dev/null; " +
+                    "settings put global data_stall_recovery_on_bad_network 1 2>/dev/null; " +
+                    "settings put global tcp_default_init_rwnd 60 2>/dev/null; " +
+                    "setprop persist.radio.add_power_save 0; " +
+                    "setprop persist.vendor.radio.5g_mode_pref 1; " +
+                    "setprop persist.vendor.radio.nr_disable 0; " +
+                    "setprop persist.radio.5g_mode_pref 1; " +
+                    "setprop persist.radio.multimode 1"
+            );
             optimizeTcpBuffers();
         } else {
-            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 0");
+            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 0 2>/dev/null");
         }
-        return ok;
+        return true;
     }
 
     /**
      * Forces Wi-Fi 5 (5GHz), Wi-Fi 6/6E (6GHz), and Wi-Fi 7 (7GHz / 802.11be MLO) into Zero-Lag Gaming Mode.
-     * - Suppresses periodic background AP scanning (which causes 200ms+ lag spikes in MLBB, CODM, PUBGM).
-     * - Enables Wi-Fi 7 Multi-Link Operation (MLO) aggregation (simultaneous 5GHz + 6/7GHz dual-band).
-     * - Enables Wi-Fi 7 Puncturing and 320MHz ultra-wide channel low-latency buffers.
-     * - Disables Wi-Fi power-save throttling and chip sleep.
-     * - Forces driver into low-latency lock.
      */
     public static boolean optimizeWifi6and7LowLatency(boolean enabled) {
-        boolean ok = true;
         if (enabled) {
-            // 1. Force low latency mode via Wi-Fi service (Android 10+)
-            CommandExecutor.executeSystemCommand("cmd wifi force-low-latency-mode enabled");
-            CommandExecutor.executeSystemCommand("cmd wifi force-hi-perf-mode enabled");
-            CommandExecutor.executeSystemCommand("cmd wifi set-multicast-filter enabled");
-
-            // 2. Suppress background AP Wi-Fi scanning during gameplay
-            CommandExecutor.executeSystemCommand("settings put global wifi_scan_always_enabled 0");
-            CommandExecutor.executeSystemCommand("settings put global wifi_framework_scan_interval_ms 300000"); // 5-minute interval
-            CommandExecutor.executeSystemCommand("settings put global wifi_sleep_policy 2"); // Never sleep
-            CommandExecutor.executeSystemCommand("settings put global wifi_power_save 0"); // Disable chip sleep
-            CommandExecutor.executeSystemCommand("settings put global wifi_watchdog_on 0");
-
-            // 3. Low-latency chipset driver props (Wi-Fi 5GHz, 6GHz, and Wi-Fi 7 802.11be MLO)
-            CommandExecutor.executeSystemCommand("setprop debug.wifi.low_latency 1");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.low_latency 1");
-            CommandExecutor.executeSystemCommand("setprop persist.sys.wifi.energy.saving 0");
-
-            // 4. 2026 Wi-Fi 7 (802.11be) Multi-Link Operation (MLO) & 320MHz Acceleration
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.mlo 1");
-            CommandExecutor.executeSystemCommand("setprop debug.wifi7.low_latency 1");
-            CommandExecutor.executeSystemCommand("setprop debug.wifi7.mlo_aggregation 1");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.puncturing 1");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.twt_disable 1"); // Bypass TWT sleep delays
-            CommandExecutor.executeSystemCommand("setprop set.tcp.buffersize.wifi7 524288,1048576,8388608,262144,524288,4194304");
-
+            CommandExecutor.executeSystemCommand(
+                    "cmd wifi force-low-latency-mode enabled 2>/dev/null; " +
+                    "cmd wifi force-hi-perf-mode enabled 2>/dev/null; " +
+                    "cmd wifi set-multicast-filter enabled 2>/dev/null; " +
+                    "settings put global wifi_scan_always_enabled 0 2>/dev/null; " +
+                    "settings put global wifi_framework_scan_interval_ms 300000 2>/dev/null; " +
+                    "settings put global wifi_sleep_policy 2 2>/dev/null; " +
+                    "settings put global wifi_power_save 0 2>/dev/null; " +
+                    "settings put global wifi_watchdog_on 0 2>/dev/null; " +
+                    "setprop debug.wifi.low_latency 1; " +
+                    "setprop persist.vendor.wifi.low_latency 1; " +
+                    "setprop persist.sys.wifi.energy.saving 0; " +
+                    "setprop persist.vendor.wifi.mlo 1; " +
+                    "setprop debug.wifi7.low_latency 1; " +
+                    "setprop debug.wifi7.mlo_aggregation 1; " +
+                    "setprop persist.vendor.wifi.puncturing 1; " +
+                    "setprop persist.vendor.wifi.twt_disable 1"
+            );
             optimizeTcpBuffers();
         } else {
-            CommandExecutor.executeSystemCommand("cmd wifi force-low-latency-mode disabled");
-            CommandExecutor.executeSystemCommand("cmd wifi force-hi-perf-mode disabled");
-            CommandExecutor.executeSystemCommand("settings put global wifi_scan_always_enabled 1");
-            CommandExecutor.executeSystemCommand("settings put global wifi_power_save 1");
-            CommandExecutor.executeSystemCommand("settings put global wifi_sleep_policy 0");
-            CommandExecutor.executeSystemCommand("setprop debug.wifi.low_latency 0");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.low_latency 0");
-            CommandExecutor.executeSystemCommand("setprop debug.wifi7.low_latency 0");
-            CommandExecutor.executeSystemCommand("setprop debug.wifi7.mlo_aggregation 0");
+            CommandExecutor.executeSystemCommand(
+                    "cmd wifi force-low-latency-mode disabled 2>/dev/null; " +
+                    "cmd wifi force-hi-perf-mode disabled 2>/dev/null; " +
+                    "settings put global wifi_scan_always_enabled 1 2>/dev/null; " +
+                    "settings put global wifi_power_save 1 2>/dev/null; " +
+                    "settings put global wifi_sleep_policy 0 2>/dev/null; " +
+                    "setprop debug.wifi.low_latency 0; " +
+                    "setprop persist.vendor.wifi.low_latency 0; " +
+                    "setprop debug.wifi7.low_latency 0; " +
+                    "setprop debug.wifi7.mlo_aggregation 0"
+            );
         }
-        return ok;
+        return true;
     }
 
     /**
      * Enables 5G/6G Mobile Data + Wi-Fi Dual Multipath Acceleration.
-     * Keeps cellular data active during Wi-Fi connection to allow instantaneous handover
-     * and multipath dual-connection acceleration for zero packet loss during gaming.
      */
     public static boolean setDualDataAndWifiAcceleration(boolean enabled) {
-        boolean ok = true;
         if (enabled) {
-            CommandExecutor.executeSystemCommand("svc data enable");
-            CommandExecutor.executeSystemCommand("svc wifi enable");
-            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 1");
-            CommandExecutor.executeSystemCommand("settings put global wifi_cellular_data_fallback 1");
-            CommandExecutor.executeSystemCommand("settings put global network_scoring_ui_enabled 0");
+            CommandExecutor.executeSystemCommand(
+                    "svc data enable 2>/dev/null; " +
+                    "svc wifi enable 2>/dev/null; " +
+                    "settings put global mobile_data_always_on 1 2>/dev/null; " +
+                    "settings put global wifi_cellular_data_fallback 1 2>/dev/null; " +
+                    "settings put global network_scoring_ui_enabled 0 2>/dev/null"
+            );
             optimize5gAnd6gDataNetwork(true);
             optimizeWifi6and7LowLatency(true);
         } else {
-            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 0");
+            CommandExecutor.executeSystemCommand("settings put global mobile_data_always_on 0 2>/dev/null");
             optimize5gAnd6gDataNetwork(false);
             optimizeWifi6and7LowLatency(false);
         }
-        return ok;
+        return true;
     }
 
     /**
-     * Completely disables Android OS Data Saver restrictions:
-     * - Disables background data restriction policy
-     * - Allows background data globally
-     * - Disables global restrict_background_data
+     * Completely disables Android OS Data Saver restrictions.
      */
     public static boolean disableDataSaver() {
         try {
-            CommandExecutor.setSystemSetting("global", "restrict_background_data", "0");
-            CommandExecutor.setSystemSetting("global", "data_saver_enabled", "0");
-            CommandExecutor.executeSystemCommand("cmd netpolicy set restrict-background false 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd connectivity set-background-data true 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global restrict_background_data 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global data_saver_enabled 0 2>/dev/null");
+            CommandExecutor.executeSystemCommand(
+                    "cmd netpolicy set restrict-background false 2>/dev/null; " +
+                    "cmd connectivity set-background-data true 2>/dev/null; " +
+                    "settings put global restrict_background_data 0 2>/dev/null; " +
+                    "settings put global data_saver_enabled 0 2>/dev/null"
+            );
             Log.i(TAG, "🚫 Data Saver completely disabled for uncapped throughput.");
             return true;
         } catch (Throwable t) {
@@ -445,25 +432,18 @@ public class NetworkOptimizer {
     }
 
     /**
-     * Completely disables Android OS Battery Saver / Low Power Mode:
-     * - Clears low_power mode
-     * - Clears sticky low power mode
-     * - Sets battery saver trigger level to 0
-     * - Sets power mode to 0 (normal) and requests fixed performance mode
-     * - Disables Doze mode (deviceidle) to eliminate background socket freezes
+     * Completely disables Android OS Battery Saver / Low Power Mode.
      */
     public static boolean disableBatterySaver() {
         try {
-            CommandExecutor.setSystemSetting("global", "low_power", "0");
-            CommandExecutor.setSystemSetting("global", "low_power_sticky", "0");
-            CommandExecutor.setSystemSetting("global", "low_power_trigger_level", "0");
-            CommandExecutor.executeSystemCommand("settings put global low_power 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global low_power_sticky 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global low_power_trigger_level 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd power set-mode 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd power set-fixed-performance-mode-enabled true 2>/dev/null");
-            CommandExecutor.executeSystemCommand("dumpsys deviceidle disable 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd deviceidle disable 2>/dev/null");
+            CommandExecutor.executeSystemCommand(
+                    "settings put global low_power 0 2>/dev/null; " +
+                    "settings put global low_power_sticky 0 2>/dev/null; " +
+                    "settings put global low_power_trigger_level 0 2>/dev/null; " +
+                    "cmd power set-mode 0 2>/dev/null; " +
+                    "cmd power set-fixed-performance-mode-enabled true 2>/dev/null; " +
+                    "cmd deviceidle disable 2>/dev/null"
+            );
             Log.i(TAG, "⚡ Battery Saver / Low Power Mode & Doze throttling disabled.");
             return true;
         } catch (Throwable t) {
@@ -473,32 +453,25 @@ public class NetworkOptimizer {
     }
 
     /**
-     * Completely disables Wi-Fi power saving and chip sleep:
-     * - Disables chip sleep policy and power_save
-     * - Disables Wi-Fi suspend optimizations
-     * - Disables 802.11 TWT (Target Wake Time) power save sleep
-     * - Disables WMM power save
-     * - Forces low latency and high performance mode
+     * Completely disables Wi-Fi power saving and chip sleep.
      */
     public static boolean disableWifiPowerSaver() {
         try {
-            CommandExecutor.setSystemSetting("global", "wifi_power_save", "0");
-            CommandExecutor.setSystemSetting("global", "wifi_sleep_policy", "2");
-            CommandExecutor.setSystemSetting("global", "wifi_suspend_optimizations_enabled", "0");
-            CommandExecutor.setSystemSetting("global", "wifi_scan_always_enabled", "0");
-            CommandExecutor.executeSystemCommand("settings put global wifi_power_save 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("setprop persist.sys.wifi.power_save 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.powersave 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd wifi set-power-save-enabled disabled 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global wifi_sleep_policy 2 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global wifi_suspend_optimizations_enabled 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("setprop persist.sys.wifi.energy.saving 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("setprop persist.sys.wifi.wmm_power_save 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("setprop persist.vendor.wifi.twt_disable 1 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd wifi force-low-latency-mode enabled 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd wifi force-hi-perf-mode enabled 2>/dev/null");
-            CommandExecutor.executeSystemCommand("settings put global wifi_scan_always_enabled 0 2>/dev/null");
-            CommandExecutor.executeSystemCommand("cmd wifi set-scan-always-available 0 2>/dev/null");
+            CommandExecutor.executeSystemCommand(
+                    "settings put global wifi_power_save 0 2>/dev/null; " +
+                    "setprop persist.sys.wifi.power_save 0 2>/dev/null; " +
+                    "setprop persist.vendor.wifi.powersave 0 2>/dev/null; " +
+                    "cmd wifi set-power-save-enabled disabled 2>/dev/null; " +
+                    "settings put global wifi_sleep_policy 2 2>/dev/null; " +
+                    "settings put global wifi_suspend_optimizations_enabled 0 2>/dev/null; " +
+                    "setprop persist.sys.wifi.energy.saving 0 2>/dev/null; " +
+                    "setprop persist.sys.wifi.wmm_power_save 0 2>/dev/null; " +
+                    "setprop persist.vendor.wifi.twt_disable 1 2>/dev/null; " +
+                    "cmd wifi force-low-latency-mode enabled 2>/dev/null; " +
+                    "cmd wifi force-hi-perf-mode enabled 2>/dev/null; " +
+                    "settings put global wifi_scan_always_enabled 0 2>/dev/null; " +
+                    "cmd wifi set-scan-always-available 0 2>/dev/null"
+            );
             Log.i(TAG, "📶 Wi-Fi Power Saver & chip sleep disabled for zero jitter.");
             return true;
         } catch (Throwable t) {

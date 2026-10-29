@@ -177,14 +177,14 @@ public enum FpsUnlockTier {
     public String getUE4UltraExtremeCVars() {
         return getUE4UnlockCVars() +
                 // ── FPS CVars ──
-                "+CVars=r.PUBGDeviceFPS=" + level + "\n" +
+                "+CVars=r.PUBGDeviceFPS=" + getPubgmFrameRateLevel(fps) + "\n" +
                 "+CVars=r.PUBGMaxFPS=" + fps + "\n" +
                 "+CVars=r.PUBGFrameRateLimit=" + fps + "\n" +
                 "+CVars=r.FrameRateLimit=" + fps + "\n" +
                 "+CVars=r.MobileFPSLimit=" + fps + "\n" +
-                // ── 2026 Graphics CVars ──
-                "+CVars=r.PUBGQualityLevel=4\n" +
-                "+CVars=r.PUBGSDKQualityLevel=4\n" +
+                // ── 2026 Graphics CVars (Smooth Quality=1 required for 90/120fps toggle) ──
+                "+CVars=r.PUBGQualityLevel=1\n" +
+                "+CVars=r.PUBGSDKQualityLevel=1\n" +
                 "+CVars=r.MobileHDR=1\n" +
                 "+CVars=r.Tonemapper.Quality=4\n" +
                 "+CVars=r.HDR.Display.OutputDevice=1\n" +
@@ -315,42 +315,62 @@ public enum FpsUnlockTier {
     /**
      * Returns the MLBB internal HighFPSMode FrameRateLevel for a given FPS tier.
      *
-     * MLBB Unity engine level mapping (2026):
-     *   3 = 120fps, 4 = 144fps, 5 = 165fps, 6 = 185fps
+     * MLBB Unity engine level mapping:
+     *   0 = 30fps (Low), 1 = 60fps (High), 2 = 90fps (Super), 3 = 120fps (Ultra)
      */
     public static int getMlbbFrameRateLevel(int targetFps) {
-        if (targetFps >= 185) return 6;
-        if (targetFps >= 165) return 5;
-        if (targetFps >= 144) return 4;
-        return 3;
+        if (targetFps >= 120) return 3;
+        if (targetFps >= 90) return 2;
+        return 1;
     }
 
     /**
      * Returns the MLBB HighFPSMode value for a given FPS tier.
      *
      * MLBB HighFPSMode:
-     *   3 = 120fps+
+     *   3 = 120fps (Ultra)
      */
     public static int getMlbbHighFPSMode(int targetFps) {
-        return 6; // Ultra Max 2026
+        if (targetFps >= 120) return 3;
+        if (targetFps >= 90) return 2;
+        return 1;
     }
 
     /**
-     * Returns the CODM/PUBGM (UE4) internal FrameRateLevel for a given FPS tier.
+     * Returns the CODM internal FrameRateLevel for a given FPS tier.
      *
-     * UE4 standard level mapping (2026):
-     *   7 = 120fps, 8 = 144fps, 9 = 165fps, 10 = 185fps
+     * CODM standard level mapping:
+     *   0=Low, 1=Med, 2=High, 3=Very High, 4=Max (60fps), 5=Ultra (120fps)
      */
     public static int getCodmFrameRateLevel(int targetFps) {
-        return fromFps(targetFps).level;
+        if (targetFps >= 120) return 5;
+        if (targetFps >= 90) return 4;
+        return 3;
     }
 
     /**
      * Returns the PUBGM UE4 FrameRateLevel for a given FPS tier.
-     * Alias of getCodmFrameRateLevel — same UE4 level mapping.
+     *
+     * UE4 standard level mapping:
+     *   5 = 60fps Extreme, 6 = 90fps, 7 = 120fps Extreme+ / Ultra Extreme.
      */
     public static int getPubgmFrameRateLevel(int targetFps) {
-        return fromFps(targetFps).level;
+        if (targetFps >= 120) return 7;
+        if (targetFps >= 90) return 6;
+        return 5;
+    }
+
+    /**
+     * Returns the HOK internal FrameRateLevel for a given FPS tier.
+     *
+     * HOK standard level mapping:
+     *   0=Low (30fps), 1=Normal (45fps), 2=High (60fps), 3=Ultra (90fps), 4=Extreme (120fps).
+     */
+    public static int getHokFrameRateLevel(int targetFps) {
+        if (targetFps >= 120) return 4;
+        if (targetFps >= 90) return 3;
+        if (targetFps >= 60) return 2;
+        return 1;
     }
 
     /**

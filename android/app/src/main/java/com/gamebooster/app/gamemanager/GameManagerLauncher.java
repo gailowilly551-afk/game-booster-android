@@ -127,21 +127,34 @@ public final class GameManagerLauncher {
         // mutating the one retained by the home-card model.
         // ═══════════════════════════════════════════════════════════
         final Intent finalTargetIntent = targetIntent != null ? new Intent(targetIntent) : null;
+        if (finalTargetIntent != null) {
+            String lowerPkg = pkg.toLowerCase();
+            if (lowerPkg.contains("pubg") || lowerPkg.contains("tencent.ig") || lowerPkg.contains("imobile") || lowerPkg.contains("krmobile") || lowerPkg.contains("vng.pubgmobile")) {
+                finalTargetIntent.putExtra("DeviceProfile", "Android_High_165");
+                finalTargetIntent.putExtra("-DeviceProfile", "Android_High_165");
+                finalTargetIntent.putExtra("CVar", "r.PUBGDeviceFPSSupport165=1,r.PUBGMaxFPS=" + displayHz + ",r.MaxFPS=" + displayHz);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // STEP 4: GUARANTEED IMMEDIATE LAUNCH ON MAIN THREAD
+        // Starts the game activity immediately with ZERO UI thread blocking!
+        // ═══════════════════════════════════════════════════════════
         Runnable launchNow = () -> {
-            // Start InGameTrainerOverlayService with target game package
+            boolean launched = false;
             try {
-                if (android.provider.Settings.canDrawOverlays(appContext)) {
-                    com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext, pkg);
-                }
-            } catch (Throwable overlayErr) {
-                Log.w(TAG, "Floating overlay auto-start notice: " + overlayErr.getMessage());
+                launched = launchWithFrameworkIntent(context, appContext, pkg, finalTargetIntent);
+            } catch (Throwable t) {
+                Log.w(TAG, "Framework launch error: " + t.getMessage());
             }
 
-            // Framework launch must happen immediately with zero blocking or UI stalls
-            boolean launched = launchWithFrameworkIntent(context, appContext, pkg, finalTargetIntent);
             if (launched) {
-                Toast.makeText(appContext, "Launching " + gameTitle + "\nDisplay preference: " + displayHz + "Hz", Toast.LENGTH_SHORT).show();
-                if (listener != null) listener.onLaunchSuccess(pkg);
+                try {
+                    Toast.makeText(appContext, "Launching " + gameTitle + " (" + displayHz + "Hz)", Toast.LENGTH_SHORT).show();
+                } catch (Throwable ignored) {}
+                if (listener != null) {
+                    try { listener.onLaunchSuccess(pkg); } catch (Throwable ignored) {}
+                }
             } else {
                 reportLaunchFailure(appContext, pkg, gameTitle, listener);
             }
@@ -152,11 +165,27 @@ public final class GameManagerLauncher {
         Runnable postLaunchPipeline = () -> {
             AppExecutors.getInstance().executeCommand(() -> {
                 try {
-                    // Pre-launch hardware spoof & profile commit runs in background concurrently with game launch
+                    // 1. Hardware spoofing & profile commit (runs safely in background)
                     try {
                         com.gamebooster.app.spoofer.DeviceSpooferEngine.applyWorkingSpoofForGame(appContext, pkg, targetHz);
                     } catch (Throwable spoofErr) {
-                        Log.w(TAG, "Post-launch hardware spoof note: " + spoofErr.getMessage());
+                        Log.w(TAG, "Hardware spoof note: " + spoofErr.getMessage());
+                    }
+
+                    // 2. Dynamic OEM optimization (Infinix, Tecno, Xiaomi, Vivo, Samsung, Huawei, Oppo, etc.)
+                    try {
+                        com.gamebooster.app.engine.OemPerformanceBooster.applyOemOptimizations(appContext, pkg, targetHz);
+                    } catch (Throwable oemErr) {
+                        Log.w(TAG, "OEM optimization note: " + oemErr.getMessage());
+                    }
+
+                    // 3. Floating Overlay Trainer (Safe check)
+                    try {
+                        if (android.provider.Settings.canDrawOverlays(appContext)) {
+                            com.gamebooster.app.overlay.InGameTrainerOverlayService.startTrainer(appContext, pkg);
+                        }
+                    } catch (Throwable overlayErr) {
+                        Log.w(TAG, "Floating overlay note: " + overlayErr.getMessage());
                     }
                     // If MLBB, inject Drone View concurrently while game splash screen is initializing
                     if (isMlbb) {
@@ -258,64 +287,124 @@ public final class GameManagerLauncher {
      */
     private static boolean launchWithFrameworkIntent(Context sourceContext, Context appContext,
                                                      String packageName, Intent launchIntent) {
-        if (launchIntent != null) {
+        // Priority 1: Use provided launchIntent if valid and has executable action or component
+        if (launchIntent != null && (launchIntent.getComponent() != null || launchIntent.getPackage() != null || launchIntent.getAction() != null)) {
             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
                     | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             try {
                 sourceContext.startActivity(launchIntent);
                 Log.i(TAG, "Framework launch started for " + packageName);
                 return true;
             } catch (Throwable sourceError) {
-                Log.w(TAG, "Caller-context launch failed for " + packageName + ": "
-                        + sourceError.getMessage());
+                Log.w(TAG, "Caller-context launch failed for " + packageName + ": " + sourceError.getMessage());
                 try {
-                    appContext.startActivity(new Intent(launchIntent));
-                    Log.i(TAG, "Application-context launch started for " + packageName);
-                    return true;
+                    if (appContext != null) {
+                        Intent cloneIntent = new Intent(launchIntent);
+                        cloneIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        appContext.startActivity(cloneIntent);
+                        Log.i(TAG, "Application-context launch started for " + packageName);
+                        return true;
+                    }
                 } catch (Throwable appError) {
-                    Log.w(TAG, "Application-context launch failed for " + packageName + ": "
-                            + appError.getMessage());
+                    Log.w(TAG, "Application-context launch failed for " + packageName + ": " + appError.getMessage());
                 }
             }
         }
 
-        // Some OEM launchers reject an explicit component but still accept a package-scoped
-        // MAIN/LAUNCHER intent. Keep this as a framework fallback before any shell command.
+        // Priority 2: Direct PackageManager official launch intent
+        Context bestCtx = (sourceContext != null) ? sourceContext : appContext;
+        if (bestCtx != null) {
+            try {
+                PackageManager pm = bestCtx.getPackageManager();
+                if (pm != null) {
+                    Intent pmIntent = pm.getLaunchIntentForPackage(packageName);
+                    if (pmIntent != null) {
+                        pmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                        bestCtx.startActivity(pmIntent);
+                        Log.i(TAG, "PM direct launch started for " + packageName);
+                        return true;
+                    }
+
+                    // Priority 3: Resolve explicit main launcher activity via queryIntentActivities
+                    Intent mainQuery = new Intent(Intent.ACTION_MAIN);
+                    mainQuery.addCategory(Intent.CATEGORY_LAUNCHER);
+                    mainQuery.setPackage(packageName);
+                    java.util.List<android.content.pm.ResolveInfo> matches = pm.queryIntentActivities(mainQuery, 0);
+                    if (matches != null && !matches.isEmpty()) {
+                        android.content.pm.ActivityInfo ai = matches.get(0).activityInfo;
+                        if (ai != null) {
+                            Intent explicitIntent = new Intent(Intent.ACTION_MAIN);
+                            explicitIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                            explicitIntent.setComponent(new android.content.ComponentName(ai.packageName, ai.name));
+                            explicitIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                    | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            bestCtx.startActivity(explicitIntent);
+                            Log.i(TAG, "Explicit component launch started for " + packageName + " -> " + ai.name);
+                            return true;
+                        }
+                    }
+                }
+            } catch (Throwable pmError) {
+                Log.w(TAG, "PM direct/query launch failed for " + packageName + ": " + pmError.getMessage());
+            }
+        }
+
+        // Priority 4: Package-scoped framework launch intent
         try {
             Intent rawFallback = new Intent(Intent.ACTION_MAIN);
             rawFallback.addCategory(Intent.CATEGORY_LAUNCHER);
             rawFallback.setPackage(packageName);
             rawFallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
                     | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            appContext.startActivity(rawFallback);
-            Log.i(TAG, "Package-scoped framework launch started for " + packageName);
-            return true;
+            if (appContext != null) {
+                appContext.startActivity(rawFallback);
+                Log.i(TAG, "Package-scoped framework launch started for " + packageName);
+                return true;
+            }
         } catch (Throwable rawError) {
-            Log.w(TAG, "Package-scoped framework launch failed for " + packageName + ": "
-                    + rawError.getMessage());
+            Log.w(TAG, "Package-scoped framework launch failed for " + packageName + ": " + rawError.getMessage());
         }
 
-        // Privileged Shizuku / Shell fallback to force launch if OEM framework blocks it
+        // Priority 5: Privileged Shizuku / Shell fallback (cmd activity start / monkey)
         try {
+            String amCmd = "cmd activity start-activity -S -W " + packageName;
             String monkeyCmd = "monkey -p " + packageName + " -c android.intent.category.LAUNCHER 1";
             if (com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission()) {
-                String out = com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(monkeyCmd);
+                String out = com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(amCmd);
+                if (out != null && !out.contains("Error") && !out.contains("does not exist")) {
+                    Log.i(TAG, "Shizuku privileged am start succeeded for " + packageName);
+                    return true;
+                }
+                out = com.gamebooster.app.shizuku.ShizukuExecutor.executeShizukuCommand(monkeyCmd);
                 if (out != null && !out.contains("No activities found")) {
-                    Log.i(TAG, "Shizuku privileged launch started for " + packageName);
+                    Log.i(TAG, "Shizuku privileged monkey launch started for " + packageName);
                     return true;
                 }
             } else if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
                 com.gamebooster.app.engine.ShellExecutor.CommandResult res =
-                        com.gamebooster.app.engine.ShellExecutor.executeSuCommand(monkeyCmd);
-                if (res.isSuccess() && !res.stdout.contains("No activities found")) {
-                    Log.i(TAG, "Root privileged launch started for " + packageName);
+                        com.gamebooster.app.engine.ShellExecutor.executeSuCommand(amCmd);
+                if (res != null && res.isSuccess()) {
+                    Log.i(TAG, "Root privileged am start succeeded for " + packageName);
+                    return true;
+                }
+                res = com.gamebooster.app.engine.ShellExecutor.executeSuCommand(monkeyCmd);
+                if (res != null && res.isSuccess() && !res.stdout.contains("No activities found")) {
+                    Log.i(TAG, "Root privileged monkey launch started for " + packageName);
                     return true;
                 }
             }
-        } catch (Throwable t) {
-            Log.w(TAG, "Privileged launch fallback failed for " + packageName + ": " + t.getMessage());
+        } catch (Throwable privilegedError) {
+            Log.w(TAG, "Privileged launch fallback failed for " + packageName + ": " + privilegedError.getMessage());
         }
 
         return false;

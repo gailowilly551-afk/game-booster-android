@@ -667,10 +667,19 @@ public class CodmConfigPatcher {
 
         List<String> paths = getConfigPaths(packageName);
         int written = 0;
+        com.gamebooster.app.spoofer.SpoofProfile prof = com.gamebooster.app.spoofer.DeviceSpooferEngine.getEffectiveProfile(null, packageName);
         for (String path : paths) {
             String content;
-            if (path.endsWith(".json")) {
+            if (path.contains("HardwareProfile.json") || path.contains("device_profile.json")) {
+                content = prof != null ? prof.generateJsonHardwareProfile(144) : "{\n  \"MaxFrameRate\": 144,\n  \"TargetFPS\": 144\n}\n";
+            } else if (path.endsWith(".json")) {
                 content = "{\n"
+                    + "  \"DeviceModel\": \"" + (prof != null ? prof.model : "ASUS_AI2401_A") + "\",\n"
+                    + "  \"DeviceBrand\": \"" + (prof != null ? prof.brand : "asus") + "\",\n"
+                    + "  \"Manufacturer\": \"" + (prof != null ? prof.manufacturer : "asus") + "\",\n"
+                    + "  \"GPURenderer\": \"" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "\",\n"
+                    + "  \"GPUVendor\": \"" + (prof != null ? prof.glVendor : "Qualcomm") + "\",\n"
+                    + "  \"SoCModel\": \"" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "\",\n"
                     + "  \"MaxFrameRate\": 144,\n"
                     + "  \"TargetFPS\": 144,\n"
                     + "  \"FPSLimit\": 144,\n"
@@ -719,39 +728,47 @@ public class CodmConfigPatcher {
                     + "  \"AllowOcclusionQueries\": 1\n"
                     + "}\n";
             } else if (path.endsWith(".xml")) {
-                content = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
-                    + "<map>\n"
-                    + "  <int name=\"MaxFrameRate\" value=\"144\" />\n"
-                    + "  <int name=\"TargetFPS\" value=\"144\" />\n"
-                    + "  <int name=\"FPSLimit\" value=\"144\" />\n"
-                    + "  <int name=\"FrameRateLimit\" value=\"144\" />\n"
-                    + "  <int name=\"MobileFPSLimit\" value=\"144\" />\n"
-                    + "  <int name=\"GraphicQuality\" value=\"4\" />\n"
-                    + "  <int name=\"TextureQuality\" value=\"4\" />\n"
-                    + "  <int name=\"ShadowQuality\" value=\"2\" />\n"
-                    + "  <int name=\"ShadowResolution\" value=\"2048\" />\n"
-                    + "  <int name=\"AntiAliasingQuality\" value=\"4\" />\n"
-                    + "  <int name=\"BloomQuality\" value=\"5\" />\n"
-                    + "  <int name=\"MaxAnisotropy\" value=\"16\" />\n"
-                    + "  <int name=\"HDRMode\" value=\"1\" />\n"
-                    + "  <int name=\"UltraHDMode\" value=\"1\" />\n"
-                    + "  <int name=\"SuperResolution\" value=\"1\" />\n"
-                    + "  <int name=\"ResolutionScale\" value=\"120\" />\n"
-                    + "  <int name=\"UltraExtreme\" value=\"1\" />\n"
-                    + "  <int name=\"Vsync\" value=\"0\" />\n"
-                    + "  <int name=\"Unlock120Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock165Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock185Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"TouchBoostHz\" value=\"144\" />\n"
-                    + "  <int name=\"TouchPollingRate\" value=\"1000\" />\n"
-                    + "  <int name=\"GyroSampleRate\" value=\"1000\" />\n"
-                    + "  <float name=\"GyroSensitivityRatio\" value=\"2.5\" />\n"
-                    + "  <int name=\"GyroZeroDelay\" value=\"1\" />\n"
-                    + "  <int name=\"PreloadShaders\" value=\"1\" />\n"
-                    + "</map>\n";
+                String[] xmlKeys = {
+                    "<string name=\"DeviceModel\">" + (prof != null ? prof.model : "ASUS_AI2401_A") + "</string>",
+                    "<string name=\"GPU\">" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "</string>",
+                    "<string name=\"SoC\">" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "</string>",
+                    "<int name=\"FrameRate\" value=\"5\" />",
+                    "<int name=\"FrameRateLevel\" value=\"5\" />",
+                    "<int name=\"MaxFrameRate\" value=\"144\" />",
+                    "<int name=\"TargetFPS\" value=\"144\" />",
+                    "<int name=\"FPSLimit\" value=\"144\" />",
+                    "<int name=\"FrameRateLimit\" value=\"144\" />",
+                    "<int name=\"MobileFPSLimit\" value=\"144\" />",
+                    "<int name=\"GraphicQuality\" value=\"4\" />",
+                    "<int name=\"TextureQuality\" value=\"4\" />",
+                    "<int name=\"ShadowQuality\" value=\"2\" />",
+                    "<int name=\"ShadowResolution\" value=\"2048\" />",
+                    "<int name=\"AntiAliasingQuality\" value=\"4\" />",
+                    "<int name=\"BloomQuality\" value=\"5\" />",
+                    "<int name=\"MaxAnisotropy\" value=\"16\" />",
+                    "<int name=\"HDRMode\" value=\"1\" />",
+                    "<int name=\"UltraHDMode\" value=\"1\" />",
+                    "<int name=\"SuperResolution\" value=\"1\" />",
+                    "<int name=\"ResolutionScale\" value=\"120\" />",
+                    "<int name=\"UltraExtreme\" value=\"1\" />",
+                    "<int name=\"Vsync\" value=\"0\" />",
+                    "<int name=\"Unlock120Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144Hz\" value=\"1\" />",
+                    "<int name=\"Unlock165Hz\" value=\"1\" />",
+                    "<int name=\"Unlock185Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144FPS\" value=\"1\" />",
+                    "<int name=\"Ultra144FPS\" value=\"1\" />",
+                    "<int name=\"TouchBoostHz\" value=\"144\" />",
+                    "<int name=\"TouchPollingRate\" value=\"1000\" />",
+                    "<int name=\"GyroSampleRate\" value=\"1000\" />",
+                    "<float name=\"GyroSensitivityRatio\" value=\"2.5\" />",
+                    "<int name=\"GyroZeroDelay\" value=\"1\" />",
+                    "<int name=\"PreloadShaders\" value=\"1\" />"
+                };
+                if (ConfigFileHelper.patchKeys(path, xmlKeys, "<map>")) {
+                    written++;
+                }
+                continue;
             } else {
                 content = "[Graphics]\n"
                     + "MaxFrameRate=144\n"
@@ -759,18 +776,18 @@ public class CodmConfigPatcher {
                     + "FPSLimit=144\n"
                     + "FrameRateLimit=144\n"
                     + "MobileFPSLimit=144\n"
-                    + "FrameRateLevel=8\n"
+                    + "FrameRateLevel=5\n"
                     + "UnlockFPS=1\n"
                     + "Unlock144FPS=1\n"
                     + "Ultra144FPS=1\n"
-                    + "HighFPSMode=6\n"     // 2026: 6 = Ultra Max Overdrive
+                    + "HighFPSMode=5\n"
                     + "Unlock90Hz=1\n"
                     + "Unlock120Hz=1\n"
                     + "Unlock144Hz=1\n"
                     + "Unlock165Hz=1\n"
                     + "Unlock185Hz=1\n"
                     + "Unlock240Hz=1\n"
-                    + "GraphicQuality=4\n"
+                    + "GraphicQuality=1\n"
                     + "TextureQuality=4\n"
                     + "ShadowQuality=2\n"
                     + "ShadowResolution=2048\n"
@@ -843,6 +860,7 @@ public class CodmConfigPatcher {
 
         List<String> paths = getConfigPaths(packageName);
         int written = 0;
+        com.gamebooster.app.spoofer.SpoofProfile prof = com.gamebooster.app.spoofer.DeviceSpooferEngine.getEffectiveProfile(null, packageName);
         for (String path : paths) {
             // First attempt high-speed native C++ injection
             if (NativeConfigInjector.injectCodm165FpsGraphics(path, 165, 4)) {
@@ -851,15 +869,11 @@ public class CodmConfigPatcher {
             }
 
             String content;
-            if (path.contains("HardwareProfile.json")) {
-                content = "{\n"
+            if (path.contains("HardwareProfile.json") || path.contains("device_profile.json")) {
+                content = prof != null ? prof.generateJsonHardwareProfile(165) : "{\n"
                     + "  \"DeviceModel\": \"ASUS_AI2401_A\",\n"
                     + "  \"DeviceBrand\": \"asus\",\n"
                     + "  \"Manufacturer\": \"asus\",\n"
-                    + "  \"AndroidID\": \"7e5c8a196d8e7a4f\",\n"
-                    + "  \"SerialNumber\": \"R58MFB94F1A\",\n"
-                    + "  \"OAID\": \"bc9f2fa5-486f-33fe-8119-27e22ca088af\",\n"
-                    + "  \"MacAddress\": \"00:16:32:05:91:AD\",\n"
                     + "  \"GPURenderer\": \"Adreno (TM) 840\",\n"
                     + "  \"GPUVendor\": \"Qualcomm\",\n"
                     + "  \"SoCModel\": \"Snapdragon 8 Gen 3\",\n"
@@ -902,6 +916,12 @@ public class CodmConfigPatcher {
                 continue;
             } else if (path.endsWith(".json")) {
                 content = "{\n"
+                    + "  \"DeviceModel\": \"" + (prof != null ? prof.model : "ASUS_AI2401_A") + "\",\n"
+                    + "  \"DeviceBrand\": \"" + (prof != null ? prof.brand : "asus") + "\",\n"
+                    + "  \"Manufacturer\": \"" + (prof != null ? prof.manufacturer : "asus") + "\",\n"
+                    + "  \"GPURenderer\": \"" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "\",\n"
+                    + "  \"GPUVendor\": \"" + (prof != null ? prof.glVendor : "Qualcomm") + "\",\n"
+                    + "  \"SoCModel\": \"" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "\",\n"
                     + "  \"MaxFrameRate\": 165,\n"
                     + "  \"TargetFPS\": 165,\n"
                     + "  \"FPSLimit\": 165,\n"
@@ -953,44 +973,50 @@ public class CodmConfigPatcher {
                     + "  \"AllowOcclusionQueries\": 1\n"
                     + "}\n";
             } else if (path.endsWith(".xml")) {
-                content = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
-                    + "<map>\n"
-                    + "  <int name=\"FrameRate\" value=\"5\" />\n"
-                    + "  <int name=\"FrameRateLevel\" value=\"5\" />\n"
-                    + "  <int name=\"MaxFrameRate\" value=\"165\" />\n"
-                    + "  <int name=\"TargetFPS\" value=\"165\" />\n"
-                    + "  <int name=\"FPSLimit\" value=\"165\" />\n"
-                    + "  <int name=\"FrameRateLimit\" value=\"165\" />\n"
-                    + "  <int name=\"MobileFPSLimit\" value=\"165\" />\n"
-                    + "  <int name=\"GraphicQuality\" value=\"4\" />\n"
-                    + "  <int name=\"TextureQuality\" value=\"4\" />\n"
-                    + "  <int name=\"ShadowQuality\" value=\"2\" />\n"
-                    + "  <int name=\"ShadowResolution\" value=\"2048\" />\n"
-                    + "  <int name=\"AntiAliasingQuality\" value=\"4\" />\n"
-                    + "  <int name=\"BloomQuality\" value=\"5\" />\n"
-                    + "  <int name=\"MaxAnisotropy\" value=\"16\" />\n"
-                    + "  <int name=\"HDRMode\" value=\"1\" />\n"
-                    + "  <int name=\"HDR10Plus\" value=\"1\" />\n"
-                    + "  <int name=\"UltraHDMode\" value=\"1\" />\n"
-                    + "  <int name=\"SuperResolution\" value=\"1\" />\n"
-                    + "  <int name=\"ResolutionScale\" value=\"120\" />\n"
-                    + "  <int name=\"UltraExtreme\" value=\"1\" />\n"
-                    + "  <int name=\"Vsync\" value=\"0\" />\n"
-                    + "  <int name=\"Unlock120Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock165Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock185Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock165FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra165FPS\" value=\"1\" />\n"
-                    + "  <int name=\"TouchBoostHz\" value=\"165\" />\n"
-                    + "  <int name=\"TouchPollingRate\" value=\"1000\" />\n"
-                    + "  <int name=\"GyroSampleRate\" value=\"1000\" />\n"
-                    + "  <float name=\"GyroSensitivityRatio\" value=\"2.5\" />\n"
-                    + "  <int name=\"GyroZeroDelay\" value=\"1\" />\n"
-                    + "  <int name=\"PreloadShaders\" value=\"1\" />\n"
-                    + "</map>\n";
+                String[] xmlKeys = {
+                    "<string name=\"DeviceModel\">" + (prof != null ? prof.model : "ASUS_AI2401_A") + "</string>",
+                    "<string name=\"GPU\">" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "</string>",
+                    "<string name=\"SoC\">" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "</string>",
+                    "<int name=\"FrameRate\" value=\"5\" />",
+                    "<int name=\"FrameRateLevel\" value=\"5\" />",
+                    "<int name=\"MaxFrameRate\" value=\"165\" />",
+                    "<int name=\"TargetFPS\" value=\"165\" />",
+                    "<int name=\"FPSLimit\" value=\"165\" />",
+                    "<int name=\"FrameRateLimit\" value=\"165\" />",
+                    "<int name=\"MobileFPSLimit\" value=\"165\" />",
+                    "<int name=\"GraphicQuality\" value=\"4\" />",
+                    "<int name=\"TextureQuality\" value=\"4\" />",
+                    "<int name=\"ShadowQuality\" value=\"2\" />",
+                    "<int name=\"ShadowResolution\" value=\"2048\" />",
+                    "<int name=\"AntiAliasingQuality\" value=\"4\" />",
+                    "<int name=\"BloomQuality\" value=\"5\" />",
+                    "<int name=\"MaxAnisotropy\" value=\"16\" />",
+                    "<int name=\"HDRMode\" value=\"1\" />",
+                    "<int name=\"HDR10Plus\" value=\"1\" />",
+                    "<int name=\"UltraHDMode\" value=\"1\" />",
+                    "<int name=\"SuperResolution\" value=\"1\" />",
+                    "<int name=\"ResolutionScale\" value=\"120\" />",
+                    "<int name=\"UltraExtreme\" value=\"1\" />",
+                    "<int name=\"Vsync\" value=\"0\" />",
+                    "<int name=\"Unlock120Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144Hz\" value=\"1\" />",
+                    "<int name=\"Unlock165Hz\" value=\"1\" />",
+                    "<int name=\"Unlock185Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144FPS\" value=\"1\" />",
+                    "<int name=\"Unlock165FPS\" value=\"1\" />",
+                    "<int name=\"Ultra144FPS\" value=\"1\" />",
+                    "<int name=\"Ultra165FPS\" value=\"1\" />",
+                    "<int name=\"TouchBoostHz\" value=\"165\" />",
+                    "<int name=\"TouchPollingRate\" value=\"1000\" />",
+                    "<int name=\"GyroSampleRate\" value=\"1000\" />",
+                    "<float name=\"GyroSensitivityRatio\" value=\"2.5\" />",
+                    "<int name=\"GyroZeroDelay\" value=\"1\" />",
+                    "<int name=\"PreloadShaders\" value=\"1\" />"
+                };
+                if (ConfigFileHelper.patchKeys(path, xmlKeys, "<map>")) {
+                    written++;
+                }
+                continue;
             } else {
                 content = "[Graphics]\n"
                     + "MaxFrameRate=165\n"
@@ -998,8 +1024,8 @@ public class CodmConfigPatcher {
                     + "FPSLimit=165\n"
                     + "FrameRateLimit=165\n"
                     + "MobileFPSLimit=165\n"
-                    + "FrameRateLevel=9\n"
-                    + "GraphicQuality=4\n"
+                    + "FrameRateLevel=5\n"
+                    + "GraphicQuality=1\n"
                     + "TextureQuality=4\n"
                     + "ShadowQuality=2\n"
                     + "ShadowResolution=2048\n"
@@ -1062,10 +1088,19 @@ public class CodmConfigPatcher {
 
         List<String> paths = getConfigPaths(packageName);
         int written = 0;
+        com.gamebooster.app.spoofer.SpoofProfile prof = com.gamebooster.app.spoofer.DeviceSpooferEngine.getEffectiveProfile(null, packageName);
         for (String path : paths) {
             String content;
-            if (path.endsWith(".json")) {
+            if (path.contains("HardwareProfile.json") || path.contains("device_profile.json")) {
+                content = prof != null ? prof.generateJsonHardwareProfile(185) : "{\n  \"MaxFrameRate\": 185,\n  \"TargetFPS\": 185\n}\n";
+            } else if (path.endsWith(".json")) {
                 content = "{\n"
+                    + "  \"DeviceModel\": \"" + (prof != null ? prof.model : "ASUS_AI2401_A") + "\",\n"
+                    + "  \"DeviceBrand\": \"" + (prof != null ? prof.brand : "asus") + "\",\n"
+                    + "  \"Manufacturer\": \"" + (prof != null ? prof.manufacturer : "asus") + "\",\n"
+                    + "  \"GPURenderer\": \"" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "\",\n"
+                    + "  \"GPUVendor\": \"" + (prof != null ? prof.glVendor : "Qualcomm") + "\",\n"
+                    + "  \"SoCModel\": \"" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "\",\n"
                     + "  \"MaxFrameRate\": 185,\n"
                     + "  \"TargetFPS\": 185,\n"
                     + "  \"FPSLimit\": 185,\n"
@@ -1117,43 +1152,51 @@ public class CodmConfigPatcher {
                     + "  \"AllowOcclusionQueries\": 1\n"
                     + "}\n";
             } else if (path.endsWith(".xml")) {
-                content = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
-                    + "<map>\n"
-                    + "  <int name=\"MaxFrameRate\" value=\"185\" />\n"
-                    + "  <int name=\"TargetFPS\" value=\"185\" />\n"
-                    + "  <int name=\"FPSLimit\" value=\"185\" />\n"
-                    + "  <int name=\"FrameRateLimit\" value=\"185\" />\n"
-                    + "  <int name=\"MobileFPSLimit\" value=\"185\" />\n"
-                    + "  <int name=\"GraphicQuality\" value=\"4\" />\n"
-                    + "  <int name=\"TextureQuality\" value=\"4\" />\n"
-                    + "  <int name=\"ShadowQuality\" value=\"2\" />\n"
-                    + "  <int name=\"ShadowResolution\" value=\"2048\" />\n"
-                    + "  <int name=\"AntiAliasingQuality\" value=\"4\" />\n"
-                    + "  <int name=\"BloomQuality\" value=\"5\" />\n"
-                    + "  <int name=\"MaxAnisotropy\" value=\"16\" />\n"
-                    + "  <int name=\"HDRMode\" value=\"1\" />\n"
-                    + "  <int name=\"UltraHDMode\" value=\"1\" />\n"
-                    + "  <int name=\"SuperResolution\" value=\"1\" />\n"
-                    + "  <int name=\"ResolutionScale\" value=\"120\" />\n"
-                    + "  <int name=\"UltraExtreme\" value=\"1\" />\n"
-                    + "  <int name=\"Vsync\" value=\"0\" />\n"
-                    + "  <int name=\"Unlock120Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock165Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock185Hz\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock165FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Unlock185FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra144FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra165FPS\" value=\"1\" />\n"
-                    + "  <int name=\"Ultra185FPS\" value=\"1\" />\n"
-                    + "  <int name=\"TouchBoostHz\" value=\"185\" />\n"
-                    + "  <int name=\"TouchPollingRate\" value=\"1000\" />\n"
-                    + "  <int name=\"GyroSampleRate\" value=\"1000\" />\n"
-                    + "  <float name=\"GyroSensitivityRatio\" value=\"2.5\" />\n"
-                    + "  <int name=\"GyroZeroDelay\" value=\"1\" />\n"
-                    + "  <int name=\"PreloadShaders\" value=\"1\" />\n"
-                    + "</map>\n";
+                String[] xmlKeys = {
+                    "<string name=\"DeviceModel\">" + (prof != null ? prof.model : "ASUS_AI2401_A") + "</string>",
+                    "<string name=\"GPU\">" + (prof != null ? prof.glRenderer : "Adreno (TM) 840") + "</string>",
+                    "<string name=\"SoC\">" + (prof != null ? prof.socModel : "Snapdragon 8 Elite") + "</string>",
+                    "<int name=\"FrameRate\" value=\"5\" />",
+                    "<int name=\"FrameRateLevel\" value=\"5\" />",
+                    "<int name=\"MaxFrameRate\" value=\"185\" />",
+                    "<int name=\"TargetFPS\" value=\"185\" />",
+                    "<int name=\"FPSLimit\" value=\"185\" />",
+                    "<int name=\"FrameRateLimit\" value=\"185\" />",
+                    "<int name=\"MobileFPSLimit\" value=\"185\" />",
+                    "<int name=\"GraphicQuality\" value=\"4\" />",
+                    "<int name=\"TextureQuality\" value=\"4\" />",
+                    "<int name=\"ShadowQuality\" value=\"2\" />",
+                    "<int name=\"ShadowResolution\" value=\"2048\" />",
+                    "<int name=\"AntiAliasingQuality\" value=\"4\" />",
+                    "<int name=\"BloomQuality\" value=\"5\" />",
+                    "<int name=\"MaxAnisotropy\" value=\"16\" />",
+                    "<int name=\"HDRMode\" value=\"1\" />",
+                    "<int name=\"UltraHDMode\" value=\"1\" />",
+                    "<int name=\"SuperResolution\" value=\"1\" />",
+                    "<int name=\"ResolutionScale\" value=\"120\" />",
+                    "<int name=\"UltraExtreme\" value=\"1\" />",
+                    "<int name=\"Vsync\" value=\"0\" />",
+                    "<int name=\"Unlock120Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144Hz\" value=\"1\" />",
+                    "<int name=\"Unlock165Hz\" value=\"1\" />",
+                    "<int name=\"Unlock185Hz\" value=\"1\" />",
+                    "<int name=\"Unlock144FPS\" value=\"1\" />",
+                    "<int name=\"Unlock165FPS\" value=\"1\" />",
+                    "<int name=\"Unlock185FPS\" value=\"1\" />",
+                    "<int name=\"Ultra144FPS\" value=\"1\" />",
+                    "<int name=\"Ultra165FPS\" value=\"1\" />",
+                    "<int name=\"Ultra185FPS\" value=\"1\" />",
+                    "<int name=\"TouchBoostHz\" value=\"185\" />",
+                    "<int name=\"TouchPollingRate\" value=\"1000\" />",
+                    "<int name=\"GyroSampleRate\" value=\"1000\" />",
+                    "<float name=\"GyroSensitivityRatio\" value=\"2.5\" />",
+                    "<int name=\"GyroZeroDelay\" value=\"1\" />",
+                    "<int name=\"PreloadShaders\" value=\"1\" />"
+                };
+                if (ConfigFileHelper.patchKeys(path, xmlKeys, "<map>")) {
+                    written++;
+                }
+                continue;
             } else {
                 content = "[Graphics]\n"
                     + "MaxFrameRate=185\n"
@@ -1161,8 +1204,8 @@ public class CodmConfigPatcher {
                     + "FPSLimit=185\n"
                     + "FrameRateLimit=185\n"
                     + "MobileFPSLimit=185\n"
-                    + "FrameRateLevel=10\n"
-                    + "GraphicQuality=4\n"
+                    + "FrameRateLevel=5\n"
+                    + "GraphicQuality=1\n"
                     + "TextureQuality=4\n"
                     + "ShadowQuality=2\n"
                     + "ShadowResolution=2048\n"
@@ -1408,9 +1451,17 @@ public class CodmConfigPatcher {
     private static boolean applyPatch(String path, int targetFps) {
         if (path == null || path.trim().isEmpty()) return false;
         int level = FpsUnlockTier.getCodmFrameRateLevel(targetFps);
-        if (targetFps >= 165) level = 9;
 
         if (path.contains("HardwareProfile.json")) {
+            com.gamebooster.app.spoofer.SpoofProfile prof =
+                    com.gamebooster.app.spoofer.DeviceSpooferEngine.getActiveProfile();
+            if (prof == null) {
+                prof = com.gamebooster.app.spoofer.DeviceSpooferEngine.getRecommendedProfile("com.garena.game.codm");
+            }
+            if (prof != null) {
+                String json = prof.generateJsonHardwareProfile(targetFps);
+                return ConfigFileHelper.writeContentAtomic(path, json);
+            }
             String[] hwKeys = {
                 "DeviceModel=ASUS_AI2401_A",
                 "DeviceBrand=asus",

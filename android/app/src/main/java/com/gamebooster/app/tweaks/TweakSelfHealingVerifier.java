@@ -77,19 +77,28 @@ public final class TweakSelfHealingVerifier {
         return sDetectedVendor;
     }
 
+    private static volatile int sCachedMaxRefreshRate = -1;
+
     /**
-     * Resolves the hardware display max refresh rate from context or system properties.
+     * Resolves the hardware display max refresh rate from context or system properties (cached for fast batch execution).
      */
     public static int getDeviceMaxRefreshRate(Context context) {
+        if (sCachedMaxRefreshRate > 0) {
+            return sCachedMaxRefreshRate;
+        }
         if (context != null) {
             try {
                 float maxRate = com.gamebooster.app.device.HardwareDisplayController.getMaxHardwareRefreshRate(context);
                 if (maxRate > 0) {
-                    return com.gamebooster.app.config.GameProfileAutoConfigurator.clampTargetFpsToDisplay(context, Math.round(maxRate));
+                    int clamped = com.gamebooster.app.config.GameProfileAutoConfigurator.clampTargetFpsToDisplay(context, Math.round(maxRate));
+                    if (clamped > 0) {
+                        sCachedMaxRefreshRate = clamped;
+                        return clamped;
+                    }
                 }
             } catch (Throwable ignored) {}
         }
-        return 60;
+        return 120;
     }
 
     /**

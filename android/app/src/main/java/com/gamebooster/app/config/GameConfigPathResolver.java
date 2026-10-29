@@ -75,13 +75,17 @@ public class GameConfigPathResolver {
         if (ShizukuExecutor.hasShizukuPermission()) {
             try {
                 StringBuilder scanRoots = new StringBuilder();
-                scanRoots.append("/data/user/0/").append(pkg).append("/ ");
-                scanRoots.append("/data/data/").append(pkg).append("/ ");
+                if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+                    scanRoots.append("/data/user/0/").append(pkg).append("/ ");
+                    scanRoots.append("/data/data/").append(pkg).append("/ ");
+                }
                 scanRoots.append("/storage/emulated/0/Android/data/").append(pkg).append("/ ");
-                // Prune huge non-config asset hierarchies (e.g. Unity asset bundles, game archives, media, crash logs)
-                // This reduces discovery from 112,000+ files (26s) down to < 50 files (< 40ms), eliminating pipe truncation
+                scanRoots.append("/sdcard/Android/data/").append(pkg).append("/ ");
+                // Prune huge non-config binary assets, media, cache, and crash logs
                 String cmd = "find " + scanRoots.toString() + "\\( "
-                        + "-path \"*/dragon2017/assets\" -o "
+                        + "-path \"*/dragon2017/assets/gameres\" -o "
+                        + "-path \"*/dragon2017/assets/audio\" -o "
+                        + "-path \"*/dragon2017/assets/res\" -o "
                         + "-path \"*/mini_patch\" -o "
                         + "-path \"*/ModeVersion\" -o "
                         + "-path \"*/LoadResManager\" -o "
@@ -370,21 +374,23 @@ public class GameConfigPathResolver {
      */
     public static List<String> generateBasePaths(String pkg) {
         List<String> roots = new ArrayList<>();
-        // 1. Directory 1: App-private data root (/data/user/0/ and /data/data/)
-        roots.add("/data/user/0/" + pkg);
-        roots.add("/data/data/" + pkg);
+        // 1. Directory 1: App-private data root (/data/user/0/ and /data/data/) only if root is available
+        if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+            roots.add("/data/user/0/" + pkg);
+            roots.add("/data/data/" + pkg);
+        }
 
         // 2. Directory 2: Primary User 0 standard storage locations
         roots.add("/storage/emulated/0/Android/data/" + pkg);
         roots.add("/sdcard/Android/data/" + pkg);
 
-        // 2. Multi-profile / Dual App / Private Space roots only if secondary user dir and game directory exist
-        int[] secondaryUserIds = {10, 11, 12, 13, 14, 15, 999};
-        for (int u : secondaryUserIds) {
-            String uDataPkg = "/storage/emulated/" + u + "/Android/data/" + pkg;
-            if (new File(uDataPkg).exists() || ShizukuFileManager.isDirectory(uDataPkg)) {
-                roots.add(uDataPkg);
-                if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+        // 2. Multi-profile / Dual App / Private Space roots only if root is available and secondary user dir exists
+        if (com.gamebooster.app.engine.ShellExecutor.isRootSuAvailable()) {
+            int[] secondaryUserIds = {10, 11, 12, 13, 14, 15, 999};
+            for (int u : secondaryUserIds) {
+                String uDataPkg = "/storage/emulated/" + u + "/Android/data/" + pkg;
+                if (new File(uDataPkg).exists() || ShizukuFileManager.isDirectory(uDataPkg)) {
+                    roots.add(uDataPkg);
                     roots.add("/data/user/" + u + "/" + pkg);
                 }
             }
@@ -424,7 +430,13 @@ public class GameConfigPathResolver {
             // NOTE: PlayerPrefs XMLs are intentionally NOT listed under files/ root.
             // MLBB reads PlayerPrefs exclusively from /data/data/<pkg>/shared_prefs/.
             // Stub-creating these paths in files/ confuses the MLBB preferences loader.
-            // Document & battle configs (JSON settings introduced/relocated in NEXT 2026)
+            // Document & battle configs (JSON & INI hardware profiles for MLBB)
+            rel.add("files/dragon2017/assets/Document/DeviceHardware.ini");
+            rel.add("files/Dragon2017/assets/Document/DeviceHardware.ini");
+            rel.add("files/dragon2017/assets/Document/android/DeviceHardware.ini");
+            rel.add("files/Dragon2017/assets/Document/android/DeviceHardware.ini");
+            rel.add("files/dragon2017/assets/prefs_int");
+            rel.add("files/Dragon2017/assets/prefs_int");
             rel.add("files/dragon2017/assets/Document/QualityConfig.json");
             rel.add("files/Dragon2017/assets/Document/QualityConfig.json");
             rel.add("files/dragon2017/assets/Document/BattleConfig.json");
@@ -711,6 +723,8 @@ public class GameConfigPathResolver {
             rel.add("files/DeviceHardware.ini");
             rel.add("files/Config/GameSettings.json");
             rel.add("files/GraphicSettings.ini");
+            rel.add("files/SGameSettings.ini");
+            rel.add("files/SystemConfig.ini");
             rel.add("files/GameSettings.json");
             rel.add("files/UserCustom.ini");
             rel.add("files/Settings.json");

@@ -72,8 +72,8 @@ Java_com_gamebooster_app_config_NativeConfigInjector_nativeCloakProcessIdentity(
         closedir(taskDir);
     }
 
-    // 3. Mark process as non-dumpable to prevent casual /proc/<pid>/mem reads
-    prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
+    // 3. Keep process dumpable so Android runtime and debuggers do not abort
+    prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
 
     // 4. Android 16: set PR_SET_CHILD_SUBREAPER to 0 (deny anti-cheat fork tracing)
     prctl(PR_SET_CHILD_SUBREAPER, 0, 0, 0, 0);

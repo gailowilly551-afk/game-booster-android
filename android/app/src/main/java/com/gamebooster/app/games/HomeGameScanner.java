@@ -888,8 +888,15 @@ public class HomeGameScanner {
                                     } catch (Throwable ignored) {}
                                 }
                             }
+                            if (launchIntent == null && pm != null) {
+                                try {
+                                    launchIntent = pm.getLaunchIntentForPackage(pkg);
+                                } catch (Throwable ignored) {}
+                            }
                             if (launchIntent == null) {
-                                launchIntent = new Intent();
+                                launchIntent = new Intent(Intent.ACTION_MAIN);
+                                launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                                launchIntent.setPackage(pkg);
                             }
 
                             loaded.add(new GameAppInfo(

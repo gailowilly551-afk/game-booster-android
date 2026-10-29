@@ -110,7 +110,7 @@ public class HokConfigPatcher {
             "TargetFPS=144",
             "MaxFrameRate=144",
             "FrameRateLimit=144",
-            "FrameRateLevel=8",
+            "FrameRateLevel=4",
             "UnlockFPS=1",
             "Unlock144FPS=1",
             "Ultra144FPS=1",
@@ -166,7 +166,7 @@ public class HokConfigPatcher {
             "TargetFPS=185",
             "MaxFrameRate=185",
             "FrameRateLimit=185",
-            "FrameRateLevel=10",
+            "FrameRateLevel=4",
             "UnlockFPS=1",
             "Unlock144FPS=1",
             "Unlock165FPS=1",
@@ -222,7 +222,7 @@ public class HokConfigPatcher {
         if (packageName == null) return false;
 
         final int forcedFps = FpsUnlockTier.resolveTargetFps(targetFps);
-        final int frameRateLevel = FpsUnlockTier.fromFps(forcedFps).level;
+        final int frameRateLevel = FpsUnlockTier.getHokFrameRateLevel(forcedFps);
 
         String content = "[Graphics]\n" +
                 "HighFPSMode=1\n" +
@@ -324,7 +324,7 @@ public class HokConfigPatcher {
 
     private static boolean applyPatch(String path, int targetFps) {
         final int forcedFps = FpsUnlockTier.resolveTargetFps(targetFps);
-        final int frameRateLevel = FpsUnlockTier.fromFps(forcedFps).level;
+        final int frameRateLevel = FpsUnlockTier.getHokFrameRateLevel(forcedFps);
         String[] keys = {
             "HighFPSMode=1",
             "FrameRateLevel=" + frameRateLevel,

@@ -290,9 +290,9 @@ public class TweakManagerRepository {
         TWEAKS.add(new TweakItem(
                 "sqlite_wal_fast_cache",
                 "SQLite In-Memory Cache Optimization",
-                "Sets SQLite journal mode to in-memory cache and suppresses slow query logcat threshold",
-                "setprop db.log.slow_query_threshold 0; setprop debug.sqlite.wal.sync_mode 0; setprop debug.sqlite.journal_mode memory",
-                "setprop debug.sqlite.wal.sync_mode 1; setprop debug.sqlite.journal_mode wal",
+                "Optimizes SQLite slow query logcat threshold and stabilizes Write-Ahead Logging (WAL) for Android MediaProvider",
+                "setprop db.log.slow_query_threshold 500; setprop debug.sqlite.journal_mode \"\"; setprop debug.sqlite.wal.sync_mode \"\"; resetprop -d debug.sqlite.journal_mode 2>/dev/null; resetprop -d debug.sqlite.wal.sync_mode 2>/dev/null",
+                "setprop db.log.slow_query_threshold 100; setprop debug.sqlite.journal_mode \"\"; setprop debug.sqlite.wal.sync_mode \"\"",
                 TweakCategory.SHIZUKU_SYSTEM,
                 true
         ));
@@ -503,8 +503,8 @@ public class TweakManagerRepository {
                 "cpu_dma_latency_cstates_lock",
                 "CPU DMA Latency 0 & Deep C-State Sleep Lock",
                 "Locks kernel CPU DMA latency to 0, preventing CPU cores from entering deep sleep low-power C-states between active frames",
-                "echo 0 > /dev/cpu_dma_latency 2>/dev/null; setprop sys.perf.sched_walt_rotate_big_tasks 1; setprop persist.sys.cpu.cstate_limit 0",
-                "setprop persist.sys.cpu.cstate_limit 1",
+                "setprop sys.perf.sched_walt_rotate_big_tasks 1; setprop persist.sys.cpu.cstate_limit 0; setprop debug.power.cstate_disable 1",
+                "setprop persist.sys.cpu.cstate_limit 1; setprop debug.power.cstate_disable 0",
                 TweakCategory.SHIZUKU_SYSTEM,
                 true
         ));
@@ -715,7 +715,7 @@ public class TweakManagerRepository {
                 "no_limit_hardware_overdrive",
                 "No-Limit Extreme Hardware Overdrive (Hardware Max FPS + Max Clocks)",
                 "Locks all CPU clusters scaling_min_freq to max, performance governor, Adreno/Mali GPU boost, SurfaceFlinger hardware max Hz, and thermal trip point immunity",
-                "for p in /sys/devices/system/cpu/cpufreq/policy*; do echo performance > \"$p/scaling_governor\" 2>/dev/null; if [ -f \"$p/scaling_max_freq\" ]; then cat \"$p/scaling_max_freq\" > \"$p/scaling_min_freq\" 2>/dev/null; fi; done; echo 0 > /dev/cpu_dma_latency 2>/dev/null; setprop debug.adreno.turbo 1; setprop debug.mali.force_gpu_boost 1; setprop debug.sf.fps_limit {TARGET_HZ}; setprop persist.sys.NV_FPSLIMIT {TARGET_HZ}; service call SurfaceFlinger 1035 i32 {TARGET_HZ}",
+                "for p in /sys/devices/system/cpu/cpufreq/policy*; do echo performance > \"$p/scaling_governor\" 2>/dev/null; if [ -f \"$p/scaling_max_freq\" ]; then cat \"$p/scaling_max_freq\" > \"$p/scaling_min_freq\" 2>/dev/null; fi; done; setprop debug.adreno.turbo 1; setprop debug.mali.force_gpu_boost 1; setprop debug.sf.fps_limit {TARGET_HZ}; setprop persist.sys.NV_FPSLIMIT {TARGET_HZ}; service call SurfaceFlinger 1035 i32 {TARGET_HZ}",
                 "for p in /sys/devices/system/cpu/cpufreq/policy*; do echo schedutil > \"$p/scaling_governor\" 2>/dev/null; done; setprop debug.adreno.turbo 0; setprop debug.mali.force_gpu_boost 0; setprop debug.sf.fps_limit 60",
                 TweakCategory.CPU_GPU,
                 true
@@ -749,7 +749,7 @@ public class TweakManagerRepository {
                 "proactive_memory_compaction_shield",
                 "Proactive Zero-Stall Memory Compaction & 128MB Reserve Pool",
                 "Pre-compacts Linux memory and locks 128MB reserve pool (min_free_kbytes=131072) to abolish direct compaction freezes during high-load texture streaming",
-                "echo 1 > /proc/sys/vm/compact_memory 2>/dev/null; sysctl -w vm.min_free_kbytes=131072 2>/dev/null; sysctl -w vm.extra_free_kbytes=65536 2>/dev/null; sysctl -w vm.compaction_proactiveness=0 2>/dev/null; sysctl -w vm.watermark_boost_factor=0 2>/dev/null; sysctl -w vm.watermark_scale_factor=0 2>/dev/null",
+                "sysctl -w vm.min_free_kbytes=131072 2>/dev/null; sysctl -w vm.extra_free_kbytes=65536 2>/dev/null; sysctl -w vm.compaction_proactiveness=0 2>/dev/null; sysctl -w vm.watermark_boost_factor=0 2>/dev/null; sysctl -w vm.watermark_scale_factor=0 2>/dev/null",
                 "sysctl -w vm.min_free_kbytes=32768 2>/dev/null; sysctl -w vm.compaction_proactiveness=20 2>/dev/null",
                 TweakCategory.SHIZUKU_SYSTEM,
                 true
@@ -803,7 +803,7 @@ public class TweakManagerRepository {
                 "oryon_core_affinity_pin",
                 "Snapdragon Oryon / Cortex-X4 Affinity Pinning",
                 "Forces game top-app rendering threads exclusively onto prime performance cores (Cortex-X4 / Oryon) with uclamp.min=1024",
-                "echo 4-7 > /dev/cpuset/top-app/cpus 2>/dev/null; echo 1024 > /dev/cpuset/top-app/uclamp.min 2>/dev/null; echo 1 > /proc/sys/kernel/sched_boost 2>/dev/null; echo 0 > /dev/cpu_dma_latency 2>/dev/null",
+                "echo 4-7 > /dev/cpuset/top-app/cpus 2>/dev/null; echo 1024 > /dev/cpuset/top-app/uclamp.min 2>/dev/null; echo 1 > /proc/sys/kernel/sched_boost 2>/dev/null",
                 "echo 0-7 > /dev/cpuset/top-app/cpus 2>/dev/null; echo 0 > /dev/cpuset/top-app/uclamp.min 2>/dev/null",
                 TweakCategory.CPU_GPU,
                 true
@@ -948,38 +948,58 @@ public class TweakManagerRepository {
         return true;
     }
 
+    public static int markAllTweaksAppliedImmediate(Context context) {
+        int count = 0;
+        List<String> allIds = new ArrayList<>(TWEAKS.size());
+        for (TweakItem tweak : TWEAKS) {
+            tweak.setApplied(true);
+            allIds.add(tweak.getId());
+            count++;
+        }
+        if (context != null) {
+            TweakPreferences.saveAllTweakStates(context, allIds, true);
+        }
+        return count;
+    }
+
+    public static int markAllTweaksResetImmediate(Context context) {
+        int count = 0;
+        List<String> allIds = new ArrayList<>(TWEAKS.size());
+        for (TweakItem tweak : TWEAKS) {
+            tweak.setApplied(false);
+            allIds.add(tweak.getId());
+            count++;
+        }
+        if (context != null) {
+            TweakPreferences.saveAllTweakStates(context, allIds, false);
+        }
+        return count;
+    }
+
     public static int applyAllSupportedTweaks() {
         return applyAllSupportedTweaks(null);
     }
 
     public static int applyAllSupportedTweaks(Context context) {
-        int appliedCount = 0;
+        int appliedCount = markAllTweaksAppliedImmediate(context);
 
         // §8.1: snapshot pre-boost state and arm the thermal watchdog before
         // the first privileged batch leaves the device.
-        com.gamebooster.app.booster.SafetyGuard.ensureArmed(
-                context != null ? context : com.gamebooster.app.GameBoosterApp.getInstance());
+        try {
+            com.gamebooster.app.booster.SafetyGuard.ensureArmed(
+                    context != null ? context : com.gamebooster.app.GameBoosterApp.getInstance());
+        } catch (Throwable ignored) {}
 
-        List<String> batchCmds = new ArrayList<>();
-        List<String> appliedIds = new ArrayList<>();
+        List<String> batchCmds = new ArrayList<>(TWEAKS.size() + 4);
         for (TweakItem tweak : TWEAKS) {
-            // Bypass Charging stops physical battery charging — must NEVER be auto-applied in bulk
             if ("bypass_charging_shield".equals(tweak.getId())) {
                 continue;
             }
             batchCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware(tweak.getApplyCommand(), context));
-            tweak.setApplied(true);
-            appliedIds.add(tweak.getId());
-            appliedCount++;
-        }
-        if (context != null) {
-            TweakPreferences.saveAllTweakStates(context, appliedIds, true);
         }
 
-        // Neutralize aggressive kill flags and safeguard background multitasking
-        batchCmds.add("settings put global always_finish_activities 0");
-        batchCmds.add("settings put global background_process_limit -1");
-        batchCmds.add("settings put global cached_apps_freezer disabled");
+        // Neutralize aggressive kill flags, protect MediaProvider / PhotoPicker, and safeguard background multitasking
+        batchCmds.add("settings put global always_finish_activities 0; settings put global background_process_limit -1; settings put global cached_apps_freezer disabled; setprop debug.sqlite.journal_mode \"\"; setprop debug.sqlite.wal.sync_mode \"\"; resetprop -d debug.sqlite.journal_mode 2>/dev/null; resetprop -d debug.sqlite.wal.sync_mode 2>/dev/null");
 
         // Neutralize lingering mock combat/cheat properties
         batchCmds.add("setprop persist.sys.game.damage_boost 0; setprop persist.sys.game.crit_rate 0; setprop persist.vendor.game.damage_mult 1.00; setprop persist.sys.game.headshot_boost 0; setprop persist.sys.game.bullet_spread 1; setprop persist.sys.game.target_lock 0; setprop persist.sys.game.lowest_hp_lock 0; setprop persist.sys.game.drone_view 0; setprop persist.sys.game.fov_scale 100; setprop persist.sys.game.fast_cooldown 0; setprop persist.sys.game.cdr_ratio 0.00");
@@ -1000,16 +1020,12 @@ public class TweakManagerRepository {
     }
 
     public static void applyAllSupportedTweaksAsync(Context context, OnBatchProgressListener progressListener, OnBatchCompleteListener completeListener) {
-        if (!com.gamebooster.app.shizuku.ShizukuExecutor.hasShizukuPermission() && com.gamebooster.app.shizuku.ShizukuExecutor.isShizukuAvailable()) {
-            try {
-                rikka.shizuku.Shizuku.requestPermission(1001);
-            } catch (Throwable ignored) {}
-        }
+        final int appliedCount = markAllTweaksAppliedImmediate(context);
 
-        AppExecutors.getInstance().executeCommand(() -> {
+        AppExecutors.getInstance().executeFastBatch(() -> {
             int total = TWEAKS.size();
             int current = 0;
-            List<String> batchCmds = new ArrayList<>();
+            List<String> batchCmds = new ArrayList<>(total + 2);
 
             for (TweakItem tweak : TWEAKS) {
                 if ("bypass_charging_shield".equals(tweak.getId())) {
@@ -1021,24 +1037,17 @@ public class TweakManagerRepository {
                     AppExecutors.getInstance().postToMainThread(() ->
                             progressListener.onProgress(c, total, tweak.getTitle()));
                 }
-                batchCmds.add(tweak.getApplyCommand());
-                tweak.setApplied(true);
-                if (context != null) {
-                    TweakPreferences.saveTweakState(context, tweak.getId(), true);
-                }
+                batchCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware(tweak.getApplyCommand(), context));
             }
 
             // Neutralize aggressive kill flags and safeguard background multitasking
-            batchCmds.add("settings put global always_finish_activities 0");
-            batchCmds.add("settings put global background_process_limit -1");
-            batchCmds.add("settings put global cached_apps_freezer disabled");
+            batchCmds.add("settings put global always_finish_activities 0; settings put global background_process_limit -1; settings put global cached_apps_freezer disabled");
 
             // Neutralize lingering mock combat/cheat properties
             batchCmds.add("setprop persist.sys.game.damage_boost 0; setprop persist.sys.game.crit_rate 0; setprop persist.vendor.game.damage_mult 1.00; setprop persist.sys.game.headshot_boost 0; setprop persist.sys.game.bullet_spread 1; setprop persist.sys.game.target_lock 0; setprop persist.sys.game.lowest_hp_lock 0; setprop persist.sys.game.drone_view 0; setprop persist.sys.game.fov_scale 100; setprop persist.sys.game.fast_cooldown 0; setprop persist.sys.game.cdr_ratio 0.00");
 
             executePrivilegedBatch(batchCmds);
 
-            final int appliedCount = total;
             if (completeListener != null) {
                 AppExecutors.getInstance().postToMainThread(() -> completeListener.onBatchComplete(appliedCount));
             }
@@ -1051,8 +1060,19 @@ public class TweakManagerRepository {
             return;
         }
 
-        AppExecutors.getInstance().executeCommand(() -> {
-            List<TweakItem> list = CATEGORY_MAP.get(category);
+        List<TweakItem> list = CATEGORY_MAP.get(category);
+        if (list != null) {
+            List<String> ids = new ArrayList<>(list.size());
+            for (TweakItem tweak : list) {
+                tweak.setApplied(true);
+                ids.add(tweak.getId());
+            }
+            if (context != null) {
+                TweakPreferences.saveAllTweakStates(context, ids, true);
+            }
+        }
+
+        AppExecutors.getInstance().executeFastBatch(() -> {
             int total = list != null ? list.size() : 0;
             int current = 0;
             List<String> batchCmds = new ArrayList<>();
@@ -1068,11 +1088,7 @@ public class TweakManagerRepository {
                         AppExecutors.getInstance().postToMainThread(() ->
                                 progressListener.onProgress(c, total, tweak.getTitle()));
                     }
-                    batchCmds.add(tweak.getApplyCommand());
-                    tweak.setApplied(true);
-                    if (context != null) {
-                        TweakPreferences.saveTweakState(context, tweak.getId(), true);
-                    }
+                    batchCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware(tweak.getApplyCommand(), context));
                 }
             }
 
@@ -1093,8 +1109,19 @@ public class TweakManagerRepository {
             return;
         }
 
-        AppExecutors.getInstance().executeCommand(() -> {
-            List<TweakItem> list = CATEGORY_MAP.get(category);
+        List<TweakItem> list = CATEGORY_MAP.get(category);
+        if (list != null) {
+            List<String> ids = new ArrayList<>(list.size());
+            for (TweakItem tweak : list) {
+                tweak.setApplied(false);
+                ids.add(tweak.getId());
+            }
+            if (context != null) {
+                TweakPreferences.saveAllTweakStates(context, ids, false);
+            }
+        }
+
+        AppExecutors.getInstance().executeFastBatch(() -> {
             int total = list != null ? list.size() : 0;
             int current = 0;
             List<String> batchCmds = new ArrayList<>();
@@ -1108,10 +1135,6 @@ public class TweakManagerRepository {
                                 progressListener.onProgress(c, total, tweak.getTitle()));
                     }
                     batchCmds.add(tweak.getRevertCommand());
-                    tweak.setApplied(false);
-                    if (context != null) {
-                        TweakPreferences.saveTweakState(context, tweak.getId(), false);
-                    }
                 }
             }
 
@@ -1127,23 +1150,14 @@ public class TweakManagerRepository {
     }
 
     public static int revertAllTweaks(Context context) {
-        int revertedCount = 0;
-        List<String> batchCmds = new ArrayList<>();
-        List<String> revertedIds = new ArrayList<>();
+        int revertedCount = markAllTweaksResetImmediate(context);
+        List<String> batchCmds = new ArrayList<>(TWEAKS.size() + 2);
         for (TweakItem tweak : TWEAKS) {
             batchCmds.add(tweak.getRevertCommand());
-            tweak.setApplied(false);
-            revertedIds.add(tweak.getId());
-            revertedCount++;
-        }
-        if (context != null) {
-            TweakPreferences.saveAllTweakStates(context, revertedIds, false);
         }
 
-        // Neutralize aggressive kill flags and safeguard background multitasking
-        batchCmds.add("settings put global always_finish_activities 0");
-        batchCmds.add("settings put global background_process_limit -1");
-        batchCmds.add("settings put global cached_apps_freezer disabled");
+        // Neutralize aggressive kill flags, protect MediaProvider / PhotoPicker, and safeguard background multitasking
+        batchCmds.add("settings put global always_finish_activities 0; settings put global background_process_limit -1; settings put global cached_apps_freezer disabled; setprop debug.sqlite.journal_mode \"\"; setprop debug.sqlite.wal.sync_mode \"\"; resetprop -d debug.sqlite.journal_mode 2>/dev/null; resetprop -d debug.sqlite.wal.sync_mode 2>/dev/null");
 
         // Neutralize lingering mock combat/cheat properties
         batchCmds.add("setprop persist.sys.game.damage_boost 0; setprop persist.sys.game.crit_rate 0; setprop persist.vendor.game.damage_mult 1.00; setprop persist.sys.game.headshot_boost 0; setprop persist.sys.game.bullet_spread 1; setprop persist.sys.game.target_lock 0; setprop persist.sys.game.lowest_hp_lock 0; setprop persist.sys.game.drone_view 0; setprop persist.sys.game.fov_scale 100; setprop persist.sys.game.fast_cooldown 0; setprop persist.sys.game.cdr_ratio 0.00");
@@ -1153,8 +1167,9 @@ public class TweakManagerRepository {
     }
 
     public static void revertAllTweaksAsync(Context context, OnBatchCompleteListener listener) {
-        AppExecutors.getInstance().executeCommand(() -> {
-            int revertedCount = revertAllTweaks(context);
+        final int revertedCount = markAllTweaksResetImmediate(context);
+        AppExecutors.getInstance().executeFastBatch(() -> {
+            revertAllTweaks(context);
             if (listener != null) {
                 AppExecutors.getInstance().postToMainThread(() -> listener.onBatchComplete(revertedCount));
             }
@@ -1183,10 +1198,8 @@ public class TweakManagerRepository {
                 }
             }
 
-            // Neutralize any old aggressive kill flags and safeguard background multitasking
-            savedCmds.add("settings put global always_finish_activities 0");
-            savedCmds.add("settings put global background_process_limit -1");
-            savedCmds.add("settings put global cached_apps_freezer disabled");
+            // Neutralize any old aggressive kill flags, protect MediaProvider / PhotoPicker, and safeguard background multitasking
+            savedCmds.add("settings put global always_finish_activities 0; settings put global background_process_limit -1; settings put global cached_apps_freezer disabled; setprop debug.sqlite.journal_mode \"\"; setprop debug.sqlite.wal.sync_mode \"\"; resetprop -d debug.sqlite.journal_mode 2>/dev/null; resetprop -d debug.sqlite.wal.sync_mode 2>/dev/null");
 
             // Neutralize lingering mock combat/cheat properties
             savedCmds.add("setprop persist.sys.game.damage_boost 0; setprop persist.sys.game.crit_rate 0; setprop persist.vendor.game.damage_mult 1.00; setprop persist.sys.game.headshot_boost 0; setprop persist.sys.game.bullet_spread 1; setprop persist.sys.game.target_lock 0; setprop persist.sys.game.lowest_hp_lock 0; setprop persist.sys.game.drone_view 0; setprop persist.sys.game.fov_scale 100; setprop persist.sys.game.fast_cooldown 0; setprop persist.sys.game.cdr_ratio 0.00");
@@ -1283,7 +1296,7 @@ public class TweakManagerRepository {
         // 1. Uncap SurfaceFlinger to hardware max FPS
         noLimitCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware("setprop debug.sf.fps_limit " + targetHz + "; setprop persist.sys.NV_FPSLIMIT " + targetHz + "; setprop persist.sys.game.fps " + targetHz + "; setprop debug.sf.latch_unsignaled 0; setprop debug.sf.auto_latch_unsignaled 0; setprop debug.sf.disable_backpressure 1; service call SurfaceFlinger 1035 i32 " + targetHz + " 2>/dev/null", context));
         // 2. CPU max burst frequency lock & Oryon/X4 affinity
-        noLimitCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware("for p in /sys/devices/system/cpu/cpufreq/policy*; do echo performance > \"$p/scaling_governor\" 2>/dev/null; if [ -f \"$p/scaling_max_freq\" ]; then cat \"$p/scaling_max_freq\" > \"$p/scaling_min_freq\" 2>/dev/null; fi; done; echo 0 > /dev/cpu_dma_latency 2>/dev/null; echo 4-7 > /dev/cpuset/top-app/cpus 2>/dev/null; echo 1024 > /dev/cpuset/top-app/uclamp.min 2>/dev/null", context));
+        noLimitCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware("for p in /sys/devices/system/cpu/cpufreq/policy*; do echo performance > \"$p/scaling_governor\" 2>/dev/null; if [ -f \"$p/scaling_max_freq\" ]; then cat \"$p/scaling_max_freq\" > \"$p/scaling_min_freq\" 2>/dev/null; fi; done; echo 4-7 > /dev/cpuset/top-app/cpus 2>/dev/null; echo 1024 > /dev/cpuset/top-app/uclamp.min 2>/dev/null", context));
         // 3. GPU Turbo mode
         noLimitCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware("setprop debug.adreno.turbo 1; setprop debug.adreno.perf_level 0; setprop debug.mali.force_gpu_boost 1; setprop vendor.gpu.power_mode 1", context));
         // 4. Defeat thermal throttling with safe 75C trip point ceiling
@@ -1306,6 +1319,7 @@ public class TweakManagerRepository {
      * active thermal protection, ultra-responsive touch, and low-latency TCP.
      */
     public static int applyBalancedHighFpsMode(Context context) {
+        int count = markAllTweaksAppliedImmediate(context);
         int targetHz = HardwareDisplayController.resolveSupportedRefreshRate(context, 120);
         if (targetHz <= 0) {
             targetHz = Math.min(120, Math.round(HardwareDisplayController.getMaxHardwareRefreshRate(context)));
@@ -1327,18 +1341,6 @@ public class TweakManagerRepository {
         balancedCmds.add(TweakSelfHealingVerifier.adaptCommandForHardware("sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null; sysctl -w net.ipv4.tcp_quickack=1 2>/dev/null; sysctl -w net.core.default_qdisc=fq_codel 2>/dev/null", context));
 
         executePrivilegedBatch(balancedCmds);
-
-        // Mark core performance tweaks as applied
-        int count = 0;
-        for (TweakItem item : TWEAKS) {
-            if (item.getCategory() == TweakCategory.TOUCH_DISPLAY) {
-                item.setApplied(true);
-                if (context != null) {
-                    TweakPreferences.saveTweakState(context, item.getId(), true);
-                }
-                count++;
-            }
-        }
 
         // Initiate 2026 Autonomous Self-Healing Watchdog
         TweakSelfHealingVerifier.startSelfHealingWatchdog(context, TWEAKS);

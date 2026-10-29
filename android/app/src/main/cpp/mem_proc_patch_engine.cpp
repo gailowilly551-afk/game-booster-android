@@ -18,9 +18,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#include <string>
 
 #define TAG "MemProcPatchNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  TAG, __VA_ARGS__)
@@ -155,6 +157,148 @@ Java_com_gamebooster_app_engine_MemProcPatchEngine_getLibraryBaseAddress(
     if (!libNameJStr) return 0L;
     const char* libName = env->GetStringUTFChars(libNameJStr, nullptr);
     uintptr_t base = getLibBase(libName);
+    env->ReleaseStringUTFChars(libNameJStr, libName);
+    return static_cast<jlong>(base);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Remote Process Memory Patcher (process_vm_writev + /proc/<pid>/mem fallback)
+// ─────────────────────────────────────────────────────────────────────────────
+
+static uintptr_t getRemoteLibBase(pid_t pid, const char* libName) {
+    if (pid <= 0 || !libName) return 0;
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/%d/maps", pid);
+    FILE* maps = fopen(path, "r");
+    if (!maps) return 0;
+
+    char line[512];
+    uintptr_t base = 0;
+    while (fgets(line, sizeof(line), maps)) {
+        if (strstr(line, libName)) {
+            unsigned long start = 0;
+            sscanf(line, "%lx-", &start);
+            base = (uintptr_t)start;
+            break;
+        }
+    }
+    fclose(maps);
+    return base;
+}
+
+static bool patchRemoteBytesInternal(pid_t pid, uintptr_t addr, const uint8_t* patch, size_t size) {
+    if (pid <= 0 || !addr || !patch || size == 0) return false;
+
+    // Fast path: process_vm_writev
+    struct iovec local_iov;
+    local_iov.iov_base = const_cast<uint8_t*>(patch);
+    local_iov.iov_len = size;
+
+    struct iovec remote_iov;
+    remote_iov.iov_base = reinterpret_cast<void*>(addr);
+    remote_iov.iov_len = size;
+
+    ssize_t nwritten = process_vm_writev(pid, &local_iov, 1, &remote_iov, 1, 0);
+    if (nwritten == (ssize_t)size) {
+        LOGI("process_vm_writev patched %zu bytes in PID %d @ 0x%lx", size, pid, (unsigned long)addr);
+        return true;
+    }
+
+    // Fallback: /proc/<pid>/mem
+    char memPath[64];
+    snprintf(memPath, sizeof(memPath), "/proc/%d/mem", pid);
+    int fd = open(memPath, O_RDWR | O_CLOEXEC);
+    if (fd >= 0) {
+        off64_t seeked = lseek64(fd, (off64_t)addr, SEEK_SET);
+        if (seeked != (off64_t)-1) {
+            ssize_t written = write(fd, patch, size);
+            close(fd);
+            if (written == (ssize_t)size) {
+                LOGI("/proc/<pid>/mem patched %zu bytes in PID %d @ 0x%lx", size, pid, (unsigned long)addr);
+                return true;
+            }
+        } else {
+            close(fd);
+        }
+    }
+
+    LOGE("Failed to patch remote memory in PID %d @ 0x%lx", pid, (unsigned long)addr);
+    return false;
+}
+
+static bool readRemoteBytesInternal(pid_t pid, uintptr_t addr, uint8_t* out, size_t size) {
+    if (pid <= 0 || !addr || !out || size == 0) return false;
+
+    struct iovec local_iov;
+    local_iov.iov_base = out;
+    local_iov.iov_len = size;
+
+    struct iovec remote_iov;
+    remote_iov.iov_base = reinterpret_cast<void*>(addr);
+    remote_iov.iov_len = size;
+
+    ssize_t nread = process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0);
+    if (nread == (ssize_t)size) return true;
+
+    char memPath[64];
+    snprintf(memPath, sizeof(memPath), "/proc/%d/mem", pid);
+    int fd = open(memPath, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return false;
+
+    lseek64(fd, (off64_t)addr, SEEK_SET);
+    ssize_t got = read(fd, out, size);
+    close(fd);
+    return got == (ssize_t)size;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_gamebooster_app_engine_MemProcPatchEngine_patchRemoteProcessMemory(
+        JNIEnv* env, jclass /*clazz*/, jint pid, jlong address, jbyteArray patchArray) {
+
+    if (!patchArray || pid <= 0) return JNI_FALSE;
+    jsize len = env->GetArrayLength(patchArray);
+    if (len <= 0) return JNI_FALSE;
+
+    jbyte* bytes = env->GetByteArrayElements(patchArray, nullptr);
+    if (!bytes) return JNI_FALSE;
+
+    bool ok = patchRemoteBytesInternal(
+        static_cast<pid_t>(pid),
+        static_cast<uintptr_t>(address),
+        reinterpret_cast<const uint8_t*>(bytes),
+        static_cast<size_t>(len)
+    );
+
+    env->ReleaseByteArrayElements(patchArray, bytes, JNI_ABORT);
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_com_gamebooster_app_engine_MemProcPatchEngine_readRemoteProcessMemory(
+        JNIEnv* env, jclass /*clazz*/, jint pid, jlong address, jint length) {
+
+    if (pid <= 0 || length <= 0 || length > 4096) return nullptr;
+    jbyteArray result = env->NewByteArray(length);
+    if (!result) return nullptr;
+
+    jbyte* buf = env->GetByteArrayElements(result, nullptr);
+    bool ok = readRemoteBytesInternal(
+        static_cast<pid_t>(pid),
+        static_cast<uintptr_t>(address),
+        reinterpret_cast<uint8_t*>(buf),
+        static_cast<size_t>(length)
+    );
+    env->ReleaseByteArrayElements(result, buf, ok ? 0 : JNI_ABORT);
+    return ok ? result : nullptr;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_gamebooster_app_engine_MemProcPatchEngine_getRemoteLibraryBaseAddress(
+        JNIEnv* env, jclass /*clazz*/, jint pid, jstring libNameJStr) {
+
+    if (pid <= 0 || !libNameJStr) return 0L;
+    const char* libName = env->GetStringUTFChars(libNameJStr, nullptr);
+    uintptr_t base = getRemoteLibBase(static_cast<pid_t>(pid), libName);
     env->ReleaseStringUTFChars(libNameJStr, libName);
     return static_cast<jlong>(base);
 }

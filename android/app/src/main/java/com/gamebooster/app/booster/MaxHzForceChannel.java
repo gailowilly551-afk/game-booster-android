@@ -84,58 +84,54 @@ public final class MaxHzForceChannel {
 
         String hz  = String.valueOf(targetHz);
         String hzF = targetHz + ".0";
-        int ok = 0, total = 0;
+        java.util.List<String> batch = new java.util.ArrayList<>(48);
 
         Log.i(TAG, "══ MaxHzForceChannel.forceApply START (" + targetHz + "Hz) ══");
 
         // ── Layer 1: AOSP Standard Settings & Dynamic Refresh Defeat ─────────────────
-        ok += run("settings put system peak_refresh_rate "  + hzF); total++;
-        ok += run("settings put system min_refresh_rate "   + hzF); total++;
-        ok += run("settings put system user_refresh_rate "  + hz);  total++;
-        ok += run("settings put global peak_refresh_rate "  + hzF); total++;
-        ok += run("settings put global min_refresh_rate "   + hzF); total++;
-        ok += run("settings put system match_content_frame_rate 0"); total++;
-        ok += run("settings put secure match_content_frame_rate_preference 0"); total++;
+        batch.add("settings put system peak_refresh_rate "  + hzF);
+        batch.add("settings put system min_refresh_rate "   + hzF);
+        batch.add("settings put system user_refresh_rate "  + hz);
+        batch.add("settings put global peak_refresh_rate "  + hzF);
+        batch.add("settings put global min_refresh_rate "   + hzF);
+        batch.add("settings put system match_content_frame_rate 0");
+        batch.add("settings put secure match_content_frame_rate_preference 0");
 
         // ── Layer 2: Android Game Mode API + Window Manager ───────────────────────────
-        ok += run("cmd game mode performance global");                               total++;
-        ok += run("cmd game set --fps " + targetHz + " global");                     total++;
-        ok += run("cmd window set-app-refresh-rate global " + targetHz);             total++;
+        batch.add("cmd game mode performance global 2>/dev/null");
+        batch.add("cmd game set --fps " + targetHz + " global 2>/dev/null");
+        batch.add("cmd window set-app-refresh-rate global " + targetHz + " 2>/dev/null");
 
         // ── Layer 3: device_config game_overlay (per-global refresh rate policy) ─────
-        ok += run("device_config put game_overlay global "
-                + "mode=2,fps=" + targetHz + ":mode=3,fps=" + targetHz);             total++;
+        batch.add("device_config put game_overlay global mode=2,fps=" + targetHz + ":mode=3,fps=" + targetHz + " 2>/dev/null");
 
         // ── Layer 4: SurfaceFlinger Direct Binder ────────────────────────────────────
-        if (com.gamebooster.app.core.SurfaceFlingerDirectBinder.setRefreshRate(targetHz)) {
-            ok += 2;
-        } else {
-            ok += run("service call SurfaceFlinger 1035 i32 " + targetHz);
-            ok += run("service call SurfaceFlinger 1036 i32 " + targetHz);
+        if (!com.gamebooster.app.core.SurfaceFlingerDirectBinder.setRefreshRate(targetHz)) {
+            batch.add("service call SurfaceFlinger 1035 i32 " + targetHz + " 2>/dev/null");
+            batch.add("service call SurfaceFlinger 1036 i32 " + targetHz + " 2>/dev/null");
         }
-        total += 2;
 
         // ── Layer 5: setprop Runtime Overrides, Ultra Extreme Graphics & Latency Eliminators ────────────────
-        ok += run("setprop debug.sf.fps_limit "                + hz);                total++;
-        ok += run("setprop persist.sys.NV_FPSLIMIT "           + hz);                total++;
-        ok += run("setprop persist.sys.NV_POWERMODE 1");                             total++;
-        ok += run("setprop debug.egl.force_msaa 1");                                 total++;
-        ok += run("setprop debug.sf.early_phase_offset_ns 0");                       total++;
-        ok += run("setprop debug.sf.early_app_phase_offset_ns 0");                   total++;
-        ok += run("setprop persist.sys.game.fps "              + hz);                total++;
-        ok += run("setprop persist.sys.game.rate "             + hz);                total++;
-        ok += run("setprop persist.vendor.power.dfps.level "   + hz);                total++;
-        ok += run("setprop persist.vendor.display.vrr.disable 1");                   total++;
-        ok += run("setprop ro.surface_flinger.set_idle_timer_ms 0");                 total++;
-        ok += run("setprop ro.surface_flinger.set_touch_timer_ms 0");                total++;
-        ok += run("setprop persist.sys.fps "                   + hz);                total++;
-        ok += run("setprop debug.cpurend.fps "                 + hz);                total++;
-        ok += run("setprop ro.vendor.display.default_fps "     + hz);                total++;
-        ok += run("setprop vendor.display.fps "                + hz);                total++;
-        ok += run("setprop debug.hwui.fps_divisor 1");                               total++;
-        ok += run("setprop debug.graphics.game_default_frame_rate.disabled 1");       total++;
-        ok += run("setprop ro.vendor.dfps.enable 0");                                total++;
-        ok += run("setprop vendor.display.enable_default_fps_switch 0");             total++;
+        batch.add("setprop debug.sf.fps_limit "                + hz);
+        batch.add("setprop persist.sys.NV_FPSLIMIT "           + hz);
+        batch.add("setprop persist.sys.NV_POWERMODE 1");
+        batch.add("setprop debug.egl.force_msaa 1");
+        batch.add("setprop debug.sf.early_phase_offset_ns 0");
+        batch.add("setprop debug.sf.early_app_phase_offset_ns 0");
+        batch.add("setprop persist.sys.game.fps "              + hz);
+        batch.add("setprop persist.sys.game.rate "             + hz);
+        batch.add("setprop persist.vendor.power.dfps.level "   + hz);
+        batch.add("setprop persist.vendor.display.vrr.disable 1");
+        batch.add("setprop ro.surface_flinger.set_idle_timer_ms 0");
+        batch.add("setprop ro.surface_flinger.set_touch_timer_ms 0");
+        batch.add("setprop persist.sys.fps "                   + hz);
+        batch.add("setprop debug.cpurend.fps "                 + hz);
+        batch.add("setprop ro.vendor.display.default_fps "     + hz);
+        batch.add("setprop vendor.display.fps "                + hz);
+        batch.add("setprop debug.hwui.fps_divisor 1");
+        batch.add("setprop debug.graphics.game_default_frame_rate.disabled 1");
+        batch.add("setprop ro.vendor.dfps.enable 0");
+        batch.add("setprop vendor.display.enable_default_fps_switch 0");
 
         // ── Layer 6: OEM / Vendor-Specific Keys (auto-detected) ──────────────────────
         String mfr    = Build.MANUFACTURER != null ? Build.MANUFACTURER.toLowerCase() : "";
@@ -143,83 +139,62 @@ public final class MaxHzForceChannel {
         String id     = mfr + " " + brand;
 
         if (id.contains("xiaomi") || id.contains("redmi") || id.contains("poco")) {
-            // Xiaomi / Redmi / POCO (MIUI / HyperOS)
-            ok += run("settings put secure user_refresh_rate " + hz);                total++;
-            ok += run("settings put global surface_flinger_peak_refresh_rate " + hz); total++;
-            ok += run("setprop persist.sys.joyose.fps " + hz);                        total++;
-            ok += run("setprop persist.sys.powerkeeper.fps 0");                      total++;
-
+            batch.add("settings put secure user_refresh_rate " + hz);
+            batch.add("settings put global surface_flinger_peak_refresh_rate " + hz);
+            batch.add("setprop persist.sys.joyose.fps " + hz);
+            batch.add("setprop persist.sys.powerkeeper.fps 0");
         } else if (id.contains("samsung")) {
-            // Samsung (OneUI) — mode 2 = Dynamic / High, mode 1 = Standard 60Hz
-            ok += run("settings put secure refresh_rate_mode " + (targetHz >= 90 ? "2" : "1")); total++;
-            ok += run("settings put system sec_display_fps " + hz);                  total++;
-            ok += run("settings put secure game_auto_temperature_control 0");        total++;
-
+            batch.add("settings put secure refresh_rate_mode " + (targetHz >= 90 ? "2" : "1"));
+            batch.add("settings put system sec_display_fps " + hz);
+            batch.add("settings put secure game_auto_temperature_control 0");
         } else if (id.contains("oneplus") || id.contains("oppo") || id.contains("realme")) {
-            // OnePlus / Realme / Oppo (OxygenOS / ColorOS)
-            ok += run("settings put global oneplus_screen_refresh_rate "
-                    + (targetHz >= 90 ? "2" : "1"));                                total++;
-            ok += run("settings put global realme_screen_refresh_rate " + hz);       total++;
-            ok += run("settings put global oppo_screen_refresh_rate " + hz);         total++;
-            ok += run("settings put global refresh_rate_blacklist \"\"");            total++;
-            ok += run("settings put system peak_refresh_rate " + hz);                total++;
-
+            batch.add("settings put global oneplus_screen_refresh_rate " + (targetHz >= 90 ? "2" : "1"));
+            batch.add("settings put global realme_screen_refresh_rate " + hz);
+            batch.add("settings put global oppo_screen_refresh_rate " + hz);
+            batch.add("settings put global refresh_rate_blacklist \"\"");
+            batch.add("settings put system peak_refresh_rate " + hz);
         } else if (id.contains("asus")) {
-            // ASUS ROG Phone / ZenFone
-            ok += run("settings put system asus_option_display_refresh_rate " + hz); total++;
-            ok += run("settings put system asus_hfr_mode 1");                        total++;
-
+            batch.add("settings put system asus_option_display_refresh_rate " + hz);
+            batch.add("settings put system asus_hfr_mode 1");
         } else if (id.contains("vivo") || id.contains("iqoo")) {
-            // vivo / iQOO (Funtouch OS / Origin OS)
-            ok += run("settings put system screen_refresh_rate " + hz);              total++;
-            ok += run("settings put system iqoo_refresh_rate " + hz);                total++;
-
+            batch.add("settings put system screen_refresh_rate " + hz);
+            batch.add("settings put system iqoo_refresh_rate " + hz);
         } else if (id.contains("nubia") || id.contains("redmagic") || id.contains("zte")) {
-            // RedMagic / Nubia / ZTE gaming devices
-            ok += run("settings put system display_refresh_rate " + hz);             total++;
-            ok += run("settings put system redmagic_refresh_rate " + hz);            total++;
-
-        } else if (id.contains("infinix") || id.contains("tecno") || id.contains("itel")
-                || id.contains("transsion")) {
-            // Transsion Holdings (Infinix XOS / Tecno HiOS / itel)
-            ok += run("settings put system screen_refresh_rate_mode "
-                    + (targetHz >= 90 ? "1" : "0"));                                total++;
-            ok += run("settings put system infinix_refresh_rate " + hz);             total++;
-            ok += run("settings put system tecno_refresh_rate " + hz);               total++;
-            ok += run("settings put system tran_refresh_rate " + hz);                total++;
-            ok += run("settings put system tran_screen_refresh_rate_mode " + hz);    total++;
-            ok += run("settings put system refresh_rate_setting " + hz);             total++;
-            ok += run("settings put system auto_refresh_rate 0");                    total++;
-
+            batch.add("settings put system display_refresh_rate " + hz);
+            batch.add("settings put system redmagic_refresh_rate " + hz);
+        } else if (id.contains("infinix") || id.contains("tecno") || id.contains("itel") || id.contains("transsion")) {
+            batch.add("settings put system screen_refresh_rate_mode " + (targetHz >= 90 ? "1" : "0"));
+            batch.add("settings put system infinix_refresh_rate " + hz);
+            batch.add("settings put system tecno_refresh_rate " + hz);
+            batch.add("settings put system tran_refresh_rate " + hz);
+            batch.add("settings put system tran_screen_refresh_rate_mode " + hz);
+            batch.add("settings put system refresh_rate_setting " + hz);
+            batch.add("settings put system auto_refresh_rate 0");
         } else if (id.contains("motorola") || id.contains("moto")) {
-            // Motorola (MyUX)
-            ok += run("settings put global peak_refresh_rate " + hz);               total++;
-            ok += run("settings put system min_refresh_rate " + hz);                 total++;
-
+            batch.add("settings put global peak_refresh_rate " + hz);
+            batch.add("settings put system min_refresh_rate " + hz);
         } else {
-            // Generic / Google Pixel — reinforce AOSP settings
-            ok += run("settings put system peak_refresh_rate " + hz);               total++;
-            ok += run("settings put system user_refresh_rate " + hz);               total++;
+            batch.add("settings put system peak_refresh_rate " + hz);
+            batch.add("settings put system user_refresh_rate " + hz);
         }
 
         // ── Layer 7: VRR / Adaptive Refresh Disable (prevents OS self-throttle) ──────────
-        ok += run("settings put secure vrr_enabled 0");                              total++;
-        ok += run("settings put global vrr_app_mode 0");                             total++;
-        ok += run("device_config put display_manager vrr_enabled false");            total++;
-        ok += run("setprop persist.sys.vrr.enable 0");                               total++;
-        ok += run("setprop persist.vendor.display.vrr.disable 1");                   total++;
-        ok += run("setprop debug.sf.vrr_enable 0");                                  total++;
+        batch.add("settings put secure vrr_enabled 0");
+        batch.add("settings put global vrr_app_mode 0");
+        batch.add("device_config put display_manager vrr_enabled false 2>/dev/null");
+        batch.add("setprop persist.sys.vrr.enable 0");
+        batch.add("setprop persist.vendor.display.vrr.disable 1");
+        batch.add("setprop debug.sf.vrr_enable 0");
 
         // ── Layer 8: Panel/DRM Direct Commands (EDID/MIPI DSI bypass) ──────────────────
-        ok += run("service call SurfaceFlinger 1037 i32 " + targetHz);               total++; // setActiveMode
-        ok += run("echo " + targetHz + " > /sys/class/drm/card0/modes 2>/dev/null"); total++;
-        ok += run("echo " + targetHz + " > /sys/class/display/mode 2>/dev/null");    total++;
-        ok += run("echo " + targetHz + " > /sys/devices/platform/display/mode 2>/dev/null"); total++;
+        batch.add("service call SurfaceFlinger 1037 i32 " + targetHz + " 2>/dev/null");
+        batch.add("echo " + targetHz + " > /sys/class/drm/card0/modes 2>/dev/null");
+        batch.add("echo " + targetHz + " > /sys/class/display/mode 2>/dev/null");
+        batch.add("echo " + targetHz + " > /sys/devices/platform/display/mode 2>/dev/null");
 
-        // ── Layer 2 Extended: Per-Package Game Mode API ────────────────────────────────
-        // This is a template - actual package name should be passed at call time
-        // For now we add global; per-package is applied via HzFpsChannel.setRefreshRatePerPackage()
-
+        int total = batch.size();
+        boolean batchSuccess = com.gamebooster.app.engine.CommandExecutor.executeBatch(batch);
+        int ok = batchSuccess ? total : 0;
         int fail = total - ok;
         Log.i(TAG, "══ MaxHzForceChannel.forceApply DONE: "
                 + ok + "/" + total + " OK, " + targetHz + "Hz ══");

@@ -64,6 +64,32 @@ public final class MemProcPatchEngine {
      */
     public static native long getLibraryBaseAddress(String libName);
 
+    /**
+     * Patches bytes in a remote game process via process_vm_writev / /proc/<pid>/mem.
+     * @param pid      Target game process ID
+     * @param address  Target virtual memory address
+     * @param patch    Payload bytes
+     * @return         true if successfully written
+     */
+    public static native boolean patchRemoteProcessMemory(int pid, long address, byte[] patch);
+
+    /**
+     * Reads bytes from a remote game process via process_vm_readv / /proc/<pid>/mem.
+     * @param pid      Target game process ID
+     * @param address  Target virtual memory address
+     * @param length   Number of bytes to read
+     * @return         Read bytes or null on failure
+     */
+    public static native byte[] readRemoteProcessMemory(int pid, long address, int length);
+
+    /**
+     * Resolves the base address of a loaded library inside a remote game process.
+     * @param pid      Target game process ID
+     * @param libName  Library name (e.g. "libUE4.so" or "libunity.so")
+     * @return         Base address or 0 if not found
+     */
+    public static native long getRemoteLibraryBaseAddress(int pid, String libName);
+
     // ─────────────────────────────────────────────────────────────────────────
     // JAVA API — convenience wrappers
     // ─────────────────────────────────────────────────────────────────────────
