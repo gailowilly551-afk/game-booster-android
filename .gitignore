@@ -29,10 +29,6 @@
 # ====================================================================
 # Reverse Engineering Workspace, APK Dumps & Extracted Binaries
 # ====================================================================
-DUMPS/
-DUMP_EXTRACTED/
-PATCH UPDATE */
-"PATCH UPDATE *"
 android/all/
 **/android/all/
 NewPatch/
@@ -304,3 +300,8 @@ docs/plans/
 **/docs/plans/
 docs/superpowers/
 **/docs/superpowers/
+
+DUMP_EXTRACTED/
+DUMPS/
+PATCH UPDATE*/
+
