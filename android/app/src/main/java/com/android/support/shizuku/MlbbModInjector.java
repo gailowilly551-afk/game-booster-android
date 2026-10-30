@@ -92,15 +92,9 @@ public final class MlbbModInjector {
                 }
 
                 // ═══════════════════════════════════════════════════════════════════
-                // LAYER 2: UNITY ENGINE 165 FPS PIPELINE (boot.config)
+                // LAYER 2: UNITY ENGINE FRAMEWORK & ASSET PATCH (boot.config purge)
                 // ═══════════════════════════════════════════════════════════════════
-                String bootConfigContent = "wait-for-native-debugger=0\n" +
-                        "target-frame-rate=165\n" +
-                        "v-sync-count=0\n" +
-                        "gfx-enable-native-gfx-jobs=1\n" +
-                        "hdr-display-enabled=1\n" +
-                        "player-connection-debug=0\n";
-
+                // Note: MLBB Unity IL2CPP hangs/stalls if custom boot.config exists in files/
                 String[] bootConfigPaths = {
                         "/storage/emulated/0/Android/data/" + pkg + "/files/boot.config",
                         "/storage/emulated/0/Android/data/" + pkg + "/files/dragon2017/assets/boot.config",
@@ -113,8 +107,7 @@ public final class MlbbModInjector {
 
                 for (String path : bootConfigPaths) {
                     try {
-                        ShizukuFileManager.ensureParentDirectory(path);
-                        ShizukuFileManager.writeFile(path, bootConfigContent, "666");
+                        ShizukuFileManager.deleteFile(path);
                     } catch (Throwable ignored) {}
                 }
 

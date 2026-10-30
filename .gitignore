@@ -235,6 +235,7 @@ scratch/
 **/scratch/
 .antigravity/
 .gemini/
+.android/
 .agents/
 .claude/
 .cursor/

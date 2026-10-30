@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <inttypes.h>
 #include <android/log.h>
 
 #define TAG "memhook_daemon"
@@ -83,9 +84,9 @@ int ScanAndReplaceString(pid_t pid, const char* target, const char* replacement)
     uint8_t buffer[BUFFER_CHUNK_SIZE];
 
     while (fgets(line, sizeof(line), fp)) {
-        uintptr_t start, end;
+        uintptr_t start = 0, end = 0;
         char perms[16];
-        if (sscanf(line, "%lx-%lx %15s", &start, &end, perms) != 3) continue;
+        if (sscanf(line, "%" SCNxPTR "-%" SCNxPTR " %15s", &start, &end, perms) != 3) continue;
 
         // Scan writable regions: heap, anon, .data, .bss, [anon:dalvik...]
         // Avoid read-only code segments to prevent crashes
