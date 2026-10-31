@@ -120,6 +120,41 @@ public final class PubgmHardwareMasker {
                 for (String uc : ucPaths) {
                     ConfigFileHelper.patchKeys(uc, profileKeys, "[UserCustom DeviceProfile]");
                 }
+
+                // Patch PUBGM Beacon & Device Preferences
+                String[] pubgmPrefs = {
+                    "/data/data/" + pkg + "/shared_prefs/" + pkg + "_preferences.xml",
+                    "/data/data/" + pkg + "/shared_prefs/beacon_device_" + pkg + ".xml",
+                    "/data/data/" + pkg + "/shared_prefs/bugly_device_" + pkg + ".xml",
+                    "/data/data/" + pkg + "/shared_prefs/qimei_cache.xml",
+                    "/storage/emulated/0/Android/data/" + pkg + "/files/shared_prefs/qimei_cache.xml",
+                    "/sdcard/Android/data/" + pkg + "/files/shared_prefs/qimei_cache.xml"
+                };
+                String[] pubgmXmlKeys = {
+                    "<string name=\"qimei\">" + profile.getQimei() + "</string>",
+                    "<string name=\"qimei36\">" + profile.getQimei36() + "</string>",
+                    "<string name=\"oaid\">" + profile.getOaid() + "</string>",
+                    "<string name=\"device_id\">" + profile.getAndroidId() + "</string>",
+                    "<string name=\"beacon_id\">" + profile.getQimei36() + "</string>",
+                    "<string name=\"DeviceID\">" + profile.getAndroidId() + "</string>",
+                    "<string name=\"OpenGaid\">" + profile.getAdvertisingId() + "</string>",
+                    "<string name=\"OpenOaid\">" + profile.getOaid() + "</string>",
+                    "<string name=\"DeviceModel\">" + profile.model + "</string>",
+                    "<string name=\"DeviceBrand\">" + profile.brand + "</string>",
+                    "<string name=\"Manufacturer\">" + profile.manufacturer + "</string>",
+                    "<string name=\"AndroidVersion\">" + profile.androidVersion + "</string>",
+                    "<string name=\"BuildFingerprint\">" + profile.fingerprint + "</string>",
+                    "<string name=\"SystemInfo_deviceModel\">" + profile.model + "</string>",
+                    "<string name=\"SystemInfo_deviceName\">" + profile.displayName + "</string>",
+                    "<string name=\"SystemInfo_operatingSystem\">Android OS " + profile.androidVersion + " / API-" + profile.sdkInt + " (" + profile.displayId + "/release-keys)</string>",
+                    "<int name=\"DeviceLevel\" value=\"5\" />",
+                    "<int name=\"TGPA_Enable\" value=\"1\" />"
+                };
+                for (String pref : pubgmPrefs) {
+                    try {
+                        ConfigFileHelper.patchKeys(pref, pubgmXmlKeys, "<map>");
+                    } catch (Throwable ignored) {}
+                }
             } catch (Throwable ignored) {}
 
             GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(pkg, paths);

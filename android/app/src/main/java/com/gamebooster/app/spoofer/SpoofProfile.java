@@ -471,6 +471,13 @@ public class SpoofProfile {
             "DeviceBrand=" + brand,
             "DeviceManufacturer=" + manufacturer,
             "DeviceID=" + getAndroidId(),
+            "DeviceUID=" + getUnityDeviceId(),
+            "AndroidID=" + getAndroidId(),
+            "OAID=" + getOaid(),
+            "QIMEI=" + getQimei(),
+            "QIMEI36=" + getQimei36(),
+            "ClientDeviceID=" + getClientDeviceId(),
+            "InstallID=" + getInstallId(),
             "DeviceSerialNumber=" + getSerialNumber(),
             "OSVersion=" + androidVersion,
             "AndroidVersion=" + androidVersion,
@@ -610,8 +617,16 @@ public class SpoofProfile {
                 "  \"SecurityPatch\": \"" + securityPatch + "\",\n" +
                 "  \"BuildFingerprint\": \"" + fingerprint + "\",\n" +
                 "  \"AndroidID\": \"" + getAndroidId() + "\",\n" +
+                "  \"DeviceUID\": \"" + getUnityDeviceId() + "\",\n" +
                 "  \"SerialNumber\": \"" + getSerialNumber() + "\",\n" +
                 "  \"OAID\": \"" + getOaid() + "\",\n" +
+                "  \"QIMEI\": \"" + getQimei() + "\",\n" +
+                "  \"QIMEI36\": \"" + getQimei36() + "\",\n" +
+                "  \"ClientDeviceID\": \"" + getClientDeviceId() + "\",\n" +
+                "  \"InstallID\": \"" + getInstallId() + "\",\n" +
+                "  \"GSFID\": \"" + getGsfId() + "\",\n" +
+                "  \"WidevineID\": \"" + getWidevineDeviceId() + "\",\n" +
+                "  \"AdvertisingID\": \"" + getAdvertisingId() + "\",\n" +
                 "  \"MacAddress\": \"" + getWifiMacAddress() + "\",\n" +
                 "  \"GPURenderer\": \"" + glRenderer + "\",\n" +
                 "  \"GPUVendor\": \"" + glVendor + "\",\n" +
@@ -650,6 +665,14 @@ public class SpoofProfile {
                 "DeviceBrand=" + brand + "\n" +
                 "Manufacturer=" + manufacturer + "\n" +
                 "Hardware=" + hardware + "\n" +
+                "DeviceID=" + getAndroidId() + "\n" +
+                "DeviceUID=" + getUnityDeviceId() + "\n" +
+                "AndroidID=" + getAndroidId() + "\n" +
+                "OAID=" + getOaid() + "\n" +
+                "QIMEI=" + getQimei() + "\n" +
+                "ClientDeviceID=" + getClientDeviceId() + "\n" +
+                "InstallID=" + getInstallId() + "\n" +
+                "DeviceSerial=" + getSerialNumber() + "\n" +
                 "AndroidVersion=" + androidVersion + "\n" +
                 "OSVersion=" + androidVersion + "\n" +
                 "SDKVersion=" + sdkInt + "\n" +
@@ -720,6 +743,15 @@ public class SpoofProfile {
                 "Brand=" + brand + "\n" +
                 "DeviceName=" + model + "\n" +
                 "Manufacturer=" + manufacturer + "\n" +
+                "DeviceID=" + getAndroidId() + "\n" +
+                "DeviceUID=" + getUnityDeviceId() + "\n" +
+                "AndroidID=" + getAndroidId() + "\n" +
+                "OAID=" + getOaid() + "\n" +
+                "QIMEI=" + getQimei() + "\n" +
+                "QIMEI36=" + getQimei36() + "\n" +
+                "ClientDeviceID=" + getClientDeviceId() + "\n" +
+                "InstallID=" + getInstallId() + "\n" +
+                "DeviceSerial=" + getSerialNumber() + "\n" +
                 "AndroidVersion=" + androidVersion + "\n" +
                 "OSVersion=" + androidVersion + "\n" +
                 "SDKVersion=" + sdkInt + "\n" +
@@ -846,6 +878,26 @@ public class SpoofProfile {
 
     public String getAdvertisingId() {
         return DeviceIdentityGenerator.generateAdvertisingId(this);
+    }
+
+    public String getUnityDeviceId() {
+        return DeviceIdentityGenerator.generateUnityDeviceId(this);
+    }
+
+    public String getQimei() {
+        return DeviceIdentityGenerator.generateQimei(this);
+    }
+
+    public String getQimei36() {
+        return DeviceIdentityGenerator.generateQimei36(this);
+    }
+
+    public String getClientDeviceId() {
+        return DeviceIdentityGenerator.generateClientDeviceId(this);
+    }
+
+    public String getInstallId() {
+        return DeviceIdentityGenerator.generateInstallId(this);
     }
 
     public String getImei1() {

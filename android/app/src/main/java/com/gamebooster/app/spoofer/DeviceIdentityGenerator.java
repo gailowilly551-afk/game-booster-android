@@ -145,6 +145,48 @@ public final class DeviceIdentityGenerator {
     }
 
     /**
+     * Generates a deterministic 32-hex character Unity SystemInfo.deviceUniqueIdentifier
+     * matching Unity's Android MD5/SHA256 representation of Settings.Secure.ANDROID_ID.
+     */
+    public static String generateUnityDeviceId(SpoofProfile profile) {
+        String seed = (profile != null ? profile.id + ":" + profile.model + ":" + profile.brand : "unity_default");
+        byte[] hash = sha256(seed + ":unity_device_uid_v2");
+        return toHex32(hash);
+    }
+
+    /**
+     * Generates a deterministic 16-hex character Tencent QIMEI identifier for PUBGM & HOK.
+     */
+    public static String generateQimei(SpoofProfile profile) {
+        byte[] hash = sha256((profile != null ? profile.id : "default") + ":qimei_v2");
+        return toHex16(hash);
+    }
+
+    /**
+     * Generates a deterministic 36-character Tencent Beacon QIMEI36 identifier for PUBGM & HOK.
+     */
+    public static String generateQimei36(SpoofProfile profile) {
+        byte[] hash = sha256((profile != null ? profile.id : "default") + ":qimei36_v2");
+        return UUID.nameUUIDFromBytes(hash).toString().toLowerCase(Locale.US);
+    }
+
+    /**
+     * Generates a deterministic 32-hex character Client Device ID for CODM / Garena.
+     */
+    public static String generateClientDeviceId(SpoofProfile profile) {
+        byte[] hash = sha256((profile != null ? profile.id : "default") + ":client_device_id_v2");
+        return toHex32(hash);
+    }
+
+    /**
+     * Generates a deterministic 36-character Install ID / App Session UUID.
+     */
+    public static String generateInstallId(SpoofProfile profile) {
+        byte[] hash = sha256((profile != null ? profile.id : "default") + ":install_id_v2");
+        return UUID.nameUUIDFromBytes(hash).toString().toLowerCase(Locale.US);
+    }
+
+    /**
      * Generates a TAC-compliant mock IMEI identifier for dual-SIM telephony spoofing.
      */
     public static String generateImei(SpoofProfile profile, int slot) {
@@ -212,6 +254,14 @@ public final class DeviceIdentityGenerator {
     private static String toHex16(byte[] hash) {
         StringBuilder sb = new StringBuilder(16);
         for (int i = 0; i < 8; i++) {
+            sb.append(String.format("%02x", hash[i]));
+        }
+        return sb.toString().toLowerCase(Locale.US);
+    }
+
+    private static String toHex32(byte[] hash) {
+        StringBuilder sb = new StringBuilder(32);
+        for (int i = 0; i < Math.min(16, hash.length); i++) {
             sb.append(String.format("%02x", hash[i]));
         }
         return sb.toString().toLowerCase(Locale.US);

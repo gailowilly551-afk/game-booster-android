@@ -1010,6 +1010,11 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             patch_json_node(content, "AndroidVersion", "15", false);
             patch_json_node(content, "OSVersion", "15", false);
             patch_json_node(content, "SDKInt", "35", true);
+            patch_json_node(content, "DeviceID", "7a8b9c0d1e2f3456", false);
+            patch_json_node(content, "DeviceUID", "7a8b9c0d1e2f34567a8b9c0d1e2f3456", false);
+            patch_json_node(content, "AndroidID", "7a8b9c0d1e2f3456", false);
+            patch_json_node(content, "OAID", "e2f34567-89ab-cdef-0123-456789abcdef", false);
+            patch_json_node(content, "ClientDeviceID", "7a8b9c0d1e2f34567a8b9c0d1e2f3456", false);
             patch_json_node(content, "RAMTotalMB", std::to_string(ram), true);
             patch_json_node(content, "MaxFrameRate", std::to_string(hz), true);
             patch_json_node(content, "TargetFPS", std::to_string(hz), true);
@@ -1024,6 +1029,11 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
         patch_xml_node(content, "string", "SystemInfo_graphicsDeviceVendor", vendor);
         patch_xml_node(content, "string", "SystemInfo_deviceModel", soc);
         patch_xml_node(content, "string", "SystemInfo_operatingSystem", "Android OS 15 / API-35 (UKQ1.231003.002/release-keys)");
+        patch_xml_node(content, "string", "SystemInfo_deviceUniqueIdentifier", "7a8b9c0d1e2f34567a8b9c0d1e2f3456");
+        patch_xml_node(content, "string", "DeviceID", "7a8b9c0d1e2f3456");
+        patch_xml_node(content, "string", "AndroidID", "7a8b9c0d1e2f3456");
+        patch_xml_node(content, "string", "OAID", "e2f34567-89ab-cdef-0123-456789abcdef");
+        patch_xml_node(content, "string", "ClientDeviceID", "7a8b9c0d1e2f34567a8b9c0d1e2f3456");
         patch_xml_node(content, "int", "SystemInfo_systemMemorySize", std::to_string(ram));
         patch_xml_node(content, "int", "SystemInfo_graphicsMemorySize", "8192");
         patch_xml_node(content, "int", "TargetFrameRate", std::to_string(hz));
@@ -1039,6 +1049,10 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
                << "soc=" << soc << "\n"
                << "ram=" << ram << "\n"
                << "hz=" << hz << "\n"
+               << "DeviceID=7a8b9c0d1e2f3456\n"
+               << "DeviceUID=7a8b9c0d1e2f34567a8b9c0d1e2f3456\n"
+               << "AndroidID=7a8b9c0d1e2f3456\n"
+               << "OAID=e2f34567-89ab-cdef-0123-456789abcdef\n"
                << "AndroidVersion=15\n"
                << "TargetFPS=" << hz << "\n"
                << "Unlock185Hz=1\n"

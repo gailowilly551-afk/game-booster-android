@@ -107,6 +107,10 @@ public final class CodmHardwareMasker {
                     "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/device_profile.json 2>/dev/null; " +
                     "echo '" + bootB64 + "' | base64 -d > /storage/emulated/0/Android/data/" + pkg + "/files/boot.config 2>/dev/null; " +
                     "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/boot.config 2>/dev/null; " +
+                    "echo '" + profile.getAndroidId() + "' > /storage/emulated/0/Android/data/" + pkg + "/files/UDID.dat 2>/dev/null; " +
+                    "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/UDID.dat 2>/dev/null; " +
+                    "echo '{\"device_id\":\"" + profile.getClientDeviceId() + "\",\"oaid\":\"" + profile.getOaid() + "\",\"install_id\":\"" + profile.getInstallId() + "\"}' > /storage/emulated/0/Android/data/" + pkg + "/files/device_id.json 2>/dev/null; " +
+                    "chmod 666 /storage/emulated/0/Android/data/" + pkg + "/files/device_id.json 2>/dev/null; " +
                     "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/Config/HardwareProfile.json 2>/dev/null; " +
                     "chmod 666 /sdcard/Android/data/" + pkg + "/files/Config/HardwareProfile.json 2>/dev/null; " +
                     "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/Config/device_profile.json 2>/dev/null; " +
@@ -116,7 +120,11 @@ public final class CodmHardwareMasker {
                     "echo '" + jsonB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/device_profile.json 2>/dev/null; " +
                     "chmod 666 /sdcard/Android/data/" + pkg + "/files/device_profile.json 2>/dev/null; " +
                     "echo '" + bootB64 + "' | base64 -d > /sdcard/Android/data/" + pkg + "/files/boot.config 2>/dev/null; " +
-                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/boot.config 2>/dev/null";
+                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/boot.config 2>/dev/null; " +
+                    "echo '" + profile.getAndroidId() + "' > /sdcard/Android/data/" + pkg + "/files/UDID.dat 2>/dev/null; " +
+                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/UDID.dat 2>/dev/null; " +
+                    "echo '{\"device_id\":\"" + profile.getClientDeviceId() + "\",\"oaid\":\"" + profile.getOaid() + "\",\"install_id\":\"" + profile.getInstallId() + "\"}' > /sdcard/Android/data/" + pkg + "/files/device_id.json 2>/dev/null; " +
+                    "chmod 666 /sdcard/Android/data/" + pkg + "/files/device_id.json 2>/dev/null";
                 com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged(codFallbackCmd);
 
                 String[] codmPrefs = {
@@ -126,17 +134,29 @@ public final class CodmHardwareMasker {
                     "/sdcard/Android/data/" + pkg + "/files/shared_prefs/" + pkg + ".v2.playerprefs.xml"
                 };
                 String[] codmXmlKeys = {
+                    "<string name=\"SystemInfo_deviceUniqueIdentifier\">" + profile.getUnityDeviceId() + "</string>",
                     "<string name=\"SystemInfo_deviceModel\">" + profile.model + "</string>",
                     "<string name=\"SystemInfo_deviceName\">" + profile.displayName + "</string>",
                     "<string name=\"SystemInfo_operatingSystem\">Android OS " + profile.androidVersion + " / API-" + profile.sdkInt + " (" + profile.displayId + "/release-keys)</string>",
                     "<string name=\"SystemInfo_graphicsDeviceName\">" + profile.glRenderer + "</string>",
+                    "<string name=\"DeviceID\">" + profile.getAndroidId() + "</string>",
                     "<string name=\"DeviceModel\">" + profile.model + "</string>",
                     "<string name=\"DeviceBrand\">" + profile.brand + "</string>",
                     "<string name=\"Manufacturer\">" + profile.manufacturer + "</string>",
                     "<string name=\"AndroidVersion\">" + profile.androidVersion + "</string>",
                     "<string name=\"BuildFingerprint\">" + profile.fingerprint + "</string>",
+                    "<string name=\"AndroidID\">" + profile.getAndroidId() + "</string>",
+                    "<string name=\"OAID\">" + profile.getOaid() + "</string>",
+                    "<string name=\"ClientDeviceID\">" + profile.getClientDeviceId() + "</string>",
+                    "<string name=\"InstallId\">" + profile.getInstallId() + "</string>",
+                    "<string name=\"DeviceSerial\">" + profile.getSerialNumber() + "</string>",
+                    "<string name=\"unity.cloud_userid\">" + profile.getUnityDeviceId() + "</string>",
                     "<string name=\"GPU\">" + profile.glRenderer + "</string>",
                     "<string name=\"SoC\">" + profile.socModel + "</string>",
+                    "<int name=\"DeviceLevel\" value=\"5\" />",
+                    "<int name=\"classLevel\" value=\"5\" />",
+                    "<int name=\"QAPE_Enable\" value=\"1\" />",
+                    "<int name=\"TGPA_Enable\" value=\"1\" />",
                     "<int name=\"FrameRate\" value=\"5\" />",
                     "<int name=\"FrameRateLevel\" value=\"5\" />",
                     "<int name=\"MaxFrameRate\" value=\"" + targetFps + "\" />",

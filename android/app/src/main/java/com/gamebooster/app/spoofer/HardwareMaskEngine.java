@@ -124,6 +124,13 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop debug.game.spoofed_android_id \"" + profile.getAndroidId() + "\"");
             batchCommands.add("setprop debug.game.spoofed_oaid \"" + profile.getOaid() + "\"");
             batchCommands.add("setprop debug.game.spoofed_widevine \"" + profile.getWidevineDeviceId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_gaid \"" + profile.getAdvertisingId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_uid \"" + profile.getUnityDeviceId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_qimei \"" + profile.getQimei() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_qimei36 \"" + profile.getQimei36() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_serialno \"" + profile.getSerialNumber() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_client_device_id \"" + profile.getClientDeviceId() + "\"");
+            batchCommands.add("settings put secure android_id \"" + profile.getAndroidId() + "\" 2>/dev/null");
 
             // Live shell property injection read directly by games & Unity/UE4/Vulkan engines
             batchCommands.add("setprop persist.sys.device.model \"" + profile.model + "\"");
@@ -144,6 +151,16 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop persist.sys.game.soc \"" + profile.socModel + "\"");
             batchCommands.add("setprop persist.sys.game.vulkan.driver \"" + profile.vulkanDriverVersion + "\"");
             batchCommands.add("setprop persist.vendor.display.device_name \"" + profile.displayName + "\"");
+
+            // TGPA (Tencent Game Performance Accelerator), QAPE (Qualcomm) & MAGT (MediaTek) boost
+            batchCommands.add("setprop vendor.tgpa.support 1");
+            batchCommands.add("setprop persist.sys.tgpa.opt 1");
+            batchCommands.add("setprop debug.tgpa.fps " + targetHz);
+            batchCommands.add("setprop vendor.perf.qape.enable 1");
+            batchCommands.add("setprop vendor.perf.adk.enable 1");
+            batchCommands.add("setprop persist.vendor.qape.fps " + targetHz);
+            batchCommands.add("setprop vendor.magt.enable 1");
+            batchCommands.add("setprop persist.vendor.magt.fps " + targetHz);
 
             // ═══════════════════════════════════════════════════════════════════
             //  LAYER 2: DISPLAY REFRESH RATE & SCHEDULER TUNING
@@ -320,6 +337,10 @@ public class HardwareMaskEngine {
         if (profile.socManufacturer != null && !profile.socManufacturer.isEmpty()) {
             cmds.add("resetprop ro.soc.manufacturer \"" + profile.socManufacturer + "\"");
         }
+        if (profile.getSerialNumber() != null && !profile.getSerialNumber().isEmpty()) {
+            cmds.add("resetprop ro.serialno \"" + profile.getSerialNumber() + "\"");
+            cmds.add("resetprop ro.boot.serialno \"" + profile.getSerialNumber() + "\"");
+        }
         // NOTE: Global ro.build.fingerprint and ro.build.display.id are intentionally NOT altered via resetprop
         // at runtime to prevent Android system framework services (MediaProvider / PhotoPicker, Keystore)
         // from throwing schema migration or signature crashes ("Media picker has stopped").
@@ -374,6 +395,10 @@ public class HardwareMaskEngine {
         }
         if (snap.socManufacturer != null && !snap.socManufacturer.isEmpty()) {
             cmds.add("resetprop ro.soc.manufacturer \"" + snap.socManufacturer + "\"");
+        }
+        if (snap.serial != null && !snap.serial.isEmpty() && !snap.serial.equals("unknown")) {
+            cmds.add("resetprop ro.serialno \"" + snap.serial + "\"");
+            cmds.add("resetprop ro.boot.serialno \"" + snap.serial + "\"");
         }
         // Fingerprint & display.id are left untouched to prevent system service disruption
         return cmds;
@@ -1181,6 +1206,13 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop debug.game.spoofed_android_id \"" + profile.getAndroidId() + "\"");
             batchCommands.add("setprop debug.game.spoofed_oaid \"" + profile.getOaid() + "\"");
             batchCommands.add("setprop debug.game.spoofed_widevine \"" + profile.getWidevineDeviceId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_gaid \"" + profile.getAdvertisingId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_uid \"" + profile.getUnityDeviceId() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_qimei \"" + profile.getQimei() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_qimei36 \"" + profile.getQimei36() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_serialno \"" + profile.getSerialNumber() + "\"");
+            batchCommands.add("setprop debug.game.spoofed_client_device_id \"" + profile.getClientDeviceId() + "\"");
+            batchCommands.add("settings put secure android_id \"" + profile.getAndroidId() + "\" 2>/dev/null");
 
             // 1.5 Persistent System Properties read by games & Unity/UE4/Vulkan engines
             batchCommands.add("setprop persist.sys.device.model \"" + profile.model + "\"");
@@ -1201,6 +1233,16 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop persist.sys.game.soc \"" + profile.socModel + "\"");
             batchCommands.add("setprop persist.sys.game.vulkan.driver \"" + profile.vulkanDriverVersion + "\"");
             batchCommands.add("setprop persist.vendor.display.device_name \"" + profile.displayName + "\"");
+
+            // TGPA (Tencent Game Performance Accelerator), QAPE (Qualcomm) & MAGT (MediaTek) boost
+            batchCommands.add("setprop vendor.tgpa.support 1");
+            batchCommands.add("setprop persist.sys.tgpa.opt 1");
+            batchCommands.add("setprop debug.tgpa.fps " + targetHz);
+            batchCommands.add("setprop vendor.perf.qape.enable 1");
+            batchCommands.add("setprop vendor.perf.adk.enable 1");
+            batchCommands.add("setprop persist.vendor.qape.fps " + targetHz);
+            batchCommands.add("setprop vendor.magt.enable 1");
+            batchCommands.add("setprop persist.vendor.magt.fps " + targetHz);
             batchCommands.add("setprop ro.product.model \"" + profile.model + "\" 2>/dev/null");
             batchCommands.add("setprop ro.product.brand \"" + profile.brand + "\" 2>/dev/null");
             batchCommands.add("setprop ro.product.manufacturer \"" + profile.manufacturer + "\" 2>/dev/null");

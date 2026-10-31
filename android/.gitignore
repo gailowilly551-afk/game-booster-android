@@ -227,3 +227,9 @@ docs/superpowers/
 *plan.md
 *plan*.md
 spoofplan.md
+_spec.md
+spec.md
+TASK.md
+TODO.md
+*.spec.md
+output-metadata.json

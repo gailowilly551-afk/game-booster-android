@@ -204,6 +204,7 @@ public final class MlbbHardwareMasker {
                     "/sdcard/Android/data/" + pkg + "/files/shared_prefs/" + pkg + ".v2.playerprefs.xml"
                 };
                 String[] mlbbXmlKeys = {
+                    "<string name=\"SystemInfo_deviceUniqueIdentifier\">" + profile.getUnityDeviceId() + "</string>",
                     "<string name=\"SystemInfo_deviceModel\">" + profile.model + "</string>",
                     "<string name=\"SystemInfo_deviceName\">" + profile.displayName + "</string>",
                     "<string name=\"SystemInfo_operatingSystem\">Android OS " + profile.androidVersion + " / API-" + profile.sdkInt + " (" + profile.displayId + "/release-keys)</string>",
@@ -213,11 +214,19 @@ public final class MlbbHardwareMasker {
                     "<string name=\"SystemInfo_processorCount\">" + profile.cpuCores + "</string>",
                     "<string name=\"SystemInfo_processorFrequency\">" + (profile.cpuMaxFreqKhz / 1000) + "</string>",
                     "<string name=\"SystemInfo_systemMemorySize\">" + profile.ramTotalMb + "</string>",
+                    "<string name=\"DeviceID\">" + profile.getAndroidId() + "</string>",
                     "<string name=\"DeviceModel\">" + profile.model + "</string>",
                     "<string name=\"DeviceBrand\">" + profile.brand + "</string>",
                     "<string name=\"Manufacturer\">" + profile.manufacturer + "</string>",
                     "<string name=\"AndroidVersion\">" + profile.androidVersion + "</string>",
                     "<string name=\"BuildFingerprint\">" + profile.fingerprint + "</string>",
+                    "<string name=\"AndroidID\">" + profile.getAndroidId() + "</string>",
+                    "<string name=\"OAID\">" + profile.getOaid() + "</string>",
+                    "<string name=\"GAID\">" + profile.getAdvertisingId() + "</string>",
+                    "<string name=\"DeviceSerial\">" + profile.getSerialNumber() + "</string>",
+                    "<string name=\"ClientDeviceID\">" + profile.getClientDeviceId() + "</string>",
+                    "<string name=\"InstallId\">" + profile.getInstallId() + "</string>",
+                    "<string name=\"unity.cloud_userid\">" + profile.getUnityDeviceId() + "</string>",
                     "<int name=\"HighFpsMode\" value=\"3\" />",
                     "<int name=\"HighFPSMode\" value=\"3\" />",
                     "<int name=\"high_fps_mode\" value=\"3\" />",
