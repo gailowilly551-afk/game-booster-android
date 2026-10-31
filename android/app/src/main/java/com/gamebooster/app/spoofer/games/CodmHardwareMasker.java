@@ -126,7 +126,15 @@ public final class CodmHardwareMasker {
                     "/sdcard/Android/data/" + pkg + "/files/shared_prefs/" + pkg + ".v2.playerprefs.xml"
                 };
                 String[] codmXmlKeys = {
+                    "<string name=\"SystemInfo_deviceModel\">" + profile.model + "</string>",
+                    "<string name=\"SystemInfo_deviceName\">" + profile.displayName + "</string>",
+                    "<string name=\"SystemInfo_operatingSystem\">Android OS " + profile.androidVersion + " / API-" + profile.sdkInt + " (" + profile.displayId + "/release-keys)</string>",
+                    "<string name=\"SystemInfo_graphicsDeviceName\">" + profile.glRenderer + "</string>",
                     "<string name=\"DeviceModel\">" + profile.model + "</string>",
+                    "<string name=\"DeviceBrand\">" + profile.brand + "</string>",
+                    "<string name=\"Manufacturer\">" + profile.manufacturer + "</string>",
+                    "<string name=\"AndroidVersion\">" + profile.androidVersion + "</string>",
+                    "<string name=\"BuildFingerprint\">" + profile.fingerprint + "</string>",
                     "<string name=\"GPU\">" + profile.glRenderer + "</string>",
                     "<string name=\"SoC\">" + profile.socModel + "</string>",
                     "<int name=\"FrameRate\" value=\"5\" />",

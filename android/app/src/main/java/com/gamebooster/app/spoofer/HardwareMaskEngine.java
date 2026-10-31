@@ -97,6 +97,10 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop debug.game.spoofed_cpu_cores \"" + profile.cpuCores + "\"");
             batchCommands.add("setprop debug.game.spoofed_cpu_freq \"" + profile.cpuMaxFreqKhz + "\"");
             batchCommands.add("setprop debug.game.spoofed_cpu_arch \"" + profile.cpuArchitecture + "\"");
+            batchCommands.add("setprop debug.game.spoofed_android_ver \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop debug.game.spoofed_sdk_int \"" + profile.sdkInt + "\"");
+            batchCommands.add("setprop debug.game.spoofed_fingerprint \"" + profile.fingerprint + "\"");
+            batchCommands.add("setprop debug.game.spoofed_display_id \"" + profile.displayId + "\"");
             batchCommands.add("setprop debug.game.spoofed_gpu \"" + profile.glRenderer + "\"");
             batchCommands.add("setprop debug.game.spoofed_gpu_vendor \"" + profile.glVendor + "\"");
             batchCommands.add("setprop debug.game.spoofed_vulkan_ver \"" + profile.vulkanVersion + "\"");
@@ -127,6 +131,10 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop persist.sys.device.manufacturer \"" + profile.manufacturer + "\"");
             batchCommands.add("setprop persist.sys.device.hardware \"" + profile.hardware + "\"");
             batchCommands.add("setprop persist.sys.device.soc \"" + profile.socModel + "\"");
+            batchCommands.add("setprop persist.sys.device.release \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop persist.sys.game.version.release \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop persist.sys.game.version.sdk \"" + profile.sdkInt + "\"");
+            batchCommands.add("setprop persist.sys.game.fingerprint \"" + profile.fingerprint + "\"");
             batchCommands.add("setprop persist.sys.game.model \"" + profile.model + "\"");
             batchCommands.add("setprop persist.sys.game.brand \"" + profile.brand + "\"");
             batchCommands.add("setprop persist.sys.game.device \"" + profile.device + "\"");
@@ -296,6 +304,16 @@ public class HardwareMaskEngine {
             cmds.add("resetprop ro.build.product \"" + profile.board + "\"");
             cmds.add("resetprop ro.board.platform \"" + profile.board + "\"");
         }
+        if (profile.androidVersion != null && !profile.androidVersion.isEmpty()) {
+            cmds.add("resetprop ro.build.version.release \"" + profile.androidVersion + "\"");
+            cmds.add("resetprop ro.build.version.release_or_codename \"" + profile.androidVersion + "\"");
+        }
+        if (profile.sdkInt > 0) {
+            cmds.add("resetprop ro.build.version.sdk \"" + profile.sdkInt + "\"");
+        }
+        if (profile.securityPatch != null && !profile.securityPatch.isEmpty()) {
+            cmds.add("resetprop ro.build.version.security_patch \"" + profile.securityPatch + "\"");
+        }
         if (profile.socModel != null && !profile.socModel.isEmpty()) {
             cmds.add("resetprop ro.soc.model \"" + profile.socModel + "\"");
         }
@@ -340,6 +358,16 @@ public class HardwareMaskEngine {
         if (snap.board != null && !snap.board.isEmpty()) {
             cmds.add("resetprop ro.build.product \"" + snap.board + "\"");
             cmds.add("resetprop ro.board.platform \"" + snap.board + "\"");
+        }
+        if (snap.release != null && !snap.release.isEmpty()) {
+            cmds.add("resetprop ro.build.version.release \"" + snap.release + "\"");
+            cmds.add("resetprop ro.build.version.release_or_codename \"" + snap.release + "\"");
+        }
+        if (snap.sdkInt > 0) {
+            cmds.add("resetprop ro.build.version.sdk \"" + snap.sdkInt + "\"");
+        }
+        if (snap.securityPatch != null && !snap.securityPatch.isEmpty()) {
+            cmds.add("resetprop ro.build.version.security_patch \"" + snap.securityPatch + "\"");
         }
         if (snap.socModel != null && !snap.socModel.isEmpty()) {
             cmds.add("resetprop ro.soc.model \"" + snap.socModel + "\"");
@@ -624,6 +652,7 @@ public class HardwareMaskEngine {
                 ShizukuFileManager.writeFile(dir + "fake_meminfo", memInfo, "666");
                 ShizukuFileManager.writeFile(dir + "fake_version", procVer, "666");
                 ShizukuFileManager.writeFile(dir + "fake_vulkan.json", vkJson.toString(), "666");
+                ShizukuFileManager.writeFile(dir + "fake_build.prop", props.toString(), "666");
                 ShizukuFileManager.writeFile(dir + "system_spoof.prop", props.toString(), "666");
                 ShizukuFileManager.writeFile(dir + "build.prop", props.toString(), "666");
             }
@@ -1131,6 +1160,10 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop debug.game.spoofed_cpu_cores \"" + profile.cpuCores + "\"");
             batchCommands.add("setprop debug.game.spoofed_cpu_freq \"" + profile.cpuMaxFreqKhz + "\"");
             batchCommands.add("setprop debug.game.spoofed_cpu_arch \"" + profile.cpuArchitecture + "\"");
+            batchCommands.add("setprop debug.game.spoofed_android_ver \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop debug.game.spoofed_sdk_int \"" + profile.sdkInt + "\"");
+            batchCommands.add("setprop debug.game.spoofed_fingerprint \"" + profile.fingerprint + "\"");
+            batchCommands.add("setprop debug.game.spoofed_display_id \"" + profile.displayId + "\"");
             batchCommands.add("setprop debug.game.spoofed_gpu \"" + profile.glRenderer + "\"");
             batchCommands.add("setprop debug.game.spoofed_gpu_vendor \"" + profile.glVendor + "\"");
             batchCommands.add("setprop debug.game.spoofed_vulkan_ver \"" + profile.vulkanVersion + "\"");
@@ -1155,6 +1188,10 @@ public class HardwareMaskEngine {
             batchCommands.add("setprop persist.sys.device.manufacturer \"" + profile.manufacturer + "\"");
             batchCommands.add("setprop persist.sys.device.hardware \"" + profile.hardware + "\"");
             batchCommands.add("setprop persist.sys.device.soc \"" + profile.socModel + "\"");
+            batchCommands.add("setprop persist.sys.device.release \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop persist.sys.game.version.release \"" + profile.androidVersion + "\"");
+            batchCommands.add("setprop persist.sys.game.version.sdk \"" + profile.sdkInt + "\"");
+            batchCommands.add("setprop persist.sys.game.fingerprint \"" + profile.fingerprint + "\"");
             batchCommands.add("setprop persist.sys.game.model \"" + profile.model + "\"");
             batchCommands.add("setprop persist.sys.game.brand \"" + profile.brand + "\"");
             batchCommands.add("setprop persist.sys.game.device \"" + profile.device + "\"");

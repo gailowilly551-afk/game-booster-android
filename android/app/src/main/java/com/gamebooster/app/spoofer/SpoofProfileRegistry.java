@@ -40,8 +40,20 @@ public class SpoofProfileRegistry {
     private static final Map<String, List<SpoofProfile>> ALL_BY_BRAND = new LinkedHashMap<>();
 
     static {
-        // Exclusively register ASUS ROG Phone 10 Pro+ flagship profile
+        // Register all OEM flagship profiles across Snapdragon, Dimensity, Exynos, Tensor, and Apple suites
         registerBrand(com.gamebooster.app.spoofer.brands.AsusRogProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.NubiaProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.SamsungProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.XiaomiProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.VivoProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.TranssionProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.OnePlusProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.OppoProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.RealmeProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.BlackSharkProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.LenovoLegionProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.HuaweiProfiles.getProfiles());
+        registerBrand(com.gamebooster.app.spoofer.brands.AppleProfiles.getProfiles());
     }
 
     private static void registerBrand(List<SpoofProfile> profiles) {

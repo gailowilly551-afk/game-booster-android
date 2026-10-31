@@ -472,6 +472,11 @@ public class SpoofProfile {
             "DeviceManufacturer=" + manufacturer,
             "DeviceID=" + getAndroidId(),
             "DeviceSerialNumber=" + getSerialNumber(),
+            "OSVersion=" + androidVersion,
+            "AndroidVersion=" + androidVersion,
+            "SDKVersion=" + sdkInt,
+            "BuildFingerprint=" + fingerprint,
+            "BuildDisplay=" + displayId,
             "GPUFamily=" + glRenderer,
             "SoCModel=" + socModel,
             "SoCManufacturer=" + socManufacturer,
@@ -596,6 +601,14 @@ public class SpoofProfile {
                 "  \"DeviceModel\": \"" + model + "\",\n" +
                 "  \"DeviceBrand\": \"" + brand + "\",\n" +
                 "  \"Manufacturer\": \"" + manufacturer + "\",\n" +
+                "  \"DeviceName\": \"" + displayName + "\",\n" +
+                "  \"Board\": \"" + board + "\",\n" +
+                "  \"Hardware\": \"" + hardware + "\",\n" +
+                "  \"AndroidVersion\": \"" + androidVersion + "\",\n" +
+                "  \"OSVersion\": \"" + androidVersion + "\",\n" +
+                "  \"SDKInt\": " + sdkInt + ",\n" +
+                "  \"SecurityPatch\": \"" + securityPatch + "\",\n" +
+                "  \"BuildFingerprint\": \"" + fingerprint + "\",\n" +
                 "  \"AndroidID\": \"" + getAndroidId() + "\",\n" +
                 "  \"SerialNumber\": \"" + getSerialNumber() + "\",\n" +
                 "  \"OAID\": \"" + getOaid() + "\",\n" +
@@ -637,6 +650,10 @@ public class SpoofProfile {
                 "DeviceBrand=" + brand + "\n" +
                 "Manufacturer=" + manufacturer + "\n" +
                 "Hardware=" + hardware + "\n" +
+                "AndroidVersion=" + androidVersion + "\n" +
+                "OSVersion=" + androidVersion + "\n" +
+                "SDKVersion=" + sdkInt + "\n" +
+                "BuildFingerprint=" + fingerprint + "\n" +
                 "GPU=" + glRenderer + "\n" +
                 "GPUVendor=" + glVendor + "\n" +
                 "SoC=" + socModel + "\n" +
@@ -703,6 +720,12 @@ public class SpoofProfile {
                 "Brand=" + brand + "\n" +
                 "DeviceName=" + model + "\n" +
                 "Manufacturer=" + manufacturer + "\n" +
+                "AndroidVersion=" + androidVersion + "\n" +
+                "OSVersion=" + androidVersion + "\n" +
+                "SDKVersion=" + sdkInt + "\n" +
+                "BuildFingerprint=" + fingerprint + "\n" +
+                "Board=" + board + "\n" +
+                "Hardware=" + hardware + "\n" +
                 "GPU=" + glRenderer + "\n" +
                 "GpuRenderer=" + glRenderer + "\n" +
                 "SoC=" + socModel + "\n" +

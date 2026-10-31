@@ -386,6 +386,9 @@ public final class GameLaunchShellExecutor {
                 case PUBGM:
                     com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
                     break;
+                case HOK:
+                    com.gamebooster.app.engine.HokCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
+                    break;
                 default:
                     break;
             }

@@ -868,6 +868,18 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     int hz = targetHz > 0 ? (targetHz < 120 ? 120 : (targetHz > 185 ? 185 : targetHz)) : 185;
     int ram = ramMb > 0 ? ramMb : 24576;
 
+    // Detect vendor accurately
+    std::string vendor = "Qualcomm";
+    std::string lowerGpu = gpu;
+    std::transform(lowerGpu.begin(), lowerGpu.end(), lowerGpu.begin(), ::tolower);
+    if (lowerGpu.find("mali") != std::string::npos || lowerGpu.find("immortalis") != std::string::npos) {
+        vendor = "ARM";
+    } else if (lowerGpu.find("apple") != std::string::npos) {
+        vendor = "Apple";
+    } else if (lowerGpu.find("xclipse") != std::string::npos) {
+        vendor = "Samsung";
+    }
+
     struct stat stBefore;
     bool hasStat = (stat(path.c_str(), &stBefore) == 0);
 
@@ -879,12 +891,16 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             std::ostringstream ss;
             ss << "[DeviceProfile]\n"
                << "DeviceName=" << soc << "\n"
+               << "DeviceModel=" << soc << "\n"
                << "BaseProfileName=Android_High\n"
                << "GpuRenderer=" << gpu << "\n"
-               << "GpuVendor=Qualcomm\n"
+               << "GpuVendor=" << vendor << "\n"
                << "TotalMemoryMB=" << ram << "\n"
                << "MaxRefreshRate=" << hz << "\n"
                << "TargetFPS=" << hz << "\n"
+               << "AndroidVersion=15\n"
+               << "OSVersion=15\n"
+               << "SDKVersion=35\n"
                << "QualityBucket=Ultra\n"
                << "+CVars=r.PUBGDeviceFPS=10\n"
                << "+CVars=r.PUBGFrameRateLimit=" << hz << "\n"
@@ -910,10 +926,15 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             // Safely patch or append keys to existing INI
             std::vector<std::string> keysToPatch = {
                 "DeviceName=" + soc,
+                "DeviceModel=" + soc,
                 "GpuRenderer=" + gpu,
+                "GpuVendor=" + vendor,
                 "TotalMemoryMB=" + std::to_string(ram),
                 "MaxRefreshRate=" + std::to_string(hz),
-                "TargetFPS=" + std::to_string(hz)
+                "TargetFPS=" + std::to_string(hz),
+                "AndroidVersion=15",
+                "OSVersion=15",
+                "SDKVersion=35"
             };
             for (const auto& kv : keysToPatch) {
                 size_t eq = kv.find('=');
@@ -945,12 +966,15 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             std::ostringstream ss;
             ss << "{\n"
                << "  \"DeviceModel\": \"" << soc << "\",\n"
-               << "  \"DeviceBrand\": \"samsung\",\n"
-               << "  \"Manufacturer\": \"samsung\",\n"
+               << "  \"DeviceBrand\": \"" << (vendor == "Apple" ? "apple" : "asus") << "\",\n"
+               << "  \"Manufacturer\": \"" << (vendor == "Apple" ? "apple" : "asus") << "\",\n"
+               << "  \"AndroidVersion\": \"15\",\n"
+               << "  \"OSVersion\": \"15\",\n"
+               << "  \"SDKInt\": 35,\n"
                << "  \"GPURenderer\": \"" << gpu << "\",\n"
-               << "  \"GPUVendor\": \"Qualcomm\",\n"
+               << "  \"GPUVendor\": \"" << vendor << "\",\n"
                << "  \"SoCModel\": \"" << soc << "\",\n"
-               << "  \"SoCManufacturer\": \"Qualcomm\",\n"
+               << "  \"SoCManufacturer\": \"" << vendor << "\",\n"
                << "  \"CPUCores\": 8,\n"
                << "  \"RAMTotalMB\": " << ram << ",\n"
                << "  \"MaxFrameRate\": " << hz << ",\n"
@@ -967,7 +991,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
                << "  \"Unlock120Hz\": true,\n"
                << "  \"VulkanSupport\": true,\n"
                << "  \"gpu_renderer\": \"" << gpu << "\",\n"
-               << "  \"gpu_vendor\": \"Qualcomm\",\n"
+               << "  \"gpu_vendor\": \"" << vendor << "\",\n"
                << "  \"soc_model\": \"" << soc << "\",\n"
                << "  \"ram_mb\": " << ram << ",\n"
                << "  \"max_fps\": " << hz << ",\n"
@@ -981,8 +1005,11 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             content = ss.str();
         } else {
             patch_json_node(content, "GPURenderer", gpu, false);
-            patch_json_node(content, "GPUVendor", "Qualcomm", false);
+            patch_json_node(content, "GPUVendor", vendor, false);
             patch_json_node(content, "SoCModel", soc, false);
+            patch_json_node(content, "AndroidVersion", "15", false);
+            patch_json_node(content, "OSVersion", "15", false);
+            patch_json_node(content, "SDKInt", "35", true);
             patch_json_node(content, "RAMTotalMB", std::to_string(ram), true);
             patch_json_node(content, "MaxFrameRate", std::to_string(hz), true);
             patch_json_node(content, "TargetFPS", std::to_string(hz), true);
@@ -994,8 +1021,9 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             content = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n</map>\n";
         }
         patch_xml_node(content, "string", "SystemInfo_graphicsDeviceName", gpu);
-        patch_xml_node(content, "string", "SystemInfo_graphicsDeviceVendor", "Qualcomm");
+        patch_xml_node(content, "string", "SystemInfo_graphicsDeviceVendor", vendor);
         patch_xml_node(content, "string", "SystemInfo_deviceModel", soc);
+        patch_xml_node(content, "string", "SystemInfo_operatingSystem", "Android OS 15 / API-35 (UKQ1.231003.002/release-keys)");
         patch_xml_node(content, "int", "SystemInfo_systemMemorySize", std::to_string(ram));
         patch_xml_node(content, "int", "SystemInfo_graphicsMemorySize", "8192");
         patch_xml_node(content, "int", "TargetFrameRate", std::to_string(hz));
@@ -1011,6 +1039,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
                << "soc=" << soc << "\n"
                << "ram=" << ram << "\n"
                << "hz=" << hz << "\n"
+               << "AndroidVersion=15\n"
                << "TargetFPS=" << hz << "\n"
                << "Unlock185Hz=1\n"
                << "Unlock165Hz=1\n"
