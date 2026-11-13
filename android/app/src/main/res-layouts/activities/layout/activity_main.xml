@@ -35,19 +35,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Global ROG 10 PRO+ Quick Bar -->
-            <Button
-                android:id="@+id/btn_main_spoof_rog10"
-                android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:layout_marginBottom="6dp"
-                android:background="@drawable/btn_cyber_dark"
-                android:text="🔥 SPOOF ROG 10 PRO+ (165Hz)"
-                android:textColor="@color/accent_neon_green"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

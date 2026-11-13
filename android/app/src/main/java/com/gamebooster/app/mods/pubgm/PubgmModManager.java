@@ -14,7 +14,7 @@ import com.gamebooster.app.mods.GameModProfile;
 import java.util.List;
 
 /**
- * PubgmModManager — Dedicated orchestrator for PUBG Mobile 4.6.0 mod operations.
+ * PubgmModManager — Dedicated orchestrator for PUBG Mobile 4.7.0 (Global & Flash) mod operations.
  * Coordinates 5-layer synchronous injector:
  *  1. Layer 1: Display refresh rate & SurfaceFlinger unlock (120/144/165/185 FPS)
  *  2. Layer 2: Asset deployment & Active.sav binary patch
@@ -26,8 +26,10 @@ public final class PubgmModManager {
 
     private static final String TAG = "PubgmModManager";
     public static final String PKG_PUBGM = "com.tencent.ig";
-    public static final int TARGET_VERSION_CODE = 21525;
-    public static final String TARGET_VERSION_NAME = "4.6.0";
+    public static final String PKG_PUBGM_FLASH = "com.tencent.igfit";
+    public static final int TARGET_VERSION_CODE = 21740;
+    public static final int TARGET_FLASH_VERSION_CODE = 21745;
+    public static final String TARGET_VERSION_NAME = "4.7.0";
     public static final String FRIDA_HOOK_DEVICE_DIR = "/data/local/tmp/gb_hooks/pubgm/";
 
     private static volatile boolean sPubgmInjected = false;
@@ -49,14 +51,16 @@ public final class PubgmModManager {
     }
 
     /**
-     * Synchronous 5-layer PUBG Mobile 4.6.0 injector.
+     * Synchronous 5-layer PUBG Mobile 4.7.0 injector (Global com.tencent.ig & Flash com.tencent.igfit).
      */
     public static synchronized boolean injectPubgmModSuite(Context ctx, String packageName, GameModProfile profile) {
         if (profile == null) return false;
         final String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_PUBGM;
+        final boolean isFlash = pkg.toLowerCase().contains("igfit");
 
         try {
-            Log.i(TAG, "⚡ [injectPubgmModSuite] Initializing PUBG Mobile 4.6.0 Mod Pipeline for " + pkg + "...");
+            Log.i(TAG, "⚡ [injectPubgmModSuite] Initializing PUBG Mobile 4.7.0 Mod Pipeline for "
+                    + pkg + " (variant=" + (isFlash ? "flash" : "global") + ")...");
             try {
                 PubgmUe4Resolver.loadOffsets(ctx);
             } catch (Throwable t) {
@@ -67,7 +71,7 @@ public final class PubgmModManager {
             // reads the per-game preference for its runtime hook property.
             final int runtimeFps = GameFpsCoordinator.resolveRuntimeFps(ctx, pkg);
 
-            // Layer 2: Pre-tuned 4.6.0 assets deployment.
+            // Layer 2: Pre-tuned 4.7.0 assets deployment.
             // Active.sav FPS bytes are written once by the coordinator's patcher,
             // never unconditionally from this manager.
             try {
@@ -81,10 +85,10 @@ public final class PubgmModManager {
             // Layer 3: CVar injection & combat enhancement suite
             try {
                 if (ctx != null) {
-                    PubgConfigPatcher.applyPubgm460MasterUpdate(ctx, pkg);
+                    PubgConfigPatcher.applyPubgm470MasterUpdate(ctx, pkg);
                 }
             } catch (Throwable t) {
-                Log.w(TAG, "PUBGM 4.6.0 master update error: " + t.getMessage());
+                Log.w(TAG, "PUBGM 4.7.0 master update error: " + t.getMessage());
             }
 
             // Apply granular mod profile toggles
@@ -134,6 +138,8 @@ public final class PubgmModManager {
             }
 
             // System properties for dynamic hooks
+            setprop("gamebooster.pubgm.variant", isFlash ? "flash" : "global");
+            setprop("gamebooster.pubgm.version", TARGET_VERSION_NAME);
             setprop("gamebooster.pubgm.aim",     profile.pubgmAimbot ? "1" : "0");
             setprop("gamebooster.pubgm.recoil",  profile.pubgmNoRecoil ? "1" : "0");
             setprop("gamebooster.pubgm.spread",  profile.pubgmNoSpread ? "1" : "0");
@@ -158,7 +164,7 @@ public final class PubgmModManager {
             }
 
             sPubgmInjected = true;
-            Log.i(TAG, "✅ [injectPubgmModSuite] PUBG Mobile 4.6.0 mod suite fully hooked & verified for " + pkg);
+            Log.i(TAG, "✅ [injectPubgmModSuite] PUBG Mobile 4.7.0 mod suite fully hooked & verified for " + pkg);
             return true;
         } catch (Throwable t) {
             Log.e(TAG, "PUBG Mobile mod pipeline injection failed for " + pkg + ": " + t.getMessage(), t);

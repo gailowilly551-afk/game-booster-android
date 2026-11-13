@@ -1,15 +1,21 @@
 {
   "game_id": "pubgm",
   "name": "PUBG Mobile",
-  "version": "4.6.0",
-  "version_code": 21525,
+  "version": "4.7.0",
+  "version_code": 21740,
+  "flash_version_code": 21745,
   "supported_packages": [
     "com.tencent.ig",
+    "com.tencent.igfit",
+    "com.tencent.igce",
+    "com.tencent.igfitce",
     "com.pubg.imobile",
     "com.pubg.krmobile",
     "com.vng.pubgmobile",
     "com.tencent.tmgp.pubgm",
-    "com.tencent.iglite"
+    "com.tencent.iglite",
+    "com.rekoo.pubgm",
+    "com.pubg.ilite"
   ],
   "engine": "UnrealEngine4",
   "fps_unlock_tier": 185,

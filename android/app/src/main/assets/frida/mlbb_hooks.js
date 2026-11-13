@@ -631,9 +631,18 @@ if (CFG.fpsUnlock > 60) {
     } catch(e) {}
   });
 
-  // IL2CPP internal setter hook
-  waitForModule(['libil2cpp.so', 'libResources.so'], (mod) => {
+  // IL2CPP internal C-API export resolver + MobaGameUnityActivity bridge (verified in MLBB DUMPS)
+  waitForModule(['libil2cpp.so', 'libResources.so', 'libmoba.so'], (mod) => {
     try {
+      const il2cppApi = {
+        domainGet:       Module.findExportByName(mod.name, 'il2cpp_domain_get'),
+        classFromName:   Module.findExportByName(mod.name, 'il2cpp_class_from_name'),
+        methodFromName:  Module.findExportByName(mod.name, 'il2cpp_class_get_method_from_name'),
+        lookupSymbol:    Module.findExportByName(mod.name, 'il2cpp_api_lookup_symbol'),
+        mobaSetup:       Module.findExportByName(mod.name, 'Java_com_moba_unityplugin_MobaGameUnityActivity_NativeSetupIL2CPP')
+      };
+      console.log('[GameBoosterPRO] MLBB IL2CPP C-API exports in ' + mod.name + ': domainGet=' + il2cppApi.domainGet + ' lookup=' + il2cppApi.lookupSymbol);
+
       const il2cppFpsExports = [
         'UnityEngine_Application_set_targetFrameRate',
         '_ZN11UnityEngine11Application18set_targetFrameRateEi'
@@ -650,6 +659,18 @@ if (CFG.fpsUnlock > 60) {
       }
     } catch(e) {}
   });
+
+  // Guard ByteBench real-time tier downgrade checks when high FPS unlock is active
+  if (typeof Java !== 'undefined' && Java.available) {
+    Java.perform(() => {
+      try {
+        const StrategySettings = Java.use('com.benchmark.settings.StrategySettings');
+        StrategySettings.isOpenRealTimeDecision.implementation = function () {
+          return false;
+        };
+      } catch (e) {}
+    });
+  }
 }
 
 try {

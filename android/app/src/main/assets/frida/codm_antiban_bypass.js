@@ -1,10 +1,10 @@
 /**
  * CODM Deep Anti-Ban & Anticheat Cloak Script (Frida)
  * Targets:
- *  - Tencent ACE (libanort.so, libanogs.so)
- *  - CrashSight (libCrashSight.so, libCrashSightPlugin.so)
- *  - Security Anti-Fraud (libsaf.so)
- *  - SSL / Telemetry Pinning
+ *  - Tencent ACE (libanort.so, libanogs.so AnoSDK*@@ANO)
+ *  - CrashSight (libCrashSight.so cs_* and UQM*, libCrashSightPlugin.so)
+ *  - Telemetry (libTDataMaster.so) & SSL Pinning
+ *  (libsaf.so is OpenAL Soft audio in CODM and intentionally untouched)
  */
 
 'use strict';
@@ -49,49 +49,47 @@ function onModuleLoaded(moduleName, callback) {
 
 // ─── 2. Tencent ACE (libanort.so & libanogs.so) Watchdog Suppression ─────────
 onModuleLoaded('libanort.so', (mod) => {
-    console.log('[AntiBan-CODM] libanort.so detected @ ' + mod.base);
-
-    // Enumerate exports to hook detection and telemetry dispatch
-    mod.enumerateExports().forEach(exp => {
-        const name = exp.name.toLowerCase();
-        if (name.includes('report') || name.includes('check') || name.includes('detect') || name.includes('heartbeat')) {
-            try {
-                Interceptor.replace(exp.address, new NativeCallback(() => {
-                    return 0; // return SUCCESS or NO-OP
-                }, 'int', []));
-                console.log('[AntiBan-CODM] Hooked libanort export: ' + exp.name);
-            } catch(e) {}
-        }
-    });
+    const tpSyscall = Module.findExportByName('libanort.so', 'tp_syscall_imp');
+    console.log('[AntiBan-CODM] libanort.so detected @ ' + mod.base + ' (tp_syscall_imp=' + tpSyscall + ')');
 });
 
 onModuleLoaded('libanogs.so', (mod) => {
     console.log('[AntiBan-CODM] libanogs.so detected @ ' + mod.base);
-
+    const prefixes = ['AnoSDKGetReportData', 'AnoSDKDelReportData', 'AnoSDKSetUserInfo', 'AnoSDKRegister'];
     mod.enumerateExports().forEach(exp => {
-        const name = exp.name.toLowerCase();
-        if (name.includes('tick') || name.includes('scan') || name.includes('verify')) {
+        if (exp.type !== 'function') return;
+        if (prefixes.some(p => exp.name.indexOf(p) === 0)) {
             try {
-                Interceptor.replace(exp.address, new NativeCallback(() => {
-                    return 0;
-                }, 'int', []));
+                Interceptor.replace(exp.address, new NativeCallback(() => 0, 'int', []));
                 console.log('[AntiBan-CODM] Hooked libanogs export: ' + exp.name);
             } catch(e) {}
         }
     });
 });
 
-// ─── 3. CrashSight Suppression ───────────────────────────────────────────────
+// ─── 3. CrashSight Suppression (cs_* / UQM*) ──────────────────────────────────
 onModuleLoaded('libCrashSight.so', (mod) => {
     console.log('[AntiBan-CODM] libCrashSight.so detected @ ' + mod.base);
-
+    const prefixes = ['cs_reportLogInfo', 'cs_reportStuck', 'cs_startDumpRoutine', 'UQMReportLogInfo', 'UQMCrashAgentReport'];
     mod.enumerateExports().forEach(exp => {
-        const name = exp.name.toLowerCase();
-        if (name.includes('crash') || name.includes('report') || name.includes('upload')) {
+        if (exp.type !== 'function') return;
+        if (prefixes.some(p => exp.name.indexOf(p) === 0)) {
             try {
-                Interceptor.replace(exp.address, new NativeCallback(() => {
-                    return 0;
-                }, 'int', []));
+                Interceptor.replace(exp.address, new NativeCallback(() => 0, 'int', []));
+            } catch(e) {}
+        }
+    });
+});
+
+// ─── 4. TGPA Frame / Telemetry Guard ──────────────────────────────────────────
+onModuleLoaded('libtgpa.so', (mod) => {
+    console.log('[AntiBan-CODM] libtgpa.so detected @ ' + mod.base);
+    const mtkApi = Module.findExportByName('libtgpa.so', 'MTKFRC_GetAPILevel');
+    const mfrcApi = Module.findExportByName('libtgpa.so', 'MFRC_GetAPILevel');
+    [mtkApi, mfrcApi].forEach(ptrFn => {
+        if (ptrFn) {
+            try {
+                Interceptor.attach(ptrFn, { onLeave(retval) { if (retval.toInt32() <= 0) retval.replace(ptr(1)); } });
             } catch(e) {}
         }
     });

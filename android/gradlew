@@ -29,7 +29,7 @@ if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
     fi
 fi
 if [ -z "$ANDROID_USER_HOME" ]; then
-    export ANDROID_USER_HOME="$(dirname "$0")/../.android"
+    export ANDROID_USER_HOME="${HOME:-/tmp}/.android"
     mkdir -p "$ANDROID_USER_HOME" 2>/dev/null || true
 fi
 # ──────────────────────────────────────────────────────────────────────────

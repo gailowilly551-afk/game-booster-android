@@ -106,6 +106,18 @@ public class ManualSettingsPreferences {
         return getPrefs(context).getBoolean(KEY_PH_TELCO_SUPERCHARGER, false);
     }
 
+    private static final String KEY_PH_CARRIER_NAME = "pref_ph_carrier_name";
+
+    public static void setSelectedPhCarrier(Context context, String carrierName) {
+        if (context == null || carrierName == null) return;
+        getPrefs(context).edit().putString(KEY_PH_CARRIER_NAME, carrierName).apply();
+    }
+
+    public static String getSelectedPhCarrier(Context context) {
+        if (context == null) return null;
+        return getPrefs(context).getString(KEY_PH_CARRIER_NAME, null);
+    }
+
     public static void setTntSmartSuperchargerEnabled(Context context, boolean enabled) {
         if (context == null) return;
         getPrefs(context).edit().putBoolean(KEY_TNT_SMART_SUPERCHARGER, enabled).apply();
@@ -744,7 +756,42 @@ public class ManualSettingsPreferences {
 
     public static void resetAllManualSettings(Context context) {
         if (context == null) return;
-        getPrefs(context).edit().clear().apply();
+        // Explicitly store stock/OFF values rather than clearing, because getters default to performance-ON on first launch.
+        getPrefs(context).edit()
+                .putString(KEY_GPU_MODE, "skia")
+                .putString(KEY_CPU_MODE, "schedutil")
+                .putBoolean(KEY_ANGLE_MODE, false)
+                .putBoolean(KEY_GAME_DRIVER, false)
+                .putBoolean(KEY_THERMAL_BYPASS, false)
+                .putBoolean(KEY_ADPF_ENGINE, false)
+                .putBoolean(KEY_UCLAMP_BOOST, false)
+                .putBoolean(KEY_TOUCH_1000HZ_LOCK, false)
+                .putBoolean(KEY_PHANTOM_FREEZER_KILL, false)
+                .putBoolean(KEY_VULKAN_SKIAVK, false)
+                .putBoolean(KEY_MEMORY_16KB_SHIELD, false)
+                .putBoolean(KEY_WEBVIEW_BOOST, false)
+                .putBoolean(KEY_ANTI_LOG, false)
+                .putBoolean(KEY_AUTO_PURGE_LOGS, false)
+                .putBoolean(KEY_AOT_SPEED, false)
+                .putBoolean(KEY_TETHER_HW, false)
+                .putBoolean(KEY_FORCE_GNSS, false)
+                .putBoolean(KEY_WIFI_5G_6G_7G_TURBO, false)
+                .putBoolean(KEY_AUTO_DNS_FLUSH, false)
+                .putBoolean(KEY_DISABLE_DATA_SAVER, false)
+                .putBoolean(KEY_DISABLE_BATTERY_SAVER, false)
+                .putBoolean(KEY_DISABLE_WIFI_SAVER, false)
+                .putBoolean(KEY_TCP_BBR_BUFFERS, false)
+                .putBoolean(KEY_5G_6G_DATA, false)
+                .putBoolean(KEY_WIFI_LOW_LATENCY, false)
+                .putBoolean(KEY_DUAL_DATA_WIFI, false)
+                .putBoolean(KEY_PH_TELCO_SUPERCHARGER, false)
+                .putBoolean(KEY_TNT_SMART_SUPERCHARGER, false)
+                .putBoolean(KEY_TM_GLOBE_SUPERCHARGER, false)
+                .putString(KEY_PH_CARRIER_NAME, null)
+                .putString(KEY_GAMING_DNS, "SYSTEM_DEFAULT")
+                .putString(KEY_NETWORK_MODE, "default")
+                .putInt(KEY_ACTIVE_FPS_PROFILE, 60)
+                .apply();
     }
 
     private static void executeCmd(String cmd) {

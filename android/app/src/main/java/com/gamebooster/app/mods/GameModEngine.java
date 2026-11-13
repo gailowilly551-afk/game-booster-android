@@ -210,7 +210,7 @@ public final class GameModEngine {
     }
 
     /**
-     * Synchronously injects PUBG Mobile 4.6.0 mod suite and returns true when fully hooked.
+     * Synchronously injects PUBG Mobile 4.7.0 mod suite and returns true when fully hooked.
      */
     public static boolean injectPubgmSync(Context ctx, String packageName, GameModProfile profile) {
         if (packageName == null) return false;

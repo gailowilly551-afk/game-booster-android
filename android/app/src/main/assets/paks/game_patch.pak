@@ -1,7 +1,7 @@
 [UserCustom]
-+CVars=+CVars=a.DisableAnalytics=1
-+CVars=r.PUBGClientVersion=4.6.0
-+CVars=r.PUBG46EngineSupport=1
++CVars=a.DisableAnalytics=1
++CVars=r.PUBGClientVersion=4.7.0
++CVars=r.PUBG47EngineSupport=1
 +CVars=r.PUBGDeviceFPS=7
 +CVars=r.PUBGDeviceFPSLevel=7
 +CVars=r.PUBGBattleFPS=7
@@ -91,7 +91,7 @@ bUseUltraExtreme=True
 +CVars=ApolloReport=0
 +CVars=HawkLogEnable=0
 +CVars=IntlServiceReport=0
-+CVars=r.PUBGVersion=4.6
++CVars=r.PUBGVersion=4.7
 +CVars=s.AsyncLoadingThreadEnabled=True
 +CVars=s.AsyncLoadingTimeLimit=10.0
 +CVars=s.PriorityAsyncLoadingExtraTime=20.0

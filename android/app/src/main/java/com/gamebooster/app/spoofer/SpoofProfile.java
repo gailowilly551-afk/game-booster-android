@@ -488,10 +488,10 @@ public class SpoofProfile {
             "SoCModel=" + socModel,
             "SoCManufacturer=" + socManufacturer,
             "RAMTotalMB=" + ramTotalMb,
-            // ── PUBGM 4.6 Engine & Version Whitelist CVars ──
-            "+CVars=r.PUBGVersion=4.6",
-            "+CVars=r.PUBGClientVersion=4.6.0",
-            "+CVars=r.PUBG46EngineSupport=1",
+            // ── PUBGM 4.7 Engine & Version Whitelist CVars ──
+            "+CVars=r.PUBGVersion=4.7",
+            "+CVars=r.PUBGClientVersion=4.7.0",
+            "+CVars=r.PUBG47EngineSupport=1",
             "+CVars=0,2," + clampedFps,
             "+CVars=r.PUBGDeviceFPS=" + effectiveLevel,
             "+CVars=r.PUBGDeviceFPSLevel=" + effectiveLevel,

@@ -91,8 +91,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private ActivityResultLauncher<Intent> safTreeLauncher;
     private ActivityResultLauncher<Intent> configImportLauncher;
 
-    private LoopingVideoBackgroundView videoSettingsBg;
-
     // Pure Cyber Terminal UI in Settings
     private TextView tvSettingsTerminalUid;
     private TextView tvSettingsTerminalFolderPath;
@@ -115,10 +113,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private SwitchCompat switchCpuMode;
     private SwitchCompat switchThermalBypass;
     private SwitchCompat switchAdpfEngine;
-    private SwitchCompat switchUclampBoost;
     private SwitchCompat switchTouch1000hzLock;
     private SwitchCompat switchPhantomFreezerKill;
-    private SwitchCompat switchVulkanSkiavk;
     private SwitchCompat switchMemory16kbShield;
     private SwitchCompat switchWebviewBoost;
     private SwitchCompat switchTetheringHw;
@@ -140,13 +136,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     private SwitchCompat switchDisableBatterySaver;
     private SwitchCompat switchDisableWifiSaver;
     private SwitchCompat switchTcpBbrBuffers;
-    private SwitchCompat switchTntSmartSupercharger;
-    private SwitchCompat switchTmGlobeSupercharger;
-    private SwitchCompat switchWifi5g6g7g;
-    private SwitchCompat switchDnsCloudflare;
-    private SwitchCompat switchDnsGoogle;
-    private SwitchCompat switchDnsAdguard;
-    private SwitchCompat switchDnsQuad9;
     private SwitchCompat switchPhTelcoSupercharger;
     private SwitchCompat switchAutoDnsFlush;
     private TextView tvActiveDnsLabel;
@@ -276,6 +265,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                             if (success) {
                                 Toast.makeText(getContext(), "✅ .gbcfg Presets Imported Successfully!", Toast.LENGTH_SHORT).show();
                                 if (spoofProfileAdapter != null) spoofProfileAdapter.notifyDataSetChanged();
+                                refreshAllStatuses();
                             } else {
                                 Toast.makeText(getContext(), "⚠️ Invalid .gbcfg file format", Toast.LENGTH_SHORT).show();
                             }
@@ -298,15 +288,24 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             precisionProfileManager = new ProfileManager(getContext());
         }
 
-        // Settings Background Looping Video
-        videoSettingsBg = view.findViewById(R.id.video_settings_bg);
-        if (videoSettingsBg != null) {
-            videoSettingsBg.setVisibility(View.GONE);
-        }
-
-        // Card 1b: Diagnostics — shareable crash + settings snapshot
+        // Diagnostics — shareable crash + settings snapshot & smooth inner scroll
         if (getContext() != null) {
             com.gamebooster.app.diagnostics.CrashLog.install(getContext().getApplicationContext());
+        }
+        NestedScrollView scrollDiagContainer = view.findViewById(R.id.scroll_diag_container);
+        if (scrollDiagContainer != null) {
+            scrollDiagContainer.setNestedScrollingEnabled(true);
+            scrollDiagContainer.setOnTouchListener((v, event) -> {
+                int action = event.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    if (v.canScrollVertically(1) || v.canScrollVertically(-1)) {
+                        v.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    v.getParent().requestDisallowInterceptTouchEvent(false);
+                }
+                return false;
+            });
         }
         tvDiagStatus = view.findViewById(R.id.tv_diag_status);
         tvDiagBadgeShizuku = view.findViewById(R.id.tv_diag_badge_shizuku);
@@ -421,6 +420,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             switchEsportsAudio.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
                 com.gamebooster.app.booster.EsportsAudioEnhancer.setEsportsAudioMode(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "esports_audio", isChecked);
                 Toast.makeText(getContext(), isChecked ? "🎧 Esports Footstep Audio Boost Enabled" : "Esports Audio Disabled", Toast.LENGTH_SHORT).show();
             });
         }
@@ -457,6 +457,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Anti-Log & Telemetry Blocker")) return;
                 ManualSettingsPreferences.setAntiLogEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "anti_log", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         AntiLogPatcher.applySystemAntiLog();
@@ -508,6 +509,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "ART Speed Compilation")) return;
                 ManualSettingsPreferences.setAotSpeedEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "art_speed", isChecked);
                 if (isChecked) {
                     Toast.makeText(getContext(), "⚡ ART Speed-Compile Triggered via Shizuku...", Toast.LENGTH_SHORT).show();
                     com.gamebooster.app.engine.ArtCompilerEngine.compileAllInstalledGamesAsync(
@@ -550,9 +552,11 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         }
 
         if (switchCrosshairOverlay != null) {
+            isProgrammaticToggle = true;
+            switchCrosshairOverlay.setChecked(CrosshairOverlayService.isRunning());
+            isProgrammaticToggle = false;
             switchCrosshairOverlay.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (getContext() == null || isProgrammaticToggle) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Target Crosshair Overlay")) return;
                 if (!Settings.canDrawOverlays(getContext())) {
                     isProgrammaticToggle = true;
                     switchCrosshairOverlay.setChecked(false);
@@ -590,10 +594,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         }
 
         if (btnCrosshairPreset != null) {
-            btnCrosshairPreset.setOnClickListener(v -> {
-                if (!requireShizukuForAction("Target Crosshair Preset")) return;
-                showCrosshairPresetDialog();
-            });
+            btnCrosshairPreset.setOnClickListener(v -> showCrosshairPresetDialog());
         }
 
         if (btnSensitivityCalculator != null) {
@@ -684,11 +685,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             if (switchCpuMode != null) switchCpuMode.setChecked("performance".equalsIgnoreCase(ManualSettingsPreferences.getCpuMode(getContext())));
             if (switchThermalBypass != null) switchThermalBypass.setChecked(ManualSettingsPreferences.isThermalBypassEnabled(getContext()));
             if (switchAdpfEngine != null) switchAdpfEngine.setChecked(ManualSettingsPreferences.isAdpfEngineEnabled(getContext()));
-
-            if (switchUclampBoost != null) switchUclampBoost.setChecked(ManualSettingsPreferences.isUclampBoostEnabled(getContext()));
             if (switchTouch1000hzLock != null) switchTouch1000hzLock.setChecked(ManualSettingsPreferences.isTouch1000HzLockEnabled(getContext()));
             if (switchPhantomFreezerKill != null) switchPhantomFreezerKill.setChecked(ManualSettingsPreferences.isPhantomFreezerKillEnabled(getContext()));
-            if (switchVulkanSkiavk != null) switchVulkanSkiavk.setChecked(ManualSettingsPreferences.isVulkanSkiaVkEnabled(getContext()));
             if (switchMemory16kbShield != null) switchMemory16kbShield.setChecked(ManualSettingsPreferences.isMemory16kbShieldEnabled(getContext()));
             if (switchWebviewBoost != null) switchWebviewBoost.setChecked(ManualSettingsPreferences.isWebViewBoostEnabled(getContext()));
             isProgrammaticToggle = false;
@@ -699,6 +697,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "System Game Graphics Driver")) return;
                 ManualSettingsPreferences.setGameDriverEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "game_driver", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     GpuTweaksChannel.setGameDriverMode(isChecked);
                     AppExecutors.getInstance().postToMainThread(() -> {
@@ -715,8 +714,13 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Vulkan 3D HWUI & Skia Pipeline")) return;
                 ManualSettingsPreferences.setGpuMode(getContext(), isChecked ? "vulkan" : "skia");
+                ManualSettingsPreferences.setVulkanSkiaVkEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "vulkan_skiavk", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     PerformanceChannel.setGpuRenderMode(isChecked);
+                    if (isChecked) {
+                        com.gamebooster.app.booster.GpuTweaksChannel.enableVulkanRenderer();
+                    }
                     AppExecutors.getInstance().postToMainThread(() -> {
                         if (isAdded() && getContext() != null) {
                             Toast.makeText(getContext(), isChecked ? "⚡ Vulkan 3D HWUI & Skia Pipeline Applied" : "Default OpenGL Engine Restored", Toast.LENGTH_SHORT).show();
@@ -729,13 +733,19 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (switchCpuMode != null) {
             switchCpuMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "CPU Extreme Governor")) return;
+                if (isChecked && !checkShizukuOrRevert(buttonView, "CPU Extreme Governor & uclamp Boost")) return;
                 ManualSettingsPreferences.setCpuMode(getContext(), isChecked ? "performance" : "schedutil");
+                ManualSettingsPreferences.setUclampBoostEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "uclamp_boost", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     com.gamebooster.app.booster.CpuGovernorChannel.setGovernor(isChecked ? "extreme" : "schedutil");
+                    if (isChecked) {
+                        com.gamebooster.app.booster.CpuGovernorChannel.tuneMultiCoreTopology();
+                        com.gamebooster.app.booster.CpuGovernorChannel.applyExtendedKernelFlags();
+                    }
                     AppExecutors.getInstance().postToMainThread(() -> {
                         if (isAdded() && getContext() != null) {
-                            Toast.makeText(getContext(), isChecked ? "⚡ CPU Extreme Governor & ADPF Boost Locked" : "CPU Dynamic Governor Restored", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), isChecked ? "⚡ CPU Extreme Governor & uclamp 1024 Boost Locked" : "CPU Dynamic Governor Restored", Toast.LENGTH_SHORT).show();
                         }
                     });
                 });
@@ -747,6 +757,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Thermal Throttling Bypass")) return;
                 ManualSettingsPreferences.setThermalBypassEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "thermal_bypass", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     com.gamebooster.app.booster.ThermalChannel.setThermalOverride(isChecked);
                     AppExecutors.getInstance().postToMainThread(() -> {
@@ -765,6 +776,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "ADPF Power Hint Engine")) return;
                 ManualSettingsPreferences.setAdpfEngineEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "adpf_engine", isChecked);
                 final Context adpfCtx = getContext().getApplicationContext();
                 AppExecutors.getInstance().executeCommand(() -> {
                     try {
@@ -787,30 +799,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        if (switchUclampBoost != null) {
-            switchUclampBoost.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Kernel uclamp 1024 Boost")) return;
-                ManualSettingsPreferences.setUclampBoostEnabled(getContext(), isChecked);
-                AppExecutors.getInstance().executeCommand(() -> {
-                    if (isChecked) {
-                        com.gamebooster.app.booster.CpuGovernorChannel.tuneMultiCoreTopology();
-                        com.gamebooster.app.booster.CpuGovernorChannel.applyExtendedKernelFlags();
-                    }
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            Toast.makeText(getContext(), isChecked ? "⚡ Linux Kernel uclamp 1024 Boost Locked" : "uclamp Boost Reverted", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
-            });
-        }
-
         if (switchTouch1000hzLock != null) {
             switchTouch1000hzLock.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "1000Hz Hardware Digitizer")) return;
                 ManualSettingsPreferences.setTouch1000HzLockEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "touch_1000hz", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         com.gamebooster.app.booster.TouchLatencyChannel.enableUltraTouchResponse();
@@ -831,6 +825,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Phantom Process Killer & Background Immunity Bypass")) return;
                 ManualSettingsPreferences.setPhantomFreezerKillEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "phantom_freezer", isChecked);
                 final Context appContext = getContext().getApplicationContext();
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
@@ -851,29 +846,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        if (switchVulkanSkiavk != null) {
-            switchVulkanSkiavk.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Vulkan SkiaVK Pipeline")) return;
-                ManualSettingsPreferences.setVulkanSkiaVkEnabled(getContext(), isChecked);
-                AppExecutors.getInstance().executeCommand(() -> {
-                    if (isChecked) {
-                        com.gamebooster.app.booster.GpuTweaksChannel.enableVulkanRenderer();
-                    }
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            Toast.makeText(getContext(), isChecked ? "🔥 Native Vulkan SkiaVK Pipeline Active (ANGLE Purged)" : "Vulkan SkiaVK Reverted", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
-            });
-        }
-
         if (switchMemory16kbShield != null) {
             switchMemory16kbShield.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "16KB Page Buffer Shield")) return;
                 ManualSettingsPreferences.setMemory16kbShieldEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "memory_16kb", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         CommandExecutor.executeSystemCommand("sysctl -w vm.max_map_count=1048576 2>/dev/null; echo 1048576 > /proc/sys/vm/max_map_count 2>/dev/null; sysctl -w vm.swappiness=10 2>/dev/null; echo 10 > /proc/sys/vm/swappiness 2>/dev/null; sysctl -w vm.vfs_cache_pressure=50 2>/dev/null; echo 50 > /proc/sys/vm/vfs_cache_pressure 2>/dev/null; sysctl -w vm.dirty_ratio=5 2>/dev/null; sysctl -w vm.dirty_background_ratio=2 2>/dev/null; sysctl -w vm.compaction_proactiveness=0 2>/dev/null; sysctl -w vm.watermark_boost_factor=0 2>/dev/null; sysctl -w vm.min_free_kbytes=65536 2>/dev/null");
@@ -894,6 +872,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "WebView Hardware Acceleration")) return;
                 ManualSettingsPreferences.setWebViewBoostEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "webview_boost", isChecked);
                 final Context appCtx = getContext().getApplicationContext();
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
@@ -919,6 +898,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         Button btnFixBatteryCharging = view.findViewById(R.id.btn_fix_battery_charging);
         switchDisableWifiSaver = view.findViewById(R.id.switch_disable_wifi_saver);
         switchTcpBbrBuffers = view.findViewById(R.id.switch_tcp_bbr_buffers);
+        switch5g6gData = view.findViewById(R.id.switch_5g_6g_data);
         switchWifiLowLatency = view.findViewById(R.id.switch_wifi_low_latency);
         switchDualDataWifi = view.findViewById(R.id.switch_dual_data_wifi);
         switchPhTelcoSupercharger = view.findViewById(R.id.switch_ph_telco_supercharger);
@@ -944,10 +924,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             if (switchDisableWifiSaver != null) switchDisableWifiSaver.setChecked(ManualSettingsPreferences.isDisableWifiSaverEnabled(getContext()));
             if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(ManualSettingsPreferences.isTcpBbrBuffersEnabled(getContext()));
             if (switch5g6gData != null) switch5g6gData.setChecked(ManualSettingsPreferences.is5g6gDataEnabled(getContext()));
-            if (switchTntSmartSupercharger != null) switchTntSmartSupercharger.setChecked(ManualSettingsPreferences.isTntSmartSuperchargerEnabled(getContext()));
-            if (switchTmGlobeSupercharger != null) switchTmGlobeSupercharger.setChecked(ManualSettingsPreferences.isTmGlobeSuperchargerEnabled(getContext()));
             if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(ManualSettingsPreferences.isWifiLowLatencyEnabled(getContext()));
-            if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(ManualSettingsPreferences.isWifi5g6g7gTurboEnabled(getContext()));
             if (switchDualDataWifi != null) switchDualDataWifi.setChecked(ManualSettingsPreferences.isDualDataWifiEnabled(getContext()));
             if (switchPhTelcoSupercharger != null) switchPhTelcoSupercharger.setChecked(ManualSettingsPreferences.isPhTelcoSuperchargerEnabled(getContext()));
             if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(ManualSettingsPreferences.isAutoDnsFlushEnabled(getContext()));
@@ -964,6 +941,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Disable Data Saver")) return;
                 ManualSettingsPreferences.setDisableDataSaverEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "data_saver", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         NetworkOptimizer.disableDataSaver();
@@ -985,6 +963,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Disable Battery Saver")) return;
                 ManualSettingsPreferences.setDisableBatterySaverEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "battery_saver", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         NetworkOptimizer.disableBatterySaver();
@@ -1025,6 +1004,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Disable Wi-Fi Saver")) return;
                 ManualSettingsPreferences.setDisableWifiSaverEnabled(getContext(), isChecked);
+                TweakPreferences.syncManualSettingToTweak(getContext(), "wifi_saver", isChecked);
                 AppExecutors.getInstance().executeCommand(() -> {
                     if (isChecked) {
                         NetworkOptimizer.disableWifiPowerSaver();
@@ -1077,61 +1057,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        if (switchTntSmartSupercharger != null) {
-            switchTntSmartSupercharger.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "TNT / Smart 5G Ultra Gaming Data")) return;
-                ManualSettingsPreferences.setTntSmartSuperchargerEnabled(getContext(), isChecked);
-                if (isChecked) {
-                    isProgrammaticToggle = true;
-                    if (switchTmGlobeSupercharger != null) switchTmGlobeSupercharger.setChecked(false);
-                    ManualSettingsPreferences.setTmGlobeSuperchargerEnabled(getContext(), false);
-                    isProgrammaticToggle = false;
-                }
-                AppExecutors.getInstance().executeCommand(() -> {
-                    if (isChecked) {
-                        NetworkOptimizer.applyTntSmartOptimization(getContext());
-                    }
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            updateLiveTelemetryUi();
-                            Toast.makeText(getContext(), isChecked ? "🇵🇭 TNT / Smart 5G Ultra Gaming Data Enforced (MTU 1460)" : "TNT / Smart Gaming Data Reset", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
-            });
-        }
-
-        if (switchTmGlobeSupercharger != null) {
-            switchTmGlobeSupercharger.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "TM / Globe 5G Turbo Fast Data")) return;
-                ManualSettingsPreferences.setTmGlobeSuperchargerEnabled(getContext(), isChecked);
-                if (isChecked) {
-                    isProgrammaticToggle = true;
-                    if (switchTntSmartSupercharger != null) switchTntSmartSupercharger.setChecked(false);
-                    ManualSettingsPreferences.setTntSmartSuperchargerEnabled(getContext(), false);
-                    isProgrammaticToggle = false;
-                }
-                AppExecutors.getInstance().executeCommand(() -> {
-                    if (isChecked) {
-                        NetworkOptimizer.applyTmGlobeOptimization(getContext());
-                    }
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            updateLiveTelemetryUi();
-                            Toast.makeText(getContext(), isChecked ? "🇵🇭 TM / Globe 5G Turbo Fast Data Enforced (MTU 1440)" : "TM / Globe Fast Data Reset", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
-            });
-        }
-
         if (switchWifiLowLatency != null) {
             switchWifiLowLatency.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "Wi-Fi Low-Latency Lock")) return;
                 ManualSettingsPreferences.setWifiLowLatencyEnabled(getContext(), isChecked);
+                ManualSettingsPreferences.setWifi5g6g7gTurboEnabled(getContext(), isChecked);
                 if (isChecked) {
                     com.gamebooster.app.engine.NativeFrameworkBridge.acquireLowLatencyWifiLock(getContext());
                 } else {
@@ -1143,23 +1074,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                         if (isAdded() && getContext() != null) {
                             updateLiveTelemetryUi();
                             Toast.makeText(getContext(), isChecked ? "📶 Wi-Fi 5G/6G/7G Low-Latency Lock Active" : "Wi-Fi Normal Mode Restored", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
-            });
-        }
-
-        if (switchWifi5g6g7g != null) {
-            switchWifi5g6g7g.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked && !checkShizukuOrRevert(buttonView, "Wi-Fi 7 MLO 320MHz Turbo")) return;
-                ManualSettingsPreferences.setWifi5g6g7gTurboEnabled(getContext(), isChecked);
-                AppExecutors.getInstance().executeCommand(() -> {
-                    NetworkOptimizer.optimizeWifi6and7LowLatency(isChecked);
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            updateLiveTelemetryUi();
-                            Toast.makeText(getContext(), isChecked ? "⚡ Wi-Fi 7 MLO 320MHz Multi-Link Operation Active!" : "Wi-Fi 7 MLO Disabled", Toast.LENGTH_SHORT).show();
                         }
                     });
                 });
@@ -1183,106 +1097,56 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
             });
         }
 
-        if (switchDnsCloudflare != null) {
-            switchDnsCloudflare.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked) {
-                    if (!checkShizukuOrRevert(buttonView, "Cloudflare 1.1.1.1 Gaming DNS")) return;
-                    isProgrammaticToggle = true;
-                    if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-                    if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-                    if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-                    isProgrammaticToggle = false;
-                    applyGamingDns(NetworkOptimizer.DnsMode.CLOUDFLARE_1_1_1_1, "⚡ 1.1.1.1 Cloudflare Gaming DNS Applied");
-                } else {
-                    if ((switchDnsGoogle == null || !switchDnsGoogle.isChecked())
-                            && (switchDnsAdguard == null || !switchDnsAdguard.isChecked())
-                            && (switchDnsQuad9 == null || !switchDnsQuad9.isChecked())) {
-                        applyGamingDns(NetworkOptimizer.DnsMode.SYSTEM_DEFAULT, "🔄 System Default DNS Restored");
-                    }
-                }
-            });
-        }
-
-        if (switchDnsGoogle != null) {
-            switchDnsGoogle.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked) {
-                    if (!checkShizukuOrRevert(buttonView, "Google 8.8.8.8 Gaming DNS")) return;
-                    isProgrammaticToggle = true;
-                    if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-                    if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-                    if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-                    isProgrammaticToggle = false;
-                    applyGamingDns(NetworkOptimizer.DnsMode.GOOGLE_8_8_8_8, "🌐 8.8.8.8 Google Gaming DNS Applied");
-                } else {
-                    if ((switchDnsCloudflare == null || !switchDnsCloudflare.isChecked())
-                            && (switchDnsAdguard == null || !switchDnsAdguard.isChecked())
-                            && (switchDnsQuad9 == null || !switchDnsQuad9.isChecked())) {
-                        applyGamingDns(NetworkOptimizer.DnsMode.SYSTEM_DEFAULT, "🔄 System Default DNS Restored");
-                    }
-                }
-            });
-        }
-
-        if (switchDnsAdguard != null) {
-            switchDnsAdguard.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked) {
-                    if (!checkShizukuOrRevert(buttonView, "AdGuard Gaming DNS")) return;
-                    isProgrammaticToggle = true;
-                    if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-                    if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-                    if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-                    isProgrammaticToggle = false;
-                    applyGamingDns(NetworkOptimizer.DnsMode.ADGUARD_GAMING, "🛡️ AdGuard Gaming DNS Applied (Ad/Ping Guard)");
-                } else {
-                    if ((switchDnsCloudflare == null || !switchDnsCloudflare.isChecked())
-                            && (switchDnsGoogle == null || !switchDnsGoogle.isChecked())
-                            && (switchDnsQuad9 == null || !switchDnsQuad9.isChecked())) {
-                        applyGamingDns(NetworkOptimizer.DnsMode.SYSTEM_DEFAULT, "🔄 System Default DNS Restored");
-                    }
-                }
-            });
-        }
-
-        if (switchDnsQuad9 != null) {
-            switchDnsQuad9.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isProgrammaticToggle || getContext() == null) return;
-                if (isChecked) {
-                    if (!checkShizukuOrRevert(buttonView, "Quad9 Gaming DNS")) return;
-                    isProgrammaticToggle = true;
-                    if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-                    if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-                    if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-                    isProgrammaticToggle = false;
-                    applyGamingDns(NetworkOptimizer.DnsMode.QUAD9_GAMING, "⚡ Quad9 Ultra-Fast Gaming DNS Applied");
-                } else {
-                    if ((switchDnsCloudflare == null || !switchDnsCloudflare.isChecked())
-                            && (switchDnsGoogle == null || !switchDnsGoogle.isChecked())
-                            && (switchDnsAdguard == null || !switchDnsAdguard.isChecked())) {
-                        applyGamingDns(NetworkOptimizer.DnsMode.SYSTEM_DEFAULT, "🔄 System Default DNS Restored");
-                    }
-                }
-            });
-        }
-
         if (switchPhTelcoSupercharger != null) {
             switchPhTelcoSupercharger.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isProgrammaticToggle || getContext() == null) return;
                 if (isChecked && !checkShizukuOrRevert(buttonView, "PH Telco Supercharger")) return;
-                ManualSettingsPreferences.setPhTelcoSuperchargerEnabled(getContext(), isChecked);
-                AppExecutors.getInstance().executeCommand(() -> {
-                    if (isChecked) {
-                        NetworkOptimizer.applyPhCarrierOptimization(getContext(), NetworkOptimizer.PhCarrier.TNT_SMART);
-                    }
-                    AppExecutors.getInstance().postToMainThread(() -> {
-                        if (isAdded() && getContext() != null) {
-                            updateLiveTelemetryUi();
-                            Toast.makeText(getContext(), isChecked ? "🇵🇭 PH Telco Supercharger Active (Smart / Globe / DITO)" : "PH Telco Supercharger Disabled", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                });
+                if (!isChecked) {
+                    ManualSettingsPreferences.setPhTelcoSuperchargerEnabled(getContext(), false);
+                    ManualSettingsPreferences.setTntSmartSuperchargerEnabled(getContext(), false);
+                    ManualSettingsPreferences.setTmGlobeSuperchargerEnabled(getContext(), false);
+                    updateLiveTelemetryUi();
+                    Toast.makeText(getContext(), "PH Telco Supercharger Disabled", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                NetworkOptimizer.PhCarrier detected = NetworkOptimizer.detectActiveSimCarrierEnum(getContext());
+                String[] carriers = {
+                    "⚡ Smart / TNT 5G (MTU 1460)" + (detected == NetworkOptimizer.PhCarrier.TNT_SMART ? " [Detected]" : ""),
+                    "🚀 Globe / TM 5G (MTU 1440)" + (detected == NetworkOptimizer.PhCarrier.TM_GLOBE ? " [Detected]" : ""),
+                    "🔥 DITO Telecommunity 5G (MTU 1460)" + (detected == NetworkOptimizer.PhCarrier.DITO ? " [Detected]" : "")
+                };
+                new AlertDialog.Builder(getContext())
+                    .setTitle("🇵🇭 Select PH Telco Carrier Route")
+                    .setItems(carriers, (dialog, which) -> {
+                        if (getContext() == null) return;
+                        NetworkOptimizer.PhCarrier chosen = which == 1
+                                ? NetworkOptimizer.PhCarrier.TM_GLOBE
+                                : (which == 2 ? NetworkOptimizer.PhCarrier.DITO : NetworkOptimizer.PhCarrier.TNT_SMART);
+                        ManualSettingsPreferences.setPhTelcoSuperchargerEnabled(getContext(), true);
+                        ManualSettingsPreferences.setSelectedPhCarrier(getContext(), chosen.name());
+                        ManualSettingsPreferences.setTntSmartSuperchargerEnabled(getContext(), chosen == NetworkOptimizer.PhCarrier.TNT_SMART);
+                        ManualSettingsPreferences.setTmGlobeSuperchargerEnabled(getContext(), chosen == NetworkOptimizer.PhCarrier.TM_GLOBE);
+                        AppExecutors.getInstance().executeCommand(() -> {
+                            NetworkOptimizer.applyPhCarrierOptimization(getContext(), chosen);
+                            AppExecutors.getInstance().postToMainThread(() -> {
+                                if (isAdded() && getContext() != null) {
+                                    updateLiveTelemetryUi();
+                                    Toast.makeText(getContext(), "🇵🇭 " + chosen.title + " Active (MTU " + chosen.mtu + ")", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        });
+                    })
+                    .setNegativeButton("CANCEL", (d, w) -> {
+                        isProgrammaticToggle = true;
+                        switchPhTelcoSupercharger.setChecked(false);
+                        isProgrammaticToggle = false;
+                    })
+                    .setOnCancelListener(d -> {
+                        isProgrammaticToggle = true;
+                        switchPhTelcoSupercharger.setChecked(false);
+                        isProgrammaticToggle = false;
+                    })
+                    .show();
             });
         }
 
@@ -1506,10 +1370,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
                 // 1. Immediately update UI switches and preferences on the main thread
                 com.gamebooster.app.tweaks.TweakManagerRepository.markAllTweaksResetImmediate(ctx);
-                if (ctx != null) {
-                    ManualSettingsPreferences.resetAllManualSettings(ctx);
-                }
+                ManualSettingsPreferences.resetAllManualSettings(ctx);
+                com.gamebooster.app.booster.EsportsAudioEnhancer.setEsportsAudioMode(ctx, false);
+                com.gamebooster.app.booster.EsportsAudioEnhancer.setSpeakerBypassMode(ctx, false);
+                com.gamebooster.app.gamespace.GameSpaceDndManager.setGamingDndMode(ctx, false);
                 setAllPerformanceSwitchesChecked(false);
+                updateDnsUiState("SYSTEM_DEFAULT");
                 if (settingsTweaksAdapter != null) {
                     settingsTweaksAdapter.notifyAllStatesChanged();
                 }
@@ -1527,15 +1393,21 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
                 AppExecutors.getInstance().executeFastBatch(() -> {
                     com.gamebooster.app.tweaks.TweakManagerRepository.revertAllTweaks(ctx);
+                    if (precisionSettingsManager != null) {
+                        precisionSettingsManager.restoreOriginalValues();
+                    }
+                    NetworkOptimizer.applyGamingDns(ctx, NetworkOptimizer.DnsMode.SYSTEM_DEFAULT);
                     AppExecutors.getInstance().postToMainThread(() -> {
                         if (isAdded() && getContext() != null) {
                             btnSettingsTweaksResetAll.setEnabled(true);
                             btnSettingsTweaksResetAll.setText("🔄 RESET TO STOCK");
+                            updatePrecisionAimStatus();
+                            updateLiveTelemetryUi();
                             if (settingsTweaksAdapter != null) {
                                 settingsTweaksAdapter.notifyAllStatesChanged();
                             }
                             updateTweaksBadgeCount();
-                            Toast.makeText(getContext(), "🔄 All Tweaks Reset to Stock Defaults", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "🔄 All Tweaks & Switches Reset to Stock Defaults", Toast.LENGTH_SHORT).show();
                         }
                     });
                 });
@@ -1889,7 +1761,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         Button btnFacebookProfile = view.findViewById(R.id.btn_facebook_profile);
 
         if (btnGithubReleases != null) {
-            btnGithubReleases.setOnClickListener(v -> openUrl("https://github.com/willygailo/Game-Launcher/releases"));
+            btnGithubReleases.setOnClickListener(v -> openUrl("https://github.com/gailowilly551-afk/game-booster-android/releases"));
         }
         if (btnFacebookProfile != null) {
             btnFacebookProfile.setOnClickListener(v -> openUrl("https://www.facebook.com/https.willy.jr.carnasa.gailo2026.2027"));
@@ -1934,57 +1806,41 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
     private void updateDnsUiState(String dnsMode) {
         if (getContext() == null) return;
-        isProgrammaticToggle = true;
         if (tvActiveDnsLabel != null) {
+            boolean hasPrivilege = isPrivilegedExecutionAvailable();
             if ("GOOGLE_8_8_8_8".equalsIgnoreCase(dnsMode)) {
-                tvActiveDnsLabel.setText("🌐 Google Gaming DNS (8.8.8.8 • DoT)");
+                tvActiveDnsLabel.setText(hasPrivilege
+                        ? "🌐 Google Gaming DNS (8.8.8.8 • DoT)"
+                        : "🌐 Pending Manual DoT: dns.google");
             } else if ("CLOUDFLARE_1_1_1_1".equalsIgnoreCase(dnsMode)) {
-                tvActiveDnsLabel.setText("⚡ Cloudflare Gaming DNS (1.1.1.1 • DoT)");
+                tvActiveDnsLabel.setText(hasPrivilege
+                        ? "⚡ Cloudflare Gaming DNS (1.1.1.1 • DoT)"
+                        : "⚡ Pending Manual DoT: one.one.one.one");
             } else if ("ADGUARD_GAMING".equalsIgnoreCase(dnsMode)) {
-                tvActiveDnsLabel.setText("🛡️ AdGuard Gaming DNS (Ad & Telemetry Guard)");
+                tvActiveDnsLabel.setText(hasPrivilege
+                        ? "🛡️ AdGuard Gaming DNS (Ad & Telemetry Guard)"
+                        : "🛡️ Pending Manual DoT: dns.adguard-dns.com");
             } else if ("QUAD9_GAMING".equalsIgnoreCase(dnsMode)) {
-                tvActiveDnsLabel.setText("⚡ Quad9 Ultra-Fast Gaming DNS (DoT)");
+                tvActiveDnsLabel.setText(hasPrivilege
+                        ? "⚡ Quad9 Ultra-Fast Gaming DNS (DoT)"
+                        : "⚡ Pending Manual DoT: dns.quad9.net");
             } else {
                 tvActiveDnsLabel.setText("System Default (No Custom DNS)");
             }
         }
-        if ("GOOGLE_8_8_8_8".equalsIgnoreCase(dnsMode)) {
-            if (switchDnsGoogle != null) switchDnsGoogle.setChecked(true);
-            if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-            if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-            if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-        } else if ("CLOUDFLARE_1_1_1_1".equalsIgnoreCase(dnsMode)) {
-            if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(true);
-            if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-            if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-            if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-        } else if ("ADGUARD_GAMING".equalsIgnoreCase(dnsMode)) {
-            if (switchDnsAdguard != null) switchDnsAdguard.setChecked(true);
-            if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-            if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-            if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-        } else if ("QUAD9_GAMING".equalsIgnoreCase(dnsMode)) {
-            if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(true);
-            if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-            if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-            if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-        } else {
-            if (switchDnsCloudflare != null) switchDnsCloudflare.setChecked(false);
-            if (switchDnsGoogle != null) switchDnsGoogle.setChecked(false);
-            if (switchDnsAdguard != null) switchDnsAdguard.setChecked(false);
-            if (switchDnsQuad9 != null) switchDnsQuad9.setChecked(false);
-        }
-        isProgrammaticToggle = false;
     }
 
     private void applyGamingDns(NetworkOptimizer.DnsMode mode, String msg) {
         if (getContext() == null) return;
-        ManualSettingsPreferences.setGamingDns(getContext(), mode.name());
-        updateDnsUiState(mode.name());
-
         boolean hasPrivilege = isPrivilegedExecutionAvailable();
-        if (!hasPrivilege && mode != NetworkOptimizer.DnsMode.SYSTEM_DEFAULT) {
-            // Non-Shizuku fallback: copy DoT hostname to clipboard and offer to open Network Settings
+        if (hasPrivilege || mode == NetworkOptimizer.DnsMode.SYSTEM_DEFAULT) {
+            ManualSettingsPreferences.setGamingDns(getContext(), mode.name());
+            updateDnsUiState(mode.name());
+        } else {
+            // Non-Shizuku fallback: copy DoT hostname to clipboard without marking DoT active
+            if (tvActiveDnsLabel != null) {
+                tvActiveDnsLabel.setText("Pending Manual DoT: " + mode.privateDnsHost);
+            }
             try {
                 android.content.ClipboardManager cm = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 if (cm != null) {
@@ -2010,6 +1866,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     })
                     .setNegativeButton("OK", null)
                     .show();
+            return;
         }
 
         AppExecutors.getInstance().executeCommand(() -> {
@@ -2183,7 +2040,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(true);
                 if (switch5g6gData != null) switch5g6gData.setChecked(true);
                 if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(true);
-                if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(true);
                 if (switchDualDataWifi != null) switchDualDataWifi.setChecked(true);
                 if (switchTetheringHw != null) switchTetheringHw.setChecked(true);
                 if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(true);
@@ -2240,9 +2096,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     @Override
     public void onResume() {
         super.onResume();
-        if (videoSettingsBg != null) {
-            try { videoSettingsBg.play(); } catch (Throwable ignored) {}
-        }
         final Context ctx = getContext();
         if (ctx != null) {
             final Context appCtx = ctx.getApplicationContext();
@@ -2260,9 +2113,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     @Override
     public void onPause() {
         super.onPause();
-        if (videoSettingsBg != null) {
-            try { videoSettingsBg.pause(); } catch (Throwable ignored) {}
-        }
         stopLiveDiagnosticsTicker();
     }
 
@@ -2270,14 +2120,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (hidden) {
-            if (videoSettingsBg != null) {
-                try { videoSettingsBg.pause(); } catch (Throwable ignored) {}
-            }
             stopLiveDiagnosticsTicker();
         } else {
-            if (videoSettingsBg != null) {
-                try { videoSettingsBg.play(); } catch (Throwable ignored) {}
-            }
             final Context ctx = getContext();
             if (ctx != null) {
                 final Context appCtx = ctx.getApplicationContext();
@@ -2297,10 +2141,6 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
     public void onDestroyView() {
         super.onDestroyView();
         stopLiveDiagnosticsTicker();
-        if (videoSettingsBg != null) {
-            videoSettingsBg.release();
-            videoSettingsBg = null;
-        }
     }
 
     private void refreshAllStatuses() {
@@ -2312,7 +2152,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 isProgrammaticToggle = true;
                 if (switchGamingDnd != null) switchGamingDnd.setChecked(com.gamebooster.app.gamespace.GameSpaceDndManager.isDndActive(getContext()));
                 if (switchAutoGameBoost != null) switchAutoGameBoost.setChecked(com.gamebooster.app.gamespace.AutoGameMonitorService.isRunning());
-                if (switchEsportsAudio != null) switchEsportsAudio.setChecked(com.gamebooster.app.booster.EsportsAudioEnhancer.isEnabled());
+                if (switchCrosshairOverlay != null) switchCrosshairOverlay.setChecked(CrosshairOverlayService.isRunning());
+                if (switchEsportsAudio != null) switchEsportsAudio.setChecked(com.gamebooster.app.booster.EsportsAudioEnhancer.isEnabled(getContext()));
                 if (switchSpeakerBypassBoost != null) switchSpeakerBypassBoost.setChecked(com.gamebooster.app.booster.EsportsAudioEnhancer.isSpeakerBypassEnabled(getContext()));
                 if (switchAntiLog != null) switchAntiLog.setChecked(ManualSettingsPreferences.isAntiLogEnabled(getContext()));
                 if (switchAutoPurgeLogs != null) switchAutoPurgeLogs.setChecked(ManualSettingsPreferences.isAutoPurgeLogsEnabled(getContext()));
@@ -2322,20 +2163,15 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                 if (switchCpuMode != null) switchCpuMode.setChecked("performance".equalsIgnoreCase(ManualSettingsPreferences.getCpuMode(getContext())));
                 if (switchThermalBypass != null) switchThermalBypass.setChecked(ManualSettingsPreferences.isThermalBypassEnabled(getContext()));
                 if (switchAdpfEngine != null) switchAdpfEngine.setChecked(ManualSettingsPreferences.isAdpfEngineEnabled(getContext()));
-                if (switchUclampBoost != null) switchUclampBoost.setChecked(ManualSettingsPreferences.isUclampBoostEnabled(getContext()));
                 if (switchTouch1000hzLock != null) switchTouch1000hzLock.setChecked(ManualSettingsPreferences.isTouch1000HzLockEnabled(getContext()));
                 if (switchPhantomFreezerKill != null) switchPhantomFreezerKill.setChecked(ManualSettingsPreferences.isPhantomFreezerKillEnabled(getContext()));
-                if (switchVulkanSkiavk != null) switchVulkanSkiavk.setChecked(ManualSettingsPreferences.isVulkanSkiaVkEnabled(getContext()));
                 if (switchMemory16kbShield != null) switchMemory16kbShield.setChecked(ManualSettingsPreferences.isMemory16kbShieldEnabled(getContext()));
                 if (switchDisableDataSaver != null) switchDisableDataSaver.setChecked(ManualSettingsPreferences.isDisableDataSaverEnabled(getContext()));
                 if (switchDisableBatterySaver != null) switchDisableBatterySaver.setChecked(ManualSettingsPreferences.isDisableBatterySaverEnabled(getContext()));
                 if (switchDisableWifiSaver != null) switchDisableWifiSaver.setChecked(ManualSettingsPreferences.isDisableWifiSaverEnabled(getContext()));
                 if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(ManualSettingsPreferences.isTcpBbrBuffersEnabled(getContext()));
                 if (switch5g6gData != null) switch5g6gData.setChecked(ManualSettingsPreferences.is5g6gDataEnabled(getContext()));
-                if (switchTntSmartSupercharger != null) switchTntSmartSupercharger.setChecked(ManualSettingsPreferences.isTntSmartSuperchargerEnabled(getContext()));
-                if (switchTmGlobeSupercharger != null) switchTmGlobeSupercharger.setChecked(ManualSettingsPreferences.isTmGlobeSuperchargerEnabled(getContext()));
                 if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(ManualSettingsPreferences.isWifiLowLatencyEnabled(getContext()));
-                if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(ManualSettingsPreferences.isWifi5g6g7gTurboEnabled(getContext()));
                 if (switchDualDataWifi != null) switchDualDataWifi.setChecked(ManualSettingsPreferences.isDualDataWifiEnabled(getContext()));
                 if (switchPhTelcoSupercharger != null) switchPhTelcoSupercharger.setChecked(ManualSettingsPreferences.isPhTelcoSuperchargerEnabled(getContext()));
                 if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(ManualSettingsPreferences.isAutoDnsFlushEnabled(getContext()));
@@ -2369,6 +2205,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
     private void handlePrecisionTunerToggle(boolean isChecked) {
         if (getContext() == null) return;
+        com.gamebooster.app.config.TweakPreferences.syncManualSettingToTweak(getContext(), "precision_input", isChecked);
 
         AppExecutors.getInstance().executeCommand(() -> {
             boolean success;
@@ -2386,6 +2223,10 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     isProgrammaticToggle = false;
                 }
                 updatePrecisionAimStatus();
+                if (settingsTweaksAdapter != null) {
+                    settingsTweaksAdapter.notifyAllStatesChanged();
+                    updateTweaksBadgeCount();
+                }
                 Toast.makeText(getContext(), isChecked ? "🎯 Precision 1000Hz Touch & Gyro Tuned" : "Precision Input Reset to Stock", Toast.LENGTH_SHORT).show();
             });
         });
@@ -2574,7 +2415,7 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
                     tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ " + activeProf.displayName + " (" + activeProf.model + ")");
                     tvSpoofActiveProfile.setTextColor(0xFF00FF66);
                 } else {
-                    tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ ASUS ROG Phone 9 Pro (185Hz)");
+                    tvSpoofActiveProfile.setText("Active Spoof Profile: ⚡ " + activeId);
                     tvSpoofActiveProfile.setTextColor(0xFF00FF66);
                 }
             } else {
@@ -2756,8 +2597,12 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
 
     private void updateTweaksBadgeCount() {
         if (tvSettingsTweaksBadgeCount == null || getContext() == null) return;
-        int active = com.gamebooster.app.config.TweakPreferences.getAppliedTweakIds(getContext()).size();
-        int total = com.gamebooster.app.tweaks.TweakManagerRepository.getAllTweaks().size();
+        int active = settingsTweaksAdapter != null
+                ? settingsTweaksAdapter.getVisibleAppliedCount()
+                : com.gamebooster.app.config.TweakPreferences.getAppliedTweakIds(getContext()).size();
+        int total = settingsTweaksAdapter != null
+                ? settingsTweaksAdapter.getVisibleMasterCount()
+                : com.gamebooster.app.tweaks.TweakManagerRepository.getAllTweaks().size();
         tvSettingsTweaksBadgeCount.setText("⚡ " + total + " Available | " + active + " Active");
     }
 
@@ -2768,10 +2613,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (switchCpuMode != null) switchCpuMode.setChecked(checked);
         if (switchThermalBypass != null) switchThermalBypass.setChecked(checked);
         if (switchAdpfEngine != null) switchAdpfEngine.setChecked(checked);
-        if (switchUclampBoost != null) switchUclampBoost.setChecked(checked);
         if (switchTouch1000hzLock != null) switchTouch1000hzLock.setChecked(checked);
         if (switchPhantomFreezerKill != null) switchPhantomFreezerKill.setChecked(checked);
-        if (switchVulkanSkiavk != null) switchVulkanSkiavk.setChecked(checked);
         if (switchMemory16kbShield != null) switchMemory16kbShield.setChecked(checked);
         if (switchWebviewBoost != null) switchWebviewBoost.setChecked(checked);
         if (switchPrecisionInputTuner != null) switchPrecisionInputTuner.setChecked(checked);
@@ -2789,8 +2632,8 @@ public class SettingsFragment extends Fragment implements ShizukuManager.Shizuku
         if (switchTcpBbrBuffers != null) switchTcpBbrBuffers.setChecked(checked);
         if (switch5g6gData != null) switch5g6gData.setChecked(checked);
         if (switchWifiLowLatency != null) switchWifiLowLatency.setChecked(checked);
-        if (switchWifi5g6g7g != null) switchWifi5g6g7g.setChecked(checked);
         if (switchDualDataWifi != null) switchDualDataWifi.setChecked(checked);
+        if (switchPhTelcoSupercharger != null && !checked) switchPhTelcoSupercharger.setChecked(false);
         if (switchTetheringHw != null) switchTetheringHw.setChecked(checked);
         if (switchForceGnss != null) switchForceGnss.setChecked(checked);
         if (switchAutoDnsFlush != null) switchAutoDnsFlush.setChecked(checked);

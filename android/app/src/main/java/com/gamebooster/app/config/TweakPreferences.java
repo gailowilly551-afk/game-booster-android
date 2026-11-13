@@ -65,27 +65,32 @@ public class TweakPreferences {
     public static void syncTweakToManualSetting(Context context, String tweakId, boolean applied) {
         if (context == null || tweakId == null) return;
         switch (tweakId) {
-            case "universal_1000hz_digitizer_lock":
-            case "touch_sampling_rate_1000hz_lock":
+            case "vendor_touch_digitizer_1000hz_universal":
+            case "gyro_1000hz_ultra":
                 ManualSettingsPreferences.setTouch1000HzLockEnabled(context, applied);
                 break;
             case "tcp_bbr_v3_congestion_control":
             case "tcp_bbr_gaming_low_latency":
                 ManualSettingsPreferences.setTcpBbrBuffersEnabled(context, applied);
                 break;
-            case "android_phantom_freezer_kill":
             case "android_13_16_phantom_freezer_kill":
                 ManualSettingsPreferences.setPhantomFreezerKillEnabled(context, applied);
                 break;
             case "vulkan_skiavk_render_thread_rt":
-            case "skia_vulkan_pipeline":
+            case "vulkan_renderengine_prime":
                 ManualSettingsPreferences.setVulkanSkiaVkEnabled(context, applied);
+                ManualSettingsPreferences.setGpuMode(context, applied ? "vulkan" : "skia");
                 break;
             case "uclamp_cpuset_top_app_boost":
                 ManualSettingsPreferences.setUclampBoostEnabled(context, applied);
+                ManualSettingsPreferences.setCpuMode(context, applied ? "performance" : "schedutil");
                 break;
             case "memory_16kb_vm_shield":
                 ManualSettingsPreferences.setMemory16kbShieldEnabled(context, applied);
+                break;
+            case "webview_gpu_vulkan_turbo":
+            case "webview_multiprocess_acceleration":
+                ManualSettingsPreferences.setWebViewBoostEnabled(context, applied);
                 break;
             case "disable_data_saver":
                 ManualSettingsPreferences.setDisableDataSaverEnabled(context, applied);
@@ -106,9 +111,14 @@ public class TweakPreferences {
             case "game_driver_mlbb_codm_pubgm_preference":
                 ManualSettingsPreferences.setGameDriverEnabled(context, applied);
                 break;
-            case "android_13_16_adpf_fixed_perf":
             case "android_15_16_adpf_headroom_v2":
                 ManualSettingsPreferences.setAdpfEngineEnabled(context, applied);
+                break;
+            case "thermalservice_override":
+                ManualSettingsPreferences.setThermalBypassEnabled(context, applied);
+                break;
+            case "disable_background_telemetry_drains":
+                ManualSettingsPreferences.setAntiLogEnabled(context, applied);
                 break;
             default:
                 break;
@@ -122,22 +132,24 @@ public class TweakPreferences {
         if (context == null || manualKey == null) return;
         switch (manualKey) {
             case "touch_1000hz":
-                saveTweakState(context, "universal_1000hz_digitizer_lock", enabled);
-                break;
-            case "tcp_bbr":
-                saveTweakState(context, "tcp_bbr_v3_congestion_control", enabled);
+                saveTweakState(context, "vendor_touch_digitizer_1000hz_universal", enabled);
                 break;
             case "phantom_freezer":
-                saveTweakState(context, "android_phantom_freezer_kill", enabled);
+                saveTweakState(context, "android_13_16_phantom_freezer_kill", enabled);
                 break;
             case "vulkan_skiavk":
                 saveTweakState(context, "vulkan_skiavk_render_thread_rt", enabled);
+                saveTweakState(context, "vulkan_renderengine_prime", enabled);
                 break;
             case "uclamp_boost":
                 saveTweakState(context, "uclamp_cpuset_top_app_boost", enabled);
                 break;
             case "memory_16kb":
                 saveTweakState(context, "memory_16kb_vm_shield", enabled);
+                break;
+            case "webview_boost":
+                saveTweakState(context, "webview_gpu_vulkan_turbo", enabled);
+                saveTweakState(context, "webview_multiprocess_acceleration", enabled);
                 break;
             case "data_saver":
                 saveTweakState(context, "disable_data_saver", enabled);
@@ -148,9 +160,6 @@ public class TweakPreferences {
             case "wifi_saver":
                 saveTweakState(context, "wifi_power_save_disable", enabled);
                 break;
-            case "wifi_low_latency":
-                saveTweakState(context, "wifi7_low_latency_gaming_mode", enabled);
-                break;
             case "art_speed":
                 saveTweakState(context, "art_dexopt_speed_compile", enabled);
                 break;
@@ -159,6 +168,18 @@ public class TweakPreferences {
                 break;
             case "adpf_engine":
                 saveTweakState(context, "android_15_16_adpf_headroom_v2", enabled);
+                break;
+            case "thermal_bypass":
+                saveTweakState(context, "thermalservice_override", enabled);
+                break;
+            case "esports_audio":
+                saveTweakState(context, "esports_audio_spatial_footstep_boost", enabled);
+                break;
+            case "anti_log":
+                saveTweakState(context, "disable_background_telemetry_drains", enabled);
+                break;
+            case "precision_input":
+                saveTweakState(context, "raw_touch_zero_slop", enabled);
                 break;
             default:
                 break;

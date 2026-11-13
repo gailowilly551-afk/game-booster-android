@@ -43,7 +43,8 @@ public enum GameFamily {
                 || pkg.contains("codm") || pkg.contains("warzone")) {
             return CODM;
         }
-        if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("pubgm")
+        if (pkg.contains("pubg") || pkg.contains("tencent.ig") || pkg.contains("igfit")
+                || pkg.contains("igce") || pkg.contains("pubgm")
                 || pkg.contains("imobile") || pkg.contains("rekoo.pubgm")
                 || pkg.contains("bgmi") || pkg.contains("iglite")) {
             return PUBGM;

@@ -272,7 +272,7 @@ public class GameBoosterApp extends Application {
                 Log.w(TAG, "Diagnostics pre-warm error: " + t.getMessage());
             }
 
-            // P. Pre-warm PUBG Mobile 4.6.0 UE4 Reflection & Anti-Cheat Offsets
+            // P. Pre-warm PUBG Mobile 4.7.0 UE4 Reflection & Anti-Cheat Offsets
             try {
                 com.gamebooster.app.mods.pubgm.PubgmUe4Resolver.loadOffsets(appCtx);
             } catch (Throwable t) {

@@ -27,8 +27,10 @@ public final class GameSpoofSafetyRegistry {
 
     // Tencent ACE (kernel-level) protected titles: strictest tier.
     private static final Set<String> HIGH_RISK_PATTERNS = new HashSet<>(Arrays.asList(
-            // PUBG Mobile family (4.6 / Global / Regional variants)
-            "tencent.ig", "tencent.iglite", "tmgp.pubgm", "vng.pubgmobile", "pubgm", "pubg.imobile", "pubg.krmobile", "rekoo.pubgm", "pubg.newstate", "pubgmobile",
+            // PUBG Mobile family (4.7.0 Global / Flash / CE / Regional variants)
+            "tencent.ig", "tencent.igfit", "tencent.igce", "tencent.igfitce", "tencent.iglite",
+            "tmgp.pubgm", "vng.pubgmobile", "pubgm", "pubg.imobile", "pubg.krmobile",
+            "rekoo.pubgm", "pubg.newstate", "pubg.ilite", "pubgmobile",
             // Call of Duty Mobile / Warzone — Global (Activision) + Garena regional variants
             // Fix S2: Garena CODM packages added (previously missing from HIGH_RISK)
             "callofduty", "activision", "tmgp.cod", "warzone",

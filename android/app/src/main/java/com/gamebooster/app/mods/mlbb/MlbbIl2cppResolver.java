@@ -299,6 +299,17 @@ public final class MlbbIl2cppResolver {
         return 0L;
     }
 
+    /**
+     * Resolves an exported IL2CPP C-API symbol (e.g. il2cpp_domain_get, il2cpp_api_lookup_symbol)
+     * directly from loaded runtime libraries via native dlsym.
+     */
+    public static long resolveRuntimeExport(String symbolName) {
+        if (symbolName == null || symbolName.isEmpty() || !Il2cppDirectScanner.isAvailable()) {
+            return 0L;
+        }
+        return Il2cppDirectScanner.resolveIl2cppExport(symbolName);
+    }
+
     private static byte[] hexStringToBytes(String s) {
         if (s == null || s.length() % 2 != 0) return null;
         int len = s.length();

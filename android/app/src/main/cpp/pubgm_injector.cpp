@@ -512,7 +512,7 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             utime(path, &t);
         }
         env->ReleaseStringUTFChars(jPath, path);
-        LOGI("PubgmActiveSav 4.6 (fps=%d, q=%d, hdr=%d) injected: %s [ok=%d]", fps, q, mobileHdrMode, pathStr.c_str(), ok);
+        LOGI("PubgmActiveSav 4.7 (fps=%d, q=%d, hdr=%d) injected: %s [ok=%d]", fps, q, mobileHdrMode, pathStr.c_str(), ok);
         return ok ? JNI_TRUE : JNI_FALSE;
     }
 
@@ -550,8 +550,8 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
             {"bUseHDRMode", (q >= 4) ? "True" : "False"}, {"bUseUltraExtreme", "True"}, {"bFramePacingEnabled", "True"},
             {"UnlockFPS", "1"}, {"Unlock120Hz", "1"}, {"Unlock144Hz", "1"}, {"Unlock165Hz", "1"},
             {"Unlock185Hz", "1"}, {"Unlock240Hz", "1"}, {"Unlock165FPS", "1"}, {"Ultra165FPS", "1"},
-            {"+CVars=r.PUBGVersion", "4.6"}, {"+CVars=r.PUBGClientVersion", "4.6.0"},
-            {"+CVars=r.PUBG46EngineSupport", "1"},
+            {"+CVars=r.PUBGVersion", "4.7"}, {"+CVars=r.PUBGClientVersion", "4.7.0"},
+            {"+CVars=r.PUBG47EngineSupport", "1"},
             {"+CVars=r.PUBGDeviceFPS", effLvlStr}, {"+CVars=r.PUBGDeviceFPSLevel", effLvlStr},
             {"+CVars=r.PUBGBattleFPS", effLvlStr}, {"+CVars=r.PUBGLobbyFPS", effLvlStr},
             {"+CVars=r.PUBGFPSLevel", effLvlStr}, {"+CVars=r.PUBGDeviceQuality", qStr},
@@ -575,9 +575,9 @@ JNIEXPORT jboolean JNICALL Java_com_gamebooster_app_config_NativeConfigInjector_
     } else {
         // UserCustom.ini / DeviceProfile.ini / Quality.ini
         std::vector<std::pair<std::string, std::string>> ue4Keys = {
-            {"+CVars=r.PUBGVersion", "4.6"},
-            {"+CVars=r.PUBGClientVersion", "4.6.0"},
-            {"+CVars=r.PUBG46EngineSupport", "1"},
+            {"+CVars=r.PUBGVersion", "4.7"},
+            {"+CVars=r.PUBGClientVersion", "4.7.0"},
+            {"+CVars=r.PUBG47EngineSupport", "1"},
             {"+CVars=r.PUBGDeviceFPS", effLvlStr},
             {"+CVars=r.PUBGDeviceFPSLevel", effLvlStr},
             {"+CVars=r.PUBGBattleFPS", effLvlStr},

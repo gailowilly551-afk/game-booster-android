@@ -43,18 +43,19 @@ import com.gamebooster.app.ui.views.LoopingVideoBackgroundView;
 public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStateListener {
 
     private TextView tvGamesHeader;
+    private TextView tvHeroEngineSubtitle;
+    private TextView tvHeroEngineBadge;
     private LinearLayout layoutEmptyState;
     private RecyclerView rvGames;
     private HomeGamesAdapter adapter;
 
-
-    private LoopingVideoBackgroundView videoHomeBg;
     private LoopingVideoBackgroundView videoHeroBanner;
     private final List<GameAppInfo> gameList = new ArrayList<>();
     private boolean lastKnownShizukuActive = false;
 
     private void handleShizukuStateUpdate() {
         if (!isAdded() || getContext() == null) return;
+        updateHeroEngineStatus();
         boolean nowActive = ShizukuExecutor.hasShizukuPermission()
                 || com.gamebooster.app.shizuku.ShizukuManager.isShizukuRunningAndGranted()
                 || com.gamebooster.app.shizuku.ShizukuConnectionManager.getInstance().isReady()
@@ -65,6 +66,23 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             loadAndScanGames(true);
         } else if (!nowActive) {
             lastKnownShizukuActive = false;
+        }
+    }
+
+    private void updateHeroEngineStatus() {
+        if (!isAdded() || getContext() == null) return;
+        float maxHz = com.gamebooster.app.device.HardwareDisplayController.getMaxHardwareRefreshRate(getContext());
+        int displayHz = maxHz >= 60f ? Math.round(maxHz) : 120;
+        boolean privileged = com.gamebooster.app.engine.PrivilegeBridgeEngine.isPrivilegedActive()
+                || ShizukuExecutor.hasShizukuPermission();
+
+        if (tvHeroEngineSubtitle != null) {
+            tvHeroEngineSubtitle.setText(privileged
+                    ? (displayHz + "Hz Hardware Lock Ready • Tap to Boost & Drop Caches")
+                    : ("Detected " + displayHz + "Hz Panel • Tap for Turbo Boost"));
+        }
+        if (tvHeroEngineBadge != null) {
+            tvHeroEngineBadge.setText(privileged ? (displayHz + "Hz MAX") : "BOOST");
         }
     }
 
@@ -81,14 +99,10 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         tvGamesHeader = view.findViewById(R.id.tv_games_header);
+        tvHeroEngineSubtitle = view.findViewById(R.id.tv_hero_engine_subtitle);
+        tvHeroEngineBadge = view.findViewById(R.id.tv_hero_engine_badge);
         layoutEmptyState = view.findViewById(R.id.layout_empty_state);
         rvGames = view.findViewById(R.id.rv_games_list);
-
-        // Background Looping Video
-        videoHomeBg = view.findViewById(R.id.video_home_bg);
-        if (videoHomeBg != null) {
-            videoHomeBg.setVisibility(View.GONE);
-        }
 
         // Hero Hardware Banner Looping Video (Video Only - Silent)
         videoHeroBanner = view.findViewById(R.id.video_hero_banner);
@@ -96,6 +110,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             videoHeroBanner.setMuted(true);
             videoHeroBanner.setVideoRawResource(R.raw.banner_video);
         }
+        updateHeroEngineStatus();
 
         Button btnSettings = view.findViewById(R.id.btn_open_settings);
         if (btnSettings != null) {
@@ -112,40 +127,51 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             });
         }
 
-        // Hero Hardware Engine Banner Click: Nuclear 185Hz Enforcement — NO 60Hz fallback
+        // Hero Hardware Engine Banner Click: Enforce detected Max Hz & Extreme Performance
         View cardHeroBanner = view.findViewById(R.id.card_hero_hardware_engine);
         if (cardHeroBanner != null) {
             cardHeroBanner.setOnClickListener(v -> {
                 Context c = getContext();
                 if (c == null) return;
-                Toast.makeText(c, "🚀 ENFORCING 185Hz MAX — Zero Throttling, Zero 60Hz Fallback!", Toast.LENGTH_SHORT).show();
+                final Context appCtxHero = c.getApplicationContext();
+                float maxHz = com.gamebooster.app.device.HardwareDisplayController.getMaxHardwareRefreshRate(appCtxHero);
+                final int targetHz = maxHz >= 60f ? Math.round(maxHz) : 120;
+                cardHeroBanner.setEnabled(false);
+                if (tvHeroEngineBadge != null) tvHeroEngineBadge.setText("BOOSTING...");
+                Toast.makeText(c, "🚀 Applying " + targetHz + "Hz Extreme Hardware Boost...", Toast.LENGTH_SHORT).show();
                 com.gamebooster.app.core.AppExecutors.getInstance().executeCommand(() -> {
+                    boolean applied = false;
                     try {
-                        // Window preference for this app
-                        com.gamebooster.app.engine.NativeFrameworkBridge.acquireSustainedPerformanceLock(c);
-                        if (getActivity() != null) {
-                            com.gamebooster.app.device.HardwareDisplayController.applyMaxRefreshRateToWindow(getActivity());
+                        com.gamebooster.app.engine.NativeFrameworkBridge.acquireSustainedPerformanceLock(appCtxHero);
+                        if (getActivity() != null && !getActivity().isFinishing()) {
+                            getActivity().runOnUiThread(() ->
+                                com.gamebooster.app.device.HardwareDisplayController.applyMaxRefreshRateToWindow(getActivity()));
                         }
-                        // Nuclear path: Settings API + 6 Shizuku command layers, target 185Hz
-                        com.gamebooster.app.device.HardwareDisplayController.forceMaxHzNeverFallback(c);
-                        // Explicit 185Hz blast via MaxHzForceChannel (OEM-specific keys)
-                        com.gamebooster.app.booster.MaxHzForceChannel.forceApply(185);
-                        // Clear VM caches for memory headroom
+                        com.gamebooster.app.device.HardwareDisplayController.forceMaxHzNeverFallback(appCtxHero);
+                        com.gamebooster.app.booster.MaxHzForceChannel.forceApply(targetHz);
                         com.gamebooster.app.engine.PrivilegeBridgeEngine.executePrivileged("echo 3 > /proc/sys/vm/drop_caches 2>/dev/null");
-                        // Apply extreme performance profile
-                        com.gamebooster.app.booster.PerformanceChannel.applyProfile(c, com.gamebooster.app.booster.PerformanceChannel.Profile.EXTREME_PERFORMANCE);
+                        applied = com.gamebooster.app.booster.PerformanceChannel.applyProfile(appCtxHero, com.gamebooster.app.booster.PerformanceChannel.Profile.EXTREME_PERFORMANCE);
                     } catch (Throwable t) {
                         android.util.Log.w("HomeFragment", "Hardware turbo error: " + t.getMessage());
                     }
+                    final boolean finalApplied = applied;
+                    com.gamebooster.app.core.AppExecutors.getInstance().postToMainThread(() -> {
+                        if (!isAdded() || getContext() == null) return;
+                        cardHeroBanner.setEnabled(true);
+                        updateHeroEngineStatus();
+                        Toast.makeText(getContext(),
+                                finalApplied ? ("✅ " + targetHz + "Hz Extreme Hardware Engine Active!") : ("⚡ " + targetHz + "Hz Window Lock & Sustained Perf Active"),
+                                Toast.LENGTH_SHORT).show();
+                    });
                 });
             });
         }
 
-        // Header & Empty State Action Buttons
+        // Single-Source Header Action Buttons (No Duplicates)
         Button btnHomeAddGame = view.findViewById(R.id.btn_home_add_game);
+        Button btnHomeScanApks = view.findViewById(R.id.btn_home_scan_apks);
         Button btnHomeClearGames = view.findViewById(R.id.btn_home_clear_games);
-        Button btnEmptyAddGame = view.findViewById(R.id.btn_empty_add_game);
-        Button btnEmptyScanApks = view.findViewById(R.id.btn_empty_scan_apks);
+        Button btnRestoreDefaults = view.findViewById(R.id.btn_restore_default_games);
 
         View.OnClickListener openAddGameAction = v -> {
             android.app.Activity act = getActivity();
@@ -170,9 +196,8 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
         };
 
         if (btnHomeAddGame != null) btnHomeAddGame.setOnClickListener(openAddGameAction);
+        if (btnHomeScanApks != null) btnHomeScanApks.setOnClickListener(openApkManagerAction);
         if (btnHomeClearGames != null) btnHomeClearGames.setOnClickListener(openClearGamesAction);
-        if (btnEmptyAddGame != null) btnEmptyAddGame.setOnClickListener(openAddGameAction);
-        if (btnEmptyScanApks != null) btnEmptyScanApks.setOnClickListener(openApkManagerAction);
 
         View.OnClickListener restoreAction = v -> {
             Context ctx = getContext();
@@ -183,10 +208,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             Toast.makeText(ctx, "✅ Game list restored to defaults!", Toast.LENGTH_SHORT).show();
             loadAndScanGames(true);
         };
-        Button btnRestoreDefaults = view.findViewById(R.id.btn_restore_default_games);
         if (btnRestoreDefaults != null) btnRestoreDefaults.setOnClickListener(restoreAction);
-        Button btnEmptyRestoreDefaults = view.findViewById(R.id.btn_empty_restore_defaults);
-        if (btnEmptyRestoreDefaults != null) btnEmptyRestoreDefaults.setOnClickListener(restoreAction);
 
         if (tvGamesHeader != null) {
             tvGamesHeader.setOnClickListener(v -> {
@@ -243,12 +265,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                 @Override
                 public void onMoreOptions(GameAppInfo game, View anchorView) {
                     try {
-                        android.app.Activity act = getActivity();
-                        if (act != null && !act.isFinishing()) {
-                            com.gamebooster.app.ui.dialogs.PreLaunchGameDialog.show(act, game, () -> {
-                                if (adapter != null) adapter.notifyDataSetChanged();
-                            });
-                        }
+                        showGameMoreOptionsMenu(game, anchorView);
                     } catch (Throwable t) {
                         android.util.Log.e("HomeFragment", "onMoreOptions error: " + t.getMessage(), t);
                     }
@@ -272,7 +289,6 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                     return;
                 }
                 if (Math.abs(scrollY - oldScrollY) > 10) {
-                    if (videoHomeBg != null && videoHomeBg.isPlaying()) videoHomeBg.pause();
                     if (videoHeroBanner != null && videoHeroBanner.isPlaying()) videoHeroBanner.pause();
                 }
             });
@@ -332,6 +348,7 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
             }
         } catch (Throwable ignored) {}
 
+        updateHeroEngineStatus();
         applyVideoBackgroundState();
         loadAndScanGames(false); // Non-forced: show cached list instantly; only re-scan on package events
     }
@@ -339,9 +356,6 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
     private void applyVideoBackgroundState() {
         if (getContext() == null) return;
         boolean videoSaver = com.gamebooster.app.config.ManualSettingsPreferences.isVideoSaverEnabled(getContext());
-        if (videoHomeBg != null) {
-            videoHomeBg.setVisibility(View.GONE);
-        }
         if (videoSaver) {
             if (videoHeroBanner != null) {
                 videoHeroBanner.pause();
@@ -363,7 +377,6 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
                 getContext().unregisterReceiver(packageReceiver);
             }
         } catch (Throwable ignored) {}
-        if (videoHomeBg != null) videoHomeBg.pause();
         if (videoHeroBanner != null) videoHeroBanner.pause();
     }
 
@@ -371,12 +384,12 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (hidden) {
-            if (videoHomeBg != null) videoHomeBg.pause();
             if (videoHeroBanner != null) videoHeroBanner.pause();
         } else {
             if (getContext() != null) {
                 com.gamebooster.app.shizuku.ShizukuLifecycleManager.getInstance(getContext()).onResumeCheck();
             }
+            updateHeroEngineStatus();
             applyVideoBackgroundState();
             loadAndScanGames(true);
         }
@@ -392,10 +405,6 @@ public class HomeFragment extends Fragment implements ShizukuManager.ShizukuStat
         } catch (Throwable ignored) {}
         com.gamebooster.app.shizuku.ShizukuConnectionManager.getInstance().removeConnectionListener(connListener);
         ShizukuManager.removeStateListener(this);
-        if (videoHomeBg != null) {
-            videoHomeBg.release();
-            videoHomeBg = null;
-        }
         if (videoHeroBanner != null) {
             videoHeroBanner.release();
             videoHeroBanner = null;

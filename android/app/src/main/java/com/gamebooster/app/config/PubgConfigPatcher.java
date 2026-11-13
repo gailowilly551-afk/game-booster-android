@@ -23,11 +23,23 @@ import java.util.List;
 public class PubgConfigPatcher {
 
     public static final String PKG_PUBGM = "com.tencent.ig";
-    public static final int TARGET_VERSION_CODE = 21525;
-    public static final String TARGET_VERSION_NAME = "4.6.0";
+    public static final String PKG_PUBGM_FLASH = "com.tencent.igfit";
+    public static final String PKG_PUBGM_CE = "com.tencent.igce";
+    public static final String PKG_PUBGM_FLASH_CE = "com.tencent.igfitce";
+    public static final int TARGET_VERSION_CODE = 21740;
+    public static final int TARGET_FLASH_VERSION_CODE = 21745;
+    public static final String TARGET_VERSION_NAME = "4.7.0";
     public static final int TARGET_UID = 10000;
     public static final String DIR_USER_0 = "/data/user/0/com.tencent.ig";
     public static final String DIR_ANDROID_DATA = "/storage/emulated/0/Android/data/com.tencent.ig";
+
+    /** Resolves target versionCode across 4.7.0 Global (21740) and Flash (21745). */
+    public static int resolveTargetVersionCode(String packageName) {
+        if (packageName != null && packageName.toLowerCase().contains("igfit")) {
+            return TARGET_FLASH_VERSION_CODE;
+        }
+        return TARGET_VERSION_CODE;
+    }
 
     public static List<String> resolveRootDirs(String packageName) {
         String pkg = (packageName != null && !packageName.trim().isEmpty()) ? packageName.trim() : PKG_PUBGM;
@@ -434,7 +446,7 @@ public class PubgConfigPatcher {
         return patchForTier(packageName, FpsUnlockTier.FPS_185);
     }
 
-    // ─── 4.6.0 Dedicated Presets: Ultra HDR 120, HDR 120, SuperSmooth 165 ───
+    // ─── 4.7.0 Dedicated Presets: Ultra HDR 120, HDR 120, SuperSmooth 165 ───
 
     public static boolean patchUltraHdr120(String packageName) {
         if (packageName == null) return false;
@@ -591,10 +603,10 @@ public class PubgConfigPatcher {
         if (pkg == null || pkg.trim().isEmpty()) return false;
 
         String foundSource = null;
-        String pakFileName = "game_patch_4.6.1.21606.pak";
+        String pakFileName = "game_patch_4.7.0." + resolveTargetVersionCode(pkg) + ".pak";
         String liveHighestPak = null;
 
-        // 1. Dynamic check: inspect device's live Saved/Paks to discover installed build stream (e.g. 4.6.1.21605)
+        // 1. Dynamic check: inspect device's live Saved/Paks to discover installed build stream (e.g. 4.7.0.21740)
         try {
             String paksDir = "/sdcard/Android/data/" + pkg + "/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks";
             String highestPakCmd = "ls -1 \"" + paksDir + "\"/game_patch_*.pak 2>/dev/null | sort -V | tail -n 1";
@@ -635,7 +647,7 @@ public class PubgConfigPatcher {
                     for (String ap : assetPaks) {
                         if (ap.endsWith(".pak")) {
                             bestAsset = ap;
-                            if (ap.equals(targetPakName) || ap.equals("game_patch_4.6.1.21606.pak")) {
+                            if (ap.equals(targetPakName) || ap.equals("game_patch_4.7.0.21740.pak")) {
                                 bestAsset = ap;
                                 break;
                             }
@@ -904,10 +916,10 @@ public class PubgConfigPatcher {
         }
 
         String[] cVarsAndIniKeys = {
-            // ── PUBGM 4.6 Engine & Device Whitelist CVars ──
-            "+CVars=r.PUBGVersion=4.6",
-            "+CVars=r.PUBGClientVersion=4.6.0",
-            "+CVars=r.PUBG46EngineSupport=1",
+            // ── PUBGM 4.7 Engine & Device Whitelist CVars ──
+            "+CVars=r.PUBGVersion=4.7",
+            "+CVars=r.PUBGClientVersion=4.7.0",
+            "+CVars=r.PUBG47EngineSupport=1",
             "+CVars=r.PUBGDeviceFPS=" + effectiveLevel,
             "+CVars=r.PUBGDeviceFPSLevel=" + effectiveLevel,
             "+CVars=r.PUBGBattleFPS=" + effectiveLevel,
@@ -1415,7 +1427,7 @@ public class PubgConfigPatcher {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // ─── ⚡ PUBG MOBILE 4.6.0 MASTER UPDATE & ASSET ENGINE ─────────────────────────
+    // ─── ⚡ PUBG MOBILE 4.7.0 MASTER UPDATE & ASSET ENGINE ─────────────────────────
     // ─────────────────────────────────────────────────────────────────────────────
 
     /**
@@ -1481,7 +1493,7 @@ public class PubgConfigPatcher {
     }
 
     /**
-     * Deploys pre-configured PUBG Mobile 4.6.0 asset templates from assets/pubgm/
+     * Deploys pre-configured PUBG Mobile 4.7.0 asset templates from assets/pubgm/
      * into game configuration directories (handling both double and single subfolder layouts).
      */
     public static boolean deployPubgmAssets(Context ctx, String packageName) {
@@ -1572,20 +1584,27 @@ public class PubgConfigPatcher {
             if (w1 || w2) anySuccess = true;
         }
 
-        Log.i(TAG, "PUBGM 4.6.0 asset deployment result for " + pkg + ": " + anySuccess);
+        Log.i(TAG, "PUBGM 4.7.0 asset deployment result for " + pkg + ": " + anySuccess);
         return anySuccess;
     }
 
-    /**
-     * Master 4.6.0 Update Orchestrator:
-     * Synchronizes all assets, unlocks adaptive FPS up to 165Hz/185Hz, applies v4.6 weapon recoil fix,
-     * Midnight Hunters event tuning, inflatable boat speed override, S32 ranked sweep,
-     * masks screen capture listeners, and enforces security cloaking & timestamps.
-     */
+    /** @deprecated Use {@link #applyPubgm470MasterUpdate(Context, String)}. */
+    @Deprecated
     public static boolean applyPubgm460MasterUpdate(Context ctx, String packageName) {
+        return applyPubgm470MasterUpdate(ctx, packageName);
+    }
+
+    /**
+     * Master 4.7.0 Update Orchestrator (Global com.tencent.ig / Flash com.tencent.igfit):
+     * Synchronizes all assets, unlocks adaptive FPS up to 165Hz/185Hz, applies weapon recoil fix,
+     * event tuning, vehicle overrides, ranked sweep, masks screen capture listeners,
+     * and enforces security cloaking & timestamps.
+     */
+    public static boolean applyPubgm470MasterUpdate(Context ctx, String packageName) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
         String pkg = packageName.trim();
-        Log.i(TAG, "🚀 Applying PUBG Mobile 4.6.0 Master Update Suite for " + pkg + "...");
+        Log.i(TAG, "🚀 Applying PUBG Mobile 4.7.0 Master Update Suite ("
+                + resolveTargetVersionCode(pkg) + ") for " + pkg + "...");
 
         // Resolve target FPS without forcing panel physical clamp (defaults to 165 FPS / level 9)
         int targetFps = 165;
@@ -1596,7 +1615,7 @@ public class PubgConfigPatcher {
             }
         }
 
-        // 1. Deploy pre-tuned 4.6.0 asset templates safely (without wiping existing login session)
+        // 1. Deploy pre-tuned 4.7.0 asset templates safely (without wiping existing login session)
         if (ctx != null) {
             deployPubgmAssets(ctx, pkg);
         }
@@ -1606,7 +1625,7 @@ public class PubgConfigPatcher {
         patchActiveSavBinary(pkg, targetFps, true, 4);
         deployPakPatch(pkg);
 
-        // 3. Inject 4.6.0 specific CVars across all discovered paths
+        // 3. Inject 4.7.0 specific CVars across all discovered paths
         List<String> paths = getConfigPaths(pkg);
         int weaponFixCount = 0;
         int midnightCount = 0;
@@ -1620,13 +1639,13 @@ public class PubgConfigPatcher {
             if (NativeConfigInjector.injectPubgmS32RankedSweep(path)) rankedSweepCount++;
         }
 
-        // 4. Android 14/15 DETECT_SCREEN_CAPTURE & VirtualDisplay Masking
+        // 4. Android 14/15/16 DETECT_SCREEN_CAPTURE, ScreenShotDetect & VirtualDisplay Masking
         NativeConfigInjector.maskScreenCaptureListeners(pkg);
 
         // 5. Anti-redownload skip protection & Timestamp/SELinux cloaking
         GameSecurityBypassEngine.enforceSelinuxAndOwnershipBypass(pkg, paths);
 
-        Log.i(TAG, "✅ PUBG Mobile 4.6.0 Master Update complete for " + pkg
+        Log.i(TAG, "✅ PUBG Mobile 4.7.0 Master Update complete for " + pkg
                 + " [weaponFix=" + weaponFixCount
                 + ", midnightHunters=" + midnightCount
                 + ", vehicleOverride=" + vehicleCount

@@ -344,9 +344,9 @@ public final class GameAutoInjectDispatcher {
                 PubgConfigPatcher.applyPubgUltraDroneViewMaxFov(pkg);
                 PubgConfigPatcher.deployPakPatch(pkg);
                 if (ctx != null) {
-                    // Safe non-destructive asset deployment & 4.6.0 master update
+                    // Safe non-destructive asset deployment & 4.7.0 master update
                     PubgConfigPatcher.deployPubgmAssets(ctx, pkg);
-                    PubgConfigPatcher.applyPubgm460MasterUpdate(ctx, pkg);
+                    PubgConfigPatcher.applyPubgm470MasterUpdate(ctx, pkg);
                 }
                 try {
                     com.gamebooster.app.engine.PubgmCombatOverdriveEngine.applyCombatOverdrive(ctx, pkg);
@@ -355,7 +355,7 @@ public final class GameAutoInjectDispatcher {
                 }
                 try {
                     boolean pubgmInjected = com.gamebooster.app.mods.pubgm.PubgmModManager.injectPubgmModSuite(ctx, pkg, com.gamebooster.app.mods.GameModProfile.load(ctx));
-                    Log.i(TAG, "PUBGM 4.6.0 Mod Profile injection result: " + pubgmInjected + " (isPubgmInjected=" + com.gamebooster.app.mods.pubgm.PubgmModManager.isPubgmInjected() + ")");
+                    Log.i(TAG, "PUBGM 4.7.0 Mod Profile injection result: " + pubgmInjected + " (isPubgmInjected=" + com.gamebooster.app.mods.pubgm.PubgmModManager.isPubgmInjected() + ")");
                 } catch (Throwable modErr) {
                     Log.w(TAG, "PUBGM Mod Profile injection warning: " + modErr.getMessage());
                 }

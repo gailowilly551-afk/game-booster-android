@@ -146,24 +146,36 @@ if (CFG.antiBan) {
     });
   }
 
-  // Intercept ACE anti-cheat libraries (libanort.so, libanogs.so, libCrashSight.so)
-  ['libanort.so', 'libanogs.so', 'libCrashSight.so', 'libCrashSightPlugin.so'].forEach(lib => {
+  // Intercept ACE & CrashSight anti-cheat libraries via verified exported symbol prefixes
+  const acPrefixTargets = {
+    'libanogs.so': ['AnoSDKGetReportData', 'AnoSDKDelReportData', 'AnoSDKSetUserInfo', 'AnoSDKRegister'],
+    'libCrashSight.so': ['cs_reportLogInfo', 'cs_reportStuck', 'cs_startDumpRoutine', 'UQMReportLogInfo', 'UQMCrashAgentReport'],
+    'libCrashSightPlugin.so': ['cs_report', 'uqmcrash', 'report']
+  };
+
+  Object.keys(acPrefixTargets).forEach(lib => {
     waitForModule(lib, (mod) => {
-      console.log(`[AntiBan-CODM] Cloaking ${lib} @ ${mod.base}`);
+      const prefixes = acPrefixTargets[lib];
+      let hooked = 0;
       try {
-        const exports = mod.enumerateExports();
-        exports.forEach(exp => {
-          const n = exp.name.toLowerCase();
-          if (n.includes('report') || n.includes('detect') || n.includes('verify') || n.includes('check') || n.includes('crash')) {
+        mod.enumerateExports().forEach(exp => {
+          if (exp.type !== 'function') return;
+          const hit = prefixes.some(p => exp.name.toLowerCase().indexOf(p.toLowerCase()) !== -1);
+          if (hit) {
             try {
-              Interceptor.replace(exp.address, new NativeCallback(() => {
-                return 0;
-              }, 'int', []));
-            } catch(err) {}
+              Interceptor.replace(exp.address, new NativeCallback(() => 0, 'int', []));
+              hooked++;
+            } catch (err) {}
           }
         });
-      } catch(e) {}
+      } catch (e) {}
+      console.log(`[AntiBan-CODM] Cloaked ${hooked} exports in ${lib} @ ${mod.base}`);
     });
+  });
+
+  waitForModule('libanort.so', (mod) => {
+    const tpSyscall = Module.findExportByName('libanort.so', 'tp_syscall_imp');
+    console.log(`[AntiBan-CODM] libanort.so active @ ${mod.base} (tp_syscall_imp=${tpSyscall})`);
   });
 }
 

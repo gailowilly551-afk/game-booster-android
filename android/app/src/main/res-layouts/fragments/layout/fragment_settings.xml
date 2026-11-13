@@ -13,13 +13,6 @@
         android:scaleType="centerCrop"
         android:src="@drawable/bg_settings" />
 
-    <!-- Optional Looping Settings Background Video -->
-    <com.gamebooster.app.ui.views.LoopingVideoBackgroundView
-        android:id="@+id/video_settings_bg"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
-
     <!-- Translucent glass scrim overlay (Crystal Glassmorphism) -->
     <View
         android:layout_width="match_parent"
@@ -755,7 +748,7 @@
                         android:background="@drawable/badge_preset_cyber"
                         android:paddingHorizontal="8dp"
                         android:paddingVertical="4dp"
-                        android:text="⚡ 87 Available"
+                        android:text="⚡ Loading..."
                         android:textColor="@color/accent_neon_green"
                         android:textSize="10sp"
                         android:textStyle="bold" />

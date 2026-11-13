@@ -21,7 +21,7 @@ profile.ue4_cvar_anti_aliasing = 2
 -- Patcher Flags
 profile.patch_active_sav = true
 profile.unlock_185hz = true
-profile.pak_filename = "game_patch_4.6.0.21525.pak"
+profile.pak_filename = "game_patch_4.7.0.21740.pak"
 profile.supported_presets = "ultra_hdr_120,hdr_120,supersmooth_165,extreme_185"
 
 -- ── Combat Enhancement Suite 2026 ─────────────────────────────────────────────
@@ -220,11 +220,13 @@ profile.ranked_combat_suite          = true
 profile.classic_combat_suite         = true
 profile.map_reinjection              = true
 
--- ── 🌙 v4.6 "Midnight Hunters" & S32 — Sep 9 2026 ────────────────────────
-profile.version                   = "4.6"
-profile.version_name              = "Midnight Hunters"
+-- ── v4.7 Engine Update (Global 21740 / Flash 21745) ───────────────────────────
+profile.version                   = "4.7.0"
+profile.version_code              = 21740
+profile.flash_version_code        = 21745
+profile.version_name              = "4.7.0"
 profile.season32_start            = "2026-09-01"
-profile.pak_filename              = "game_patch_4.6.0.21572.pak"
+profile.pak_filename              = "game_patch_4.7.0.21740.pak"
 
 -- v4.6 Weapon Fix: ACE32 screen-shake + AUG HFR recoil counter
 profile.r_weapon_screen_shake     = 0    -- kill all per-weapon shake

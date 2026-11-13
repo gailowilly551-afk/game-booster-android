@@ -42,6 +42,15 @@ public final class HokCombatOverdriveEngine {
         HokConfigPatcher.applyVulkanPipelinePrime(pkg);
         HokConfigPatcher.applyAntiTelemetrySafe(pkg);
 
+        // 3. Native in-process symbol-driven ACE & CrashSight cloak (libanogs.so / libCrashSight.so)
+        if (AceCloakEngine.isAvailable()) {
+            AceCloakEngine.cloakAceModules();
+        }
+        // Verify HOK obfuscated/split _cp IL2CPP base if mapped
+        if (Il2cppDirectScanner.isAvailable()) {
+            Il2cppDirectScanner.getIl2cppBase();
+        }
+
         Log.i(TAG, "✅ [HokCombatOverdriveEngine] HOK Combat Overdrive applied for " + pkg);
         return true;
     }

@@ -12,13 +12,6 @@
         android:scaleType="centerCrop"
         android:src="@drawable/bg_home" />
 
-    <!-- Optional Looping Video Background View -->
-    <com.gamebooster.app.ui.views.LoopingVideoBackgroundView
-        android:id="@+id/video_home_bg"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
-
     <!-- Translucent crystal glass scrim with deep cyber tint -->
     <View
         android:layout_width="match_parent"
@@ -154,6 +147,7 @@
                     android:paddingEnd="80dp">
 
                     <TextView
+                        android:id="@+id/tv_hero_engine_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="🚀 EXTREME HARDWARE ENGINE"
@@ -166,10 +160,11 @@
                         android:shadowRadius="8" />
 
                     <TextView
+                        android:id="@+id/tv_hero_engine_subtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="120 / 144 / 165 / 185 FPS Unlocked • Zero Throttling"
+                        android:text="Tap to lock Max Hz &amp; Extreme Performance"
                         android:textColor="#FFFFFF"
                         android:textSize="10sp"
                         android:textStyle="bold"
@@ -180,6 +175,7 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/tv_hero_engine_badge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
@@ -188,7 +184,7 @@
                     android:background="@drawable/badge_neon_green"
                     android:paddingHorizontal="9dp"
                     android:paddingVertical="4dp"
-                    android:text="ACTIVE"
+                    android:text="BOOST"
                     android:textColor="@color/accent_neon_green"
                     android:textSize="10sp"
                     android:textStyle="bold" />
@@ -201,53 +197,76 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tv_games_header"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginBottom="6dp"
                 android:text="INSTALLED GAMES (SCANNING...)"
                 android:textColor="@color/text_primary"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
 
-            <Button
-                android:id="@+id/btn_home_add_game"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/btn_cyber_cyan"
-                android:paddingHorizontal="10dp"
-                android:text="➕ ADD"
-                android:textColor="#080B11"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+            <!-- Single-Source Home Games Action Bar (No Duplicate Empty-State Buttons) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btn_home_clear_games"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/btn_cyber_dark"
-                android:paddingHorizontal="10dp"
-                android:text="🗑️ CLEAR"
-                android:textColor="#FF5555"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                <Button
+                    android:id="@+id/btn_home_add_game"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/btn_cyber_cyan"
+                    android:paddingHorizontal="6dp"
+                    android:text="➕ ADD"
+                    android:textColor="#080B11"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btn_restore_default_games"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/btn_cyber_dark"
-                android:paddingHorizontal="10dp"
-                android:text="♻️ RESTORE"
-                android:textColor="#AAFFAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                <Button
+                    android:id="@+id/btn_home_scan_apks"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/btn_cyber_dark"
+                    android:paddingHorizontal="6dp"
+                    android:text="📦 APKS"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_home_clear_games"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/btn_cyber_dark"
+                    android:paddingHorizontal="6dp"
+                    android:text="🗑️ CLEAR"
+                    android:textColor="#FF5555"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_restore_default_games"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/btn_cyber_dark"
+                    android:paddingHorizontal="6dp"
+                    android:text="♻️ RESTORE"
+                    android:textColor="#AAFFAA"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Games RecyclerView -->
@@ -267,7 +286,7 @@
             android:gravity="center"
             android:background="@drawable/card_glass_shape"
             android:paddingHorizontal="20dp"
-            android:paddingVertical="32dp"
+            android:paddingVertical="28dp"
             android:layout_marginTop="8dp"
             android:visibility="gone">
 
@@ -275,12 +294,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🎯"
-                android:textSize="48sp" />
+                android:textSize="44sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="10dp"
                 android:text="No Target Games Detected"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
@@ -290,54 +309,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Install MLBB, PUBG, CODM, Free Fire, Genshin, HOK, Roblox, Valorant, or Farlight\nor add any installed game or APK to boost."
+                android:text="Use ADD, APKS, or RESTORE above to add installed games, install APK packages, or restore hidden defaults."
                 android:textColor="@color/empty_state_text"
                 android:textSize="12sp"
                 android:gravity="center"
                 android:lineSpacingExtra="3dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_empty_add_game"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:background="@drawable/btn_cyber_cyan"
-                    android:text="➕ ADD INSTALLED GAME"
-                    android:textColor="#080B11"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <Button
-                    android:id="@+id/btn_empty_scan_apks"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/btn_cyber_dark"
-                    android:text="📦 SCAN &amp; INSTALL APKS"
-                    android:textColor="@color/accent_cyan"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btn_empty_restore_defaults"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/btn_cyber_dark"
-                android:text="🔄 RESTORE HIDDEN / DEFAULT GAMES"
-                android:textColor="@color/accent_neon_green"
-                android:textSize="11sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
     </LinearLayout>

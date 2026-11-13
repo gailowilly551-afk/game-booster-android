@@ -4338,9 +4338,9 @@ public class NativeConfigInjector {
         int clampedFps = Math.max(60, Math.min(185, targetFps));
         int effectiveLevel = (clampedFps >= 185) ? 10 : ((clampedFps >= 165) ? 9 : ((clampedFps >= 144) ? 8 : ((clampedFps >= 120) ? 7 : 6)));
         String[] keys = {
-            "+CVars=r.PUBGVersion=4.6",
-            "+CVars=r.PUBGClientVersion=4.6.0",
-            "+CVars=r.PUBG46EngineSupport=1",
+            "+CVars=r.PUBGVersion=4.7",
+            "+CVars=r.PUBGClientVersion=4.7.0",
+            "+CVars=r.PUBG47EngineSupport=1",
             "+CVars=0,2," + clampedFps,
             "+CVars=r.PUBGDeviceFPS=" + effectiveLevel,
             "+CVars=r.PUBGDeviceFPSLevel=" + effectiveLevel,

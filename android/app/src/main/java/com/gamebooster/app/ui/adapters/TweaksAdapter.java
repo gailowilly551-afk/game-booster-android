@@ -42,7 +42,8 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
     public TweaksAdapter(Context context, List<TweakItem> tweaks) {
         this.context = context;
         this.allMasterTweaks = new ArrayList<>(tweaks != null ? tweaks : new ArrayList<>());
-        this.tweaks = new ArrayList<>(this.allMasterTweaks);
+        this.tweaks = new ArrayList<>();
+        filterInternal();
     }
 
     public void setOnTweakStateChangeListener(OnTweakStateChangeListener listener) {
@@ -83,14 +84,55 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
     }
 
     private static final java.util.Set<String> EXCLUDED_TOP_SWITCH_TWEAK_IDS = new java.util.HashSet<>(java.util.Arrays.asList(
+            // Already exposed in Settings Cards 2 / 2.5 / 3 / 3.5 / 4
             "game_driver_mlbb_codm_pubgm_preference",
+            "vulkan_skiavk_render_thread_rt",
+            "vulkan_renderengine_prime",
+            "uclamp_cpuset_top_app_boost",
+            "thermalservice_override",
+            "android_15_16_adpf_headroom_v2",
+            "vendor_touch_digitizer_1000hz_universal",
+            "android_13_16_phantom_freezer_kill",
+            "memory_16kb_vm_shield",
+            "webview_gpu_vulkan_turbo",
+            "webview_multiprocess_acceleration",
+            "art_dexopt_speed_compile",
+            "esports_audio_spatial_footstep_boost",
+            "disable_background_telemetry_drains",
+            "raw_touch_zero_slop",
             "disable_data_saver",
             "disable_battery_saver",
             "wifi_power_save_disable",
             "dns_over_tls_latency_bypass"
     ));
 
+    public int getVisibleMasterCount() {
+        int count = 0;
+        for (TweakItem item : allMasterTweaks) {
+            if (item != null && !EXCLUDED_TOP_SWITCH_TWEAK_IDS.contains(item.getId())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int getVisibleAppliedCount() {
+        int count = 0;
+        for (TweakItem item : allMasterTweaks) {
+            if (item != null && !EXCLUDED_TOP_SWITCH_TWEAK_IDS.contains(item.getId())
+                    && TweakPreferences.isTweakApplied(context, item.getId())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void applyFilter() {
+        filterInternal();
+        notifyDataSetChanged();
+    }
+
+    private void filterInternal() {
         List<TweakItem> result = new ArrayList<>();
         for (TweakItem item : allMasterTweaks) {
             if (item == null) continue;
@@ -163,7 +205,6 @@ public class TweaksAdapter extends RecyclerView.Adapter<TweaksAdapter.TweakViewH
         }
 
         this.tweaks = result;
-        notifyDataSetChanged();
     }
 
     public void setShizukuAlive(boolean alive) {

@@ -8,10 +8,11 @@ import com.gamebooster.app.shizuku.ShizukuExecutor;
 /**
  * CodmSecurityCloak — Deep Anticheat & Telemetry Suppression for CODM.
  * Neutralizes:
- *  - Tencent ACE (Anti-Cheat Expert): libanort.so, libanogs.so
- *  - CrashSight: libCrashSight.so, libCrashSightPlugin.so
- *  - Security Anti-Fraud: libsaf.so
+ *  - Tencent ACE (Anti-Cheat Expert): libanort.so (REL_HOOK_*), libanogs.so (AnoSDK*@@ANO)
+ *  - CrashSight: libCrashSight.so (cs_* and UQM*), libCrashSightPlugin.so
+ *  - TDM Telemetry: libTDataMaster.so
  *  - TGPA (Tencent Game Performance Analyzer): libtgpa.so
+ *  (Note: libsaf.so in CODM is OpenAL Soft audio and is intentionally left untouched.)
  */
 public final class CodmSecurityCloak {
 

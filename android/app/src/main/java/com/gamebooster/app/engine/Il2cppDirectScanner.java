@@ -45,4 +45,9 @@ public final class Il2cppDirectScanner {
      * Scans any loaded native module for the specified pattern and mask.
      */
     public static native long scanPatternInModule(String moduleName, byte[] pattern, String mask);
+
+    /**
+     * Resolves an exported IL2CPP C-API symbol via dlsym (RTLD_NOLOAD) across loaded runtime modules.
+     */
+    public static native long resolveIl2cppExport(String symbolName);
 }

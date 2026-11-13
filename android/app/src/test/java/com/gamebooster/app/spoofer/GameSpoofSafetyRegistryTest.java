@@ -10,6 +10,10 @@ public class GameSpoofSafetyRegistryTest {
         assertEquals(GameSpoofSafetyRegistry.RiskTier.HIGH_RISK,
                 GameSpoofSafetyRegistry.riskTierFor("com.tencent.ig"));
         assertEquals(GameSpoofSafetyRegistry.RiskTier.HIGH_RISK,
+                GameSpoofSafetyRegistry.riskTierFor("com.tencent.igfit"));
+        assertEquals(GameSpoofSafetyRegistry.RiskTier.HIGH_RISK,
+                GameSpoofSafetyRegistry.riskTierFor("com.tencent.igce"));
+        assertEquals(GameSpoofSafetyRegistry.RiskTier.HIGH_RISK,
                 GameSpoofSafetyRegistry.riskTierFor("com.garena.game.codm"));
         assertEquals(GameSpoofSafetyRegistry.RiskTier.HIGH_RISK,
                 GameSpoofSafetyRegistry.riskTierFor("com.activision.callofduty.shooter"));
