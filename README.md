@@ -5,12 +5,12 @@
 ### **Next-Generation Android Performance Engine & Competitive MOBA / Battle Royale Hardware Accelerator**
 
 [![Android](https://img.shields.io/badge/Android-14%20|%2015%20|%2016%20(API%2034--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/Version-2.0.0--PRO-blueviolet?style=for-the-badge)](https://github.com/Willy-kali/GAME-BOOSTER-0.2)
+[![Version](https://img.shields.io/badge/Version-2.0.0--PRO-blueviolet?style=for-the-badge)](https://github.com/gailowilly551-afk/game-booster-android)
 [![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Arch-arm64--v8a%20|%20armeabi--v7a%20|%20x86__64-red?style=for-the-badge)](https://developer.android.com/ndk)
-[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/Willy-kali/GAME-BOOSTER-0.2)
+[![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/gailowilly551-afk/game-booster-android)
 [![Privilege](https://img.shields.io/badge/Privilege-Root%20|%20Shizuku%20|%20Non--Root-yellow?style=for-the-badge)](https://shizuku.rikka.app)
-[![GitHub](https://img.shields.io/badge/GitHub-Willy--kali-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Willy-kali)
+[![GitHub](https://img.shields.io/badge/GitHub-gailowilly551--afk-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/gailowilly551-afk)
 [![Facebook](https://img.shields.io/badge/Facebook-Connect-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/share/14tdhV1h92S/)
 
 <p align="center">
@@ -246,8 +246,8 @@ adb shell dumpsys gfxinfo <package_name> framestats
 
 ```bash
 # Clone the repository
-git clone https://github.com/Willy-kali/GAME-BOOSTER-0.2.git
-cd GAME-BOOSTER-0.2/android
+git clone https://github.com/gailowilly551-afk/game-booster-android.git
+cd game-booster-android/android
 
 # Build Debug APK directly via Gradle:
 ./gradlew assembleDebug
@@ -260,9 +260,9 @@ cd GAME-BOOSTER-0.2/android
 
 ## 👤 Developer & Socials
 
-Developed and maintained by **Willy-kali**. Connect, follow, or contribute:
+Developed and maintained by **gailowilly551-afk** (Willy Gailo). Connect, follow, or contribute:
 
-* 🐙 **GitHub:** [https://github.com/Willy-kali](https://github.com/Willy-kali)
+* 🐙 **GitHub:** [https://github.com/gailowilly551-afk](https://github.com/gailowilly551-afk)
 * 📘 **Facebook:** [Connect on Facebook](https://www.facebook.com/share/14tdhV1h92S/)
 
 ---
