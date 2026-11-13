@@ -325,6 +325,14 @@ public class DeviceSpooferEngine {
             SpoofSanityChecker.SanityResult sanity =
                     SpoofValidator.checkPreApplySanity(deviceChipset, profile, riskTier);
             if (!sanity.allowed) {
+                if (riskTier == GameSpoofSafetyRegistry.RiskTier.HIGH_RISK
+                        && SpoofPreferences.isStrictAntiCheatGuard(context)) {
+                    lastSanityBlockReason = sanity.reason;
+                    lastSanityWarning = null;
+                    Log.w(TAG, "Strict anti-cheat guard blocked spoof for " + profile.id
+                            + " (" + packageName + "): " + sanity.reason);
+                    return false;
+                }
                 lastSanityWarning = "Advisory: " + sanity.reason;
                 Log.w(TAG, "Proceeding with user spoof for " + profile.id + " (" + riskTier + "): " + sanity.reason);
             } else {

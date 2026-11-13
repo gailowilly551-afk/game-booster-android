@@ -139,13 +139,17 @@ public final class DocumentBundlePatcher {
                 return false;
             }
 
-            // Search and replace common device models with ASUS_AI2601_A
-            byte[] targetOld = "SM-G998B".getBytes(StandardCharsets.US_ASCII);
-            byte[] repNew = "ASUS_AI2601_A".getBytes(StandardCharsets.US_ASCII);
+            // Search and replace common device models in-place without shifting UnityFS offsets.
+            // 13-byte targets get full "ASUS_AI2601_A"; shorter 8-10 byte targets get "AI2601_A" (8 bytes, null-padded).
+            byte[] repFull = "ASUS_AI2601_A".getBytes(StandardCharsets.US_ASCII);
+            byte[] repShort = "AI2601_A".getBytes(StandardCharsets.US_ASCII);
 
-            int replaced = replaceSubArray(data, targetOld, repNew);
-            replaced += replaceSubArray(data, "M2012K11AC".getBytes(StandardCharsets.US_ASCII), repNew);
-            replaced += replaceSubArray(data, "24122RKC7C".getBytes(StandardCharsets.US_ASCII), repNew);
+            int replaced = 0;
+            replaced += replaceSubArray(data, "ASUS_AI2401_A".getBytes(StandardCharsets.US_ASCII), repFull);
+            replaced += replaceSubArray(data, "ASUS_AI2205_A".getBytes(StandardCharsets.US_ASCII), repFull);
+            replaced += replaceSubArray(data, "SM-G998B".getBytes(StandardCharsets.US_ASCII), repShort);
+            replaced += replaceSubArray(data, "M2012K11AC".getBytes(StandardCharsets.US_ASCII), repShort);
+            replaced += replaceSubArray(data, "24122RKC7C".getBytes(StandardCharsets.US_ASCII), repShort);
 
             if (replaced > 0) {
                 try (FileOutputStream fos = new FileOutputStream(bundleFile)) {
@@ -198,7 +202,14 @@ public final class DocumentBundlePatcher {
             }
             return true;
         } catch (Throwable t) {
-            return false;
+            // Android 14-16 /Android/data scoped-storage fallback via Shizuku
+            try {
+                String path = file.getAbsolutePath();
+                com.gamebooster.app.shizuku.ShizukuFileManager.ensureParentDirectory(path);
+                return com.gamebooster.app.shizuku.ShizukuFileManager.writeFile(path, content, "666").success;
+            } catch (Throwable ignored) {
+                return false;
+            }
         }
     }
 }

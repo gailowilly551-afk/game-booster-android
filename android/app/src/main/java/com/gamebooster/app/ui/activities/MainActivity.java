@@ -111,7 +111,8 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
         ShizukuManager.addStateListener(this);
 
         // Request runtime notification permission (Android 13+)
-        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
         }
 
@@ -400,10 +401,20 @@ public class MainActivity extends AppCompatActivity implements ShizukuManager.Sh
         checkAndShowPostGameReport(intent);
     }
 
+    @SuppressWarnings("deprecation")
     private void checkAndShowPostGameReport(Intent intent) {
         if (intent != null && intent.hasExtra("EXTRA_SHOW_POST_GAME_REPORT")) {
-            com.gamebooster.app.overlay.GameSessionReport report =
-                    intent.getSerializableExtra("EXTRA_SHOW_POST_GAME_REPORT", com.gamebooster.app.overlay.GameSessionReport.class);
+            com.gamebooster.app.overlay.GameSessionReport report;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                report = intent.getSerializableExtra(
+                        "EXTRA_SHOW_POST_GAME_REPORT",
+                        com.gamebooster.app.overlay.GameSessionReport.class);
+            } else {
+                Object raw = intent.getSerializableExtra("EXTRA_SHOW_POST_GAME_REPORT");
+                report = (raw instanceof com.gamebooster.app.overlay.GameSessionReport)
+                        ? (com.gamebooster.app.overlay.GameSessionReport) raw
+                        : null;
+            }
             if (report != null) {
                 com.gamebooster.app.ui.dialogs.PostGameReportDialog.show(this, report);
             }

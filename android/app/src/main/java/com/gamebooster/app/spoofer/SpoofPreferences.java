@@ -19,6 +19,7 @@ public class SpoofPreferences {
     private static final String KEY_SPOOF_ENABLED = "spoof_enabled";
     private static final String KEY_ACTIVE_PROFILE_ID = "active_profile_id";
     private static final String KEY_SPOOF_ALL_APPS = "spoof_all_apps";
+    private static final String KEY_STRICT_ANTICHEAT_GUARD = "strict_anticheat_guard";
     private static final String PREFIX_PKG_PROFILE = "pkg_profile_";
 
     private static SharedPreferences getPrefs(Context context) {
@@ -47,6 +48,18 @@ public class SpoofPreferences {
     public static void setSpoofAllApps(Context context, boolean enabled) {
         if (context == null) return;
         getPrefs(context).edit().putBoolean(KEY_SPOOF_ALL_APPS, enabled).apply();
+    }
+
+    // ── Strict Anti-Cheat Guard Toggle ──
+
+    public static boolean isStrictAntiCheatGuard(Context context) {
+        if (context == null) return false;
+        return getPrefs(context).getBoolean(KEY_STRICT_ANTICHEAT_GUARD, false);
+    }
+
+    public static void setStrictAntiCheatGuard(Context context, boolean enabled) {
+        if (context == null) return;
+        getPrefs(context).edit().putBoolean(KEY_STRICT_ANTICHEAT_GUARD, enabled).apply();
     }
 
     // ── Global Active Profile ──

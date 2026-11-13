@@ -294,10 +294,9 @@ public class HomeGameScanner {
             Intent query = new Intent(Intent.ACTION_MAIN, null);
             query.addCategory(Intent.CATEGORY_LAUNCHER);
             query.setPackage(pkg);
-            List<ResolveInfo> list = pm.queryIntentActivities(
-                    query, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL));
+            List<ResolveInfo> list = queryIntentActivitiesCompat(pm, query, PackageManager.MATCH_ALL);
             if (list == null || list.isEmpty()) {
-                list = pm.queryIntentActivities(query, PackageManager.ResolveInfoFlags.of(0));
+                list = queryIntentActivitiesCompat(pm, query, 0);
             }
             if (list != null && !list.isEmpty() && list.get(0).activityInfo != null) {
                 ActivityInfo aInfo = list.get(0).activityInfo;
@@ -316,8 +315,7 @@ public class HomeGameScanner {
             Intent queryInfo = new Intent(Intent.ACTION_MAIN, null);
             queryInfo.addCategory(Intent.CATEGORY_INFO);
             queryInfo.setPackage(pkg);
-            List<ResolveInfo> listInfo = pm.queryIntentActivities(queryInfo,
-                    PackageManager.ResolveInfoFlags.of(0));
+            List<ResolveInfo> listInfo = queryIntentActivitiesCompat(pm, queryInfo, 0);
             if (listInfo != null && !listInfo.isEmpty() && listInfo.get(0).activityInfo != null) {
                 ActivityInfo aInfo = listInfo.get(0).activityInfo;
                 Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -332,8 +330,7 @@ public class HomeGameScanner {
 
         // 5. Query any exported Activity declared in PackageInfo (Android 14+)
         try {
-            android.content.pm.PackageInfo pi = pm.getPackageInfo(pkg,
-                    PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES));
+            android.content.pm.PackageInfo pi = getPackageInfoCompat(pm, pkg, PackageManager.GET_ACTIVITIES);
             if (pi != null && pi.activities != null && pi.activities.length > 0) {
                 for (ActivityInfo ai : pi.activities) {
                     if (ai != null && ai.exported && ai.name != null) {
@@ -362,6 +359,23 @@ public class HomeGameScanner {
         return null;
     }
 
+    @SuppressWarnings("deprecation")
+    private static List<ResolveInfo> queryIntentActivitiesCompat(PackageManager pm, Intent intent, int flags) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(flags));
+        }
+        return pm.queryIntentActivities(intent, flags);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static android.content.pm.PackageInfo getPackageInfoCompat(
+            PackageManager pm, String pkg, int flags) throws PackageManager.NameNotFoundException {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(flags));
+        }
+        return pm.getPackageInfo(pkg, flags);
+    }
+
     /**
      * Helper to classify whether a package or app is a game on Android 13, 14, 15, and 16.
      */
@@ -381,10 +395,8 @@ public class HomeGameScanner {
                     android.content.Intent launcherQuery = new android.content.Intent(android.content.Intent.ACTION_MAIN);
                     launcherQuery.addCategory(android.content.Intent.CATEGORY_LAUNCHER);
                     launcherQuery.setPackage(pkg);
-                    // Android 14+: use typed ResolveInfoFlags
                     java.util.List<android.content.pm.ResolveInfo> resolved =
-                            pm.queryIntentActivities(launcherQuery,
-                                    android.content.pm.PackageManager.ResolveInfoFlags.of(0));
+                            queryIntentActivitiesCompat(pm, launcherQuery, 0);
                     if (resolved == null || resolved.isEmpty()) return false;
                 }
             } catch (Throwable ignored) {}

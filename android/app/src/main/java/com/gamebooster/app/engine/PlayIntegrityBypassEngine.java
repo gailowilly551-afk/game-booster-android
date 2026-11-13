@@ -122,9 +122,7 @@ public final class PlayIntegrityBypassEngine {
     public static String verifyIntegrityState() {
         // Check for TrickyStore verdict injection marker
         try {
-            Process p = Runtime.getRuntime().exec(new String[]{"getprop", "ro.build.fingerprint"});
-            byte[] buf = p.getInputStream().readAllBytes();
-            String fp = new String(buf).trim();
+            String fp = readGetProp("ro.build.fingerprint");
             if (fp.contains("release-keys")) {
                 Log.i(TAG, "[IntegrityState] Fingerprint looks production: " + fp.substring(0, Math.min(fp.length(), 40)));
                 return "DEVICE"; // Assume DEVICE until confirmed STRONG via TrickyStore cert
@@ -221,12 +219,24 @@ public final class PlayIntegrityBypassEngine {
             } catch (Throwable ignored) {}
         }
         // Fallback: check prop
+        return "1".equals(readGetProp("ro.zygisk.enabled"));
+    }
+
+    private static String readGetProp(String key) {
         try {
-            Process p = Runtime.getRuntime().exec(new String[]{"getprop", "ro.zygisk.enabled"});
-            byte[] buf = p.getInputStream().readAllBytes();
-            return "1".equals(new String(buf).trim());
-        } catch (Throwable ignored) {}
-        return false;
+            Process p = Runtime.getRuntime().exec(new String[]{"getprop", key});
+            try (java.io.InputStream is = p.getInputStream();
+                 java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream()) {
+                byte[] chunk = new byte[1024];
+                int n;
+                while ((n = is.read(chunk)) != -1) {
+                    bos.write(chunk, 0, n);
+                }
+                return bos.toString("UTF-8").trim();
+            }
+        } catch (Throwable ignored) {
+            return "";
+        }
     }
 
     private static void executePrivileged(String cmd) {

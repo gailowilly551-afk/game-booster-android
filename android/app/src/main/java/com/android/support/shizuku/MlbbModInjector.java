@@ -63,9 +63,12 @@ public final class MlbbModInjector {
         AppExecutors.getInstance().executeCommand(() -> {
             try {
                 final String pkg = "com.mobile.legends";
-                final String spoofModel = "ASUS_AI2601_A";
-                final String spoofBrand = "ASUS ROG Phone 10 Pro+";
-                final int targetFps = 165;
+                final SpoofProfile rogProfile = SpoofProfileRegistry.getById(SpoofProfileRegistry.ROG9_PRO_ID);
+                final String spoofModel = (rogProfile != null && rogProfile.model != null) ? rogProfile.model : "ASUS_AI2601_A";
+                final String spoofBrand = (rogProfile != null && rogProfile.brandLabel != null) ? rogProfile.brandLabel : "ASUS ROG";
+                final String spoofGpu = (rogProfile != null && rogProfile.glRenderer != null) ? rogProfile.glRenderer : "Adreno (TM) 840";
+                final String spoofSoc = (rogProfile != null && rogProfile.socModel != null) ? rogProfile.socModel : "Snapdragon 8 Elite Gen 2";
+                final int targetFps = (rogProfile != null && rogProfile.maxRefreshRateHz > 0) ? rogProfile.maxRefreshRateHz : 165;
                 final String realModel = Build.MODEL != null ? Build.MODEL : "Unknown";
 
                 Log.i(TAG, "🔥 [ROG 10 PRO+ SPOOF] Applying full 4-layer 165Hz injection for " + pkg);
@@ -150,9 +153,9 @@ public final class MlbbModInjector {
                 sysCmds.add("settings put system min_refresh_rate 165.0");
                 sysCmds.add("settings put system user_refresh_rate 165");
                 sysCmds.add("setprop debug.game.spoofed_model \"" + spoofModel + "\"");
-                sysCmds.add("setprop debug.game.spoofed_brand \"ASUS\"");
-                sysCmds.add("setprop debug.game.spoofed_gpu \"Adreno (TM) 840\"");
-                sysCmds.add("setprop debug.game.spoofed_soc \"Snapdragon 8 Elite Gen 2\"");
+                sysCmds.add("setprop debug.game.spoofed_brand \"" + spoofBrand + "\"");
+                sysCmds.add("setprop debug.game.spoofed_gpu \"" + spoofGpu + "\"");
+                sysCmds.add("setprop debug.game.spoofed_soc \"" + spoofSoc + "\"");
 
                 PrivilegeBridgeEngine.executePrivilegedBatch(sysCmds);
 

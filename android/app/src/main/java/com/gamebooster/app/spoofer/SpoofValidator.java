@@ -99,10 +99,19 @@ public class SpoofValidator {
     }
 
     private static String getSystemProperty(String propName, String fallback) {
+        if (propName == null || propName.trim().isEmpty()) return fallback;
         try {
-            Class<?> sp = Class.forName("android.os.SystemProperties");
-            java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
-            return (String) get.invoke(null, propName, fallback);
+            Process p = Runtime.getRuntime().exec(new String[]{"getprop", propName});
+            try (java.io.InputStream is = p.getInputStream();
+                 java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream()) {
+                byte[] chunk = new byte[512];
+                int n;
+                while ((n = is.read(chunk)) != -1) {
+                    bos.write(chunk, 0, n);
+                }
+                String val = bos.toString("UTF-8").trim();
+                return val.isEmpty() ? fallback : val;
+            }
         } catch (Throwable ignored) {
             return fallback;
         }

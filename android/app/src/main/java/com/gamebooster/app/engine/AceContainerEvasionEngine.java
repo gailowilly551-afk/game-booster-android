@@ -193,8 +193,15 @@ public final class AceContainerEvasionEngine {
     private static String getProp(String key) {
         try {
             Process p = Runtime.getRuntime().exec(new String[]{"getprop", key});
-            byte[] buf = p.getInputStream().readAllBytes();
-            return new String(buf).trim();
+            try (java.io.InputStream is = p.getInputStream();
+                 java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream()) {
+                byte[] chunk = new byte[1024];
+                int n;
+                while ((n = is.read(chunk)) != -1) {
+                    bos.write(chunk, 0, n);
+                }
+                return bos.toString("UTF-8").trim();
+            }
         } catch (Throwable ignored) {
             return "";
         }

@@ -118,11 +118,7 @@ public class InGameTrainerOverlayService extends Service {
             if (packageName != null && !packageName.trim().isEmpty()) {
                 intent.putExtra(EXTRA_PACKAGE_NAME, packageName.trim());
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent);
-            } else {
-                context.startService(intent);
-            }
+            context.startForegroundService(intent);
         } catch (Throwable t) {
             Log.w(TAG, "Cannot startTrainer: " + t.getMessage());
         }
@@ -148,11 +144,7 @@ public class InGameTrainerOverlayService extends Service {
         try {
             Intent intent = new Intent(context, InGameTrainerOverlayService.class);
             intent.setAction(ACTION_TOGGLE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent);
-            } else {
-                context.startService(intent);
-            }
+            context.startForegroundService(intent);
         } catch (Throwable t) {
             Log.w(TAG, "Cannot toggleTrainer: " + t.getMessage());
         }
@@ -178,7 +170,7 @@ public class InGameTrainerOverlayService extends Service {
             return START_STICKY;
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIF_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
         } else {
             startForeground(NOTIF_ID, buildNotification());
