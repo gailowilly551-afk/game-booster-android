@@ -1,7 +1,10 @@
 # ====================================================================
 # Android & Gradle Build Artifacts
 # ====================================================================
+.android/
+**/.android/
 .gradle/
+**/.gradle/
 build/
 app/build/
 **/build/
@@ -9,6 +12,9 @@ app/build/
 daemon/
 **/reports/
 **/test-results/
+**/baselineProfiles/
+**/lint-results*
+*.sarif
 
 # Android binaries & intermediate classes
 *.apk
@@ -32,8 +38,12 @@ app/.cxx/
 **/.cxx/
 .externalNativeBuild/
 app/.externalNativeBuild/
+**/.externalNativeBuild/
 obj/
 CMakeFiles/
+**/CMakeFiles/
+cmake-build-*/
+**/cmake-build-*/
 CMakeCache.txt
 cmake_install.cmake
 *.cmake
@@ -44,7 +54,9 @@ compile_commands.json
 
 # Kotlin, Java & Incremental Build Caches
 .kotlin/
+**/.kotlin/
 .incremental/
+**/.incremental/
 *.kotlin_module
 *.kotlin_builtins
 
@@ -123,6 +135,7 @@ dump.txt
 
 # Runtime Assets & Precompiled JNI Exceptions (MUST BE PRESERVED)
 !**/src/main/jniLibs/**/*.so
+!**/src/main/assets/**/*.so
 !**/assets/shizuku/*.dex
 
 !**/src/main/assets/**
@@ -204,11 +217,23 @@ scratch/
 .cursor/
 .windsurf/
 .copilot/
+.superpowers/
+**/.superpowers/
 .cache/
 .ccls-cache/
 .clangd/
 *.patch
 *.diff
+
+# Reverse Engineering Dumps & Patch Drops
+DUMPS/
+**/DUMPS/
+DUMP_EXTRACTED/
+**/DUMP_EXTRACTED/
+PATCH UPDATE*/
+**/PATCH UPDATE*/
+[Pp][Aa][Tt][Cc][Hh] [Uu][Pp][Dd][Aa][Tt][Ee]*/
+**/*_extracted/
 
 # Game Patcher Backup & Restore Snapshots
 **/config_backup/
@@ -233,3 +258,4 @@ TASK.md
 TODO.md
 *.spec.md
 output-metadata.json
+**/output-metadata.json
